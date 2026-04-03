@@ -157,6 +157,31 @@ a {
   color: #111;
 }
 
+.btn-history {
+  background: linear-gradient(180deg, #102a43, #0b1f33);
+  border: 1px solid #1b3b57;
+  color: #e7f0fb;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
+}
+
+.btn-history:hover:not(:disabled) {
+  background: linear-gradient(180deg, #163754, #0f2840);
+  box-shadow: 0 4px 10px rgba(16, 42, 67, 0.25);
+  transform: translateY(-1px);
+}
+
+.btn-history:disabled {
+  background: #d7dee8;
+  border-color: #c5cfdb;
+  color: #8c98a8;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
 .table-wrapper {
   overflow-x: auto;
 }

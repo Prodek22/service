@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { apiBaseUrl, apiGet } from '../api/client';
 import { TimeEventHistoryResponse, TimesheetSummaryResponse, WeekCycle } from '../types';
-import { formatDateTime, formatHm } from '../utils/format';
+import { formatDateTime, formatMinutes } from '../utils/format';
 
 export const TimesheetPage = () => {
   const [cycles, setCycles] = useState<WeekCycle[]>([]);
@@ -71,11 +71,11 @@ export const TimesheetPage = () => {
           <thead>
             <tr>
               <th>Angajat</th>
-              <th>Total timp</th>
-              <th>Timp normal</th>
-              <th>Ajustari manuale</th>
-              <th>+ Ajustari</th>
-              <th>- Ajustari</th>
+              <th>Total timp (min)</th>
+              <th>Timp normal (min)</th>
+              <th>Ajustari manuale (min)</th>
+              <th>+ Ajustari (min)</th>
+              <th>- Ajustari (min)</th>
               <th>Nr ajustari</th>
               <th>Istoric</th>
             </tr>
@@ -84,14 +84,18 @@ export const TimesheetPage = () => {
             {summary?.totals.map((row) => (
               <tr key={row.key}>
                 <td>{row.displayName}</td>
-                <td>{row.totalLabel}</td>
-                <td>{row.normalLabel}</td>
-                <td>{row.manualLabel}</td>
-                <td>{formatHm(row.positiveAdjustmentSeconds)}</td>
-                <td>{formatHm(row.negativeAdjustmentSeconds)}</td>
+                <td>{formatMinutes(row.totalSeconds)}</td>
+                <td>{formatMinutes(row.normalSeconds)}</td>
+                <td>{formatMinutes(row.manualAdjustmentSeconds)}</td>
+                <td>{formatMinutes(row.positiveAdjustmentSeconds)}</td>
+                <td>{formatMinutes(Math.abs(row.negativeAdjustmentSeconds))}</td>
                 <td>{row.manualAdjustmentsCount}</td>
                 <td>
-                  <button onClick={() => void openHistory(row.employeeId, row.displayName)} disabled={!row.employeeId}>
+                  <button
+                    className="btn-history"
+                    onClick={() => void openHistory(row.employeeId, row.displayName)}
+                    disabled={!row.employeeId}
+                  >
                     Vezi evenimente
                   </button>
                 </td>

@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { TimeEventType } from '@prisma/client';
 import { prisma } from '../db/prisma';
 import { buildCsv, secondsToHm } from '../utils/time';
 import { getCycleTotals, getEmployeeCycleHistory, getWeekCycles } from '../services/timesheetService';
@@ -17,16 +18,29 @@ const resolveCycleId = async (cycleIdQuery: string | undefined, serviceCodeQuery
     return Number.isNaN(parsed) ? null : parsed;
   }
 
-  const latest = await prisma.weekCycle.findFirst({
+  const cycles = await getWeekCycles(serviceCodeQuery);
+  if (cycles.length) {
+    return cycles[0].id;
+  }
+
+  const latestFallback = await prisma.weekCycle.findFirst({
     where: {
-      ...(serviceCodeQuery ? { serviceCode: serviceCodeQuery } : {})
+      ...(serviceCodeQuery ? { serviceCode: serviceCodeQuery } : {}),
+      timeEvents: {
+        some: {
+          isDeleted: false,
+          eventType: {
+            in: [TimeEventType.CLOCK_IN, TimeEventType.CLOCK_OUT, TimeEventType.MANUAL_ADJUSTMENT]
+          }
+        }
+      }
     },
     orderBy: {
       startedAt: 'desc'
     }
   });
 
-  return latest?.id ?? null;
+  return latestFallback?.id ?? null;
 };
 
 timesheetRouter.get('/summary', async (req, res) => {

@@ -18,6 +18,12 @@ type EmployeeTotal = {
   eventsCount: number;
 };
 
+const CYCLE_ACTIVITY_EVENT_TYPES: TimeEventType[] = [
+  TimeEventType.CLOCK_IN,
+  TimeEventType.CLOCK_OUT,
+  TimeEventType.MANUAL_ADJUSTMENT
+];
+
 const ensureCurrentCycle = async (serviceCode: string, at: Date): Promise<WeekCycle> => {
   const openCycle = await prisma.weekCycle.findFirst({
     where: {
@@ -145,7 +151,15 @@ export const markTimesheetMessageDeleted = async (messageId: string): Promise<vo
 export const getWeekCycles = async (serviceCode?: string) =>
   prisma.weekCycle.findMany({
     where: {
-      ...(serviceCode ? { serviceCode } : {})
+      ...(serviceCode ? { serviceCode } : {}),
+      timeEvents: {
+        some: {
+          isDeleted: false,
+          eventType: {
+            in: CYCLE_ACTIVITY_EVENT_TYPES
+          }
+        }
+      }
     },
     orderBy: {
       startedAt: 'desc'

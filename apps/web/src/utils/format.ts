@@ -13,3 +13,8 @@ export const formatHm = (seconds: number): string => {
   const sign = seconds < 0 ? '-' : '';
   return `${sign}${hours}h ${minutes}m`;
 };
+
+export const formatMinutes = (seconds: number): string => {
+  const minutes = Math.round(seconds / 60);
+  return `${minutes} min`;
+};
