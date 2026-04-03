@@ -132,9 +132,16 @@ export const parseTimesheetMessage = (rawText: string): ParsedTimeEvent => {
     normalized.includes('i a inchis pontajul') ||
     normalized.includes('i s au adaugat') ||
     normalized.includes('adaugand');
-  const hasReset =
-    normalized.includes('a resetat toate timpurile') ||
-    (/resetat/.test(normalized) && /(toate )?timp(?:urile|urile totale|urile de pontaj)?/.test(normalized));
+  const hasResetVerb =
+    /\breset(?:at|ata|ate|ati)?\b/.test(normalized) ||
+    /\bsters(?:|a|e|i)\b/.test(normalized) ||
+    /\bsterg(?:e|erea|ut)\b/.test(normalized);
+  const hasTimesKeyword = /\btimp(?:ul|urile|urile totale|urile de pontaj|ului)?\b/.test(normalized);
+  const hasResetScope =
+    /\b(toate|toata)\b/.test(normalized) ||
+    normalized.includes('au fost') ||
+    normalized.includes('pentru codul');
+  const hasReset = hasResetVerb && hasTimesKeyword && hasResetScope;
 
   if (hasReset) {
     return {
