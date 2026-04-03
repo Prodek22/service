@@ -111,6 +111,9 @@ EMPLOYEE_ROLE_NAME=Angajat
 AUTH_JWT_SECRET=change_this_to_a_long_random_secret
 CORS_ORIGIN=http://localhost:5173
 AUTH_COOKIE_SECURE=true
+TIMESHEET_DAILY_SYNC_ENABLED=true
+TIMESHEET_SYNC_INTERVAL_HOURS=24
+TIMESHEET_SYNC_DAYS=14
 DATABASE_URL="mysql://user:password@localhost:3306/service_admin"
 PORT=3001
 ```
@@ -201,6 +204,7 @@ Maintenance (necesita login):
 
 - `POST /api/maintenance/delete-old` (body: `{ "olderThanDays": 90 }`)
 - `POST /api/maintenance/sync-new` (body: `{ "latestLimitPerChannel": 100 }`)
+- `POST /api/maintenance/sync-timesheet-window` (body: `{ "days": 14 }`)
 - `POST /api/maintenance/rebuild-all` (sterge complet datele operationale si ruleaza backfill complet)
 
 ## Cum functioneaza parsarea CV

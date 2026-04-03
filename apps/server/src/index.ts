@@ -2,6 +2,7 @@ import { createApp } from './app';
 import { startDiscordBot } from './bot/discordBot';
 import { env } from './config/env';
 import { prisma } from './db/prisma';
+import { startTimesheetSyncScheduler, stopTimesheetSyncScheduler } from './services/timesheetSyncScheduler';
 
 const bootstrap = async () => {
   const app = createApp();
@@ -11,9 +12,11 @@ const bootstrap = async () => {
   });
 
   const botClient = await startDiscordBot();
+  startTimesheetSyncScheduler();
 
   const shutdown = async () => {
     console.log('Shutting down...');
+    stopTimesheetSyncScheduler();
     botClient.destroy();
     server.close();
     await prisma.$disconnect();

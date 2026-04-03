@@ -1,6 +1,12 @@
 import { useEffect, useState } from 'react';
 import { apiGet, apiPost } from '../api/client';
-import { DashboardResponse, DeleteOldResponse, RebuildAllResponse, SyncNewResponse } from '../types';
+import {
+  DashboardResponse,
+  DeleteOldResponse,
+  RebuildAllResponse,
+  SyncNewResponse,
+  SyncTimesheetWindowResponse
+} from '../types';
 
 export const DashboardPage = () => {
   const [data, setData] = useState<DashboardResponse | null>(null);
@@ -62,6 +68,25 @@ export const DashboardPage = () => {
     }
   };
 
+  const syncLastTwoWeeksTimesheets = async () => {
+    setMaintenanceBusy(true);
+    setMaintenanceMessage(null);
+
+    try {
+      const result = await apiPost<SyncTimesheetWindowResponse>('/maintenance/sync-timesheet-window', { days: 14 });
+      setMaintenanceMessage(
+        `Pontaje sincronizate pe ultimele ${result.days} zile. Evenimente procesate: ${result.processed.timesheetProcessed}.`
+      );
+      await loadDashboard();
+    } catch (actionError) {
+      setMaintenanceMessage(
+        actionError instanceof Error ? actionError.message : 'Nu am putut sincroniza pontajele pe 14 zile.'
+      );
+    } finally {
+      setMaintenanceBusy(false);
+    }
+  };
+
   const rebuildAllData = async () => {
     const confirmed = window.confirm(
       'Actiune critica: se sterg toate datele operationale (CV + pontaj) si se ruleaza reimport complet. Continui?'
@@ -118,6 +143,9 @@ export const DashboardPage = () => {
           </button>
           <button type="button" onClick={() => void syncNewResults()} disabled={maintenanceBusy}>
             Cauta rezultate noi
+          </button>
+          <button type="button" onClick={() => void syncLastTwoWeeksTimesheets()} disabled={maintenanceBusy}>
+            Sincronizeaza pontaje 14 zile
           </button>
           <button type="button" onClick={() => void rebuildAllData()} disabled={maintenanceBusy}>
             Reset complet + reimport

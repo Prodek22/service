@@ -6,11 +6,14 @@ import { attachIdImageFromReply, processCvMessage } from './cvService';
 import { createGuildMemberFilter } from './guildMemberFilter';
 import { processTimesheetMessage } from './timesheetService';
 
-type BackfillMode = 'all' | 'latest';
+type BackfillMode = 'all' | 'latest' | 'since';
+type BackfillChannel = 'cv' | 'timesheet';
 
 type BackfillOptions = {
   mode: BackfillMode;
   latestLimitPerChannel?: number;
+  channels?: BackfillChannel[];
+  sinceDate?: Date;
 };
 
 export type BackfillResult = {
@@ -140,6 +143,44 @@ const backfillLatest = async (
   return processBatch(messages, handler);
 };
 
+const backfillSince = async (
+  channel: TextChannel,
+  handler: (message: Message) => Promise<boolean>,
+  sinceDate: Date
+): Promise<number> => {
+  const sinceTs = sinceDate.getTime();
+  let before: string | undefined;
+  let processed = 0;
+
+  while (true) {
+    const batch = await channel.messages.fetch({
+      limit: 100,
+      ...(before ? { before } : {})
+    });
+
+    if (!batch.size) {
+      break;
+    }
+
+    const messages = [...batch.values()].sort((a, b) => a.createdTimestamp - b.createdTimestamp);
+    const eligible = messages.filter((message) => message.createdTimestamp >= sinceTs);
+    processed += await processBatch(eligible, handler);
+
+    const oldest = messages[0];
+    if (!oldest || oldest.createdTimestamp < sinceTs) {
+      break;
+    }
+
+    before = oldest.id;
+    await sleep(300);
+  }
+
+  return processed;
+};
+
+const includesChannel = (channels: BackfillChannel[] | undefined, target: BackfillChannel): boolean =>
+  !channels || channels.includes(target);
+
 export const runBackfill = async (options: BackfillOptions): Promise<BackfillResult> => {
   const client = new Client({
     intents: [
@@ -169,16 +210,30 @@ export const runBackfill = async (options: BackfillOptions): Promise<BackfillRes
     const timesheetHandler = (message: Message) => processTimesheetChannelMessage(message, memberFilter);
 
     const latestLimit = options.latestLimitPerChannel ?? 100;
+    const channels = options.channels;
+    const sinceDate = options.sinceDate;
 
-    const cvProcessed =
-      options.mode === 'all'
-        ? await backfillAll(cvRaw, cvHandler)
-        : await backfillLatest(cvRaw, cvHandler, latestLimit);
+    let cvProcessed = 0;
+    if (includesChannel(channels, 'cv')) {
+      if (options.mode === 'all') {
+        cvProcessed = await backfillAll(cvRaw, cvHandler);
+      } else if (options.mode === 'since' && sinceDate) {
+        cvProcessed = await backfillSince(cvRaw, cvHandler, sinceDate);
+      } else {
+        cvProcessed = await backfillLatest(cvRaw, cvHandler, latestLimit);
+      }
+    }
 
-    const timesheetProcessed =
-      options.mode === 'all'
-        ? await backfillAll(timesheetRaw, timesheetHandler)
-        : await backfillLatest(timesheetRaw, timesheetHandler, latestLimit);
+    let timesheetProcessed = 0;
+    if (includesChannel(channels, 'timesheet')) {
+      if (options.mode === 'all') {
+        timesheetProcessed = await backfillAll(timesheetRaw, timesheetHandler);
+      } else if (options.mode === 'since' && sinceDate) {
+        timesheetProcessed = await backfillSince(timesheetRaw, timesheetHandler, sinceDate);
+      } else {
+        timesheetProcessed = await backfillLatest(timesheetRaw, timesheetHandler, latestLimit);
+      }
+    }
 
     return {
       cvProcessed,

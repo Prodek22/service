@@ -126,3 +126,12 @@ export type RebuildAllResponse = {
     timesheetProcessed: number;
   };
 };
+
+export type SyncTimesheetWindowResponse = {
+  ok: boolean;
+  days: number;
+  processed: {
+    cvProcessed: number;
+    timesheetProcessed: number;
+  };
+};

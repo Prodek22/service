@@ -85,6 +85,34 @@ maintenanceRouter.post('/sync-new', async (req, res) => {
   }
 });
 
+maintenanceRouter.post('/sync-timesheet-window', async (req, res) => {
+  if (!ensureSingleMaintenanceRun(res)) {
+    return;
+  }
+
+  const input = Number.parseInt(String(req.body?.days ?? '14'), 10);
+  const days = Number.isNaN(input) ? 14 : Math.max(1, Math.min(input, 90));
+  const sinceDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+
+  try {
+    const result = await runBackfill({
+      mode: 'since',
+      sinceDate,
+      channels: ['timesheet']
+    });
+
+    res.json({
+      ok: true,
+      days,
+      processed: result
+    });
+  } catch (error) {
+    res.status(500).json({ error: error instanceof Error ? error.message : 'Timesheet window sync failed' });
+  } finally {
+    syncInProgress = false;
+  }
+});
+
 maintenanceRouter.post('/rebuild-all', async (_req, res) => {
   if (!ensureSingleMaintenanceRun(res)) {
     return;
