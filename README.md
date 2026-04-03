@@ -108,8 +108,6 @@ CV_CHANNEL_ID=
 TIMESHEET_CHANNEL_ID=
 EMPLOYEE_ROLE_ID=
 EMPLOYEE_ROLE_NAME=Angajat
-ADMIN_USERNAME=admin
-ADMIN_PASSWORD=change_me
 AUTH_JWT_SECRET=change_this_to_a_long_random_secret
 CORS_ORIGIN=http://localhost:5173
 AUTH_COOKIE_SECURE=true
@@ -141,6 +139,12 @@ Aplicare migrare in DB:
 
 ```bash
 npm run db:migrate
+```
+
+Creeaza/actualizeaza user admin pentru login:
+
+```bash
+npm run admin:create -w @gta-service/server -- admin parola_foarte_puternica
 ```
 
 Pornire dev (API + bot + web):
@@ -255,6 +259,7 @@ Configureaza `apps/server/.env` si `apps/web/.env`, apoi:
 ```bash
 sudo npm run db:generate
 sudo npm run db:migrate
+sudo npm run admin:create -w @gta-service/server -- admin parola_foarte_puternica
 sudo npm run build
 ```
 
