@@ -71,6 +71,7 @@ const normalizeWeekCycleBoundaries = async (): Promise<number> => {
           SELECT nxt.started_at
           FROM week_cycles nxt
           WHERE nxt.service_code = base.service_code
+            AND nxt.reset_message_id IS NOT NULL
             AND (
               nxt.started_at > base.started_at
               OR (nxt.started_at = base.started_at AND nxt.id > base.id)
@@ -79,15 +80,15 @@ const normalizeWeekCycleBoundaries = async (): Promise<number> => {
           LIMIT 1
         ) AS computed_end
       FROM week_cycles base
+      WHERE base.reset_message_id IS NOT NULL
     ) calc ON calc.id = wc.id
     SET wc.ended_at = calc.computed_end
-    WHERE (
-      wc.ended_at IS NULL AND calc.computed_end IS NOT NULL
-    ) OR (
-      wc.ended_at IS NOT NULL AND calc.computed_end IS NULL
-    ) OR (
-      wc.ended_at IS NOT NULL AND calc.computed_end IS NOT NULL AND wc.ended_at <> calc.computed_end
-    )
+    WHERE wc.reset_message_id IS NOT NULL
+      AND (
+        (wc.ended_at IS NULL AND calc.computed_end IS NOT NULL)
+        OR (wc.ended_at IS NOT NULL AND calc.computed_end IS NULL)
+        OR (wc.ended_at IS NOT NULL AND calc.computed_end IS NOT NULL AND wc.ended_at <> calc.computed_end)
+      )
   `);
 
   return Number(updated) || 0;
@@ -99,14 +100,26 @@ const normalizeTimesheetCycleAssignments = async (): Promise<number> => {
     JOIN (
       SELECT
         e.id AS event_id,
-        (
-          SELECT wc.id
-          FROM week_cycles wc
-          WHERE wc.service_code = COALESCE(e.service_code, 'service')
-            AND wc.started_at <= e.event_at
-            AND (wc.ended_at IS NULL OR wc.ended_at > e.event_at)
-          ORDER BY wc.started_at DESC, wc.id DESC
-          LIMIT 1
+        COALESCE(
+          (
+            SELECT wc.id
+            FROM week_cycles wc
+            WHERE wc.service_code = COALESCE(e.service_code, 'service')
+              AND wc.reset_message_id IS NOT NULL
+              AND wc.started_at <= e.event_at
+              AND (wc.ended_at IS NULL OR wc.ended_at > e.event_at)
+            ORDER BY wc.started_at DESC, wc.id DESC
+            LIMIT 1
+          ),
+          (
+            SELECT wc.id
+            FROM week_cycles wc
+            WHERE wc.service_code = COALESCE(e.service_code, 'service')
+              AND wc.started_at <= e.event_at
+              AND (wc.ended_at IS NULL OR wc.ended_at > e.event_at)
+            ORDER BY wc.started_at DESC, wc.id DESC
+            LIMIT 1
+          )
         ) AS resolved_cycle_id
       FROM time_events e
       WHERE e.is_deleted = 0
@@ -118,6 +131,39 @@ const normalizeTimesheetCycleAssignments = async (): Promise<number> => {
   `);
 
   return Number(updated) || 0;
+};
+
+const pruneNonResetWeekCycles = async (): Promise<number> => {
+  const deleted = await prisma.$executeRawUnsafe(`
+    DELETE wc
+    FROM week_cycles wc
+    LEFT JOIN time_events te
+      ON te.week_cycle_id = wc.id
+      AND te.is_deleted = 0
+    WHERE wc.reset_message_id IS NULL
+      AND te.id IS NULL
+  `);
+
+  return Number(deleted) || 0;
+};
+
+const normalizeTimesheetData = async (): Promise<{
+  normalizedWeekCycleBoundaries: number;
+  deletedGhostCycles: number;
+  reassignedCycleEvents: number;
+  deletedNonResetCycles: number;
+}> => {
+  const normalizedWeekCycleBoundaries = await normalizeWeekCycleBoundaries();
+  const deletedGhostCycles = await pruneGhostWeekCycles();
+  const reassignedCycleEvents = await normalizeTimesheetCycleAssignments();
+  const deletedNonResetCycles = await pruneNonResetWeekCycles();
+
+  return {
+    normalizedWeekCycleBoundaries,
+    deletedGhostCycles,
+    reassignedCycleEvents,
+    deletedNonResetCycles
+  };
 };
 
 const runIncrementalEmployeeSync = async (lookbackDaysInput?: number) => {
@@ -306,18 +352,17 @@ const run = async () => {
       onProgress: (progress) => emitBackfillProgress(progress, 20, 80)
     });
     sendProgress(86, 'Normalizare cicluri si reasignare pontaje...');
-    const normalizedWeekCycleBoundaries = await normalizeWeekCycleBoundaries();
-    const deletedGhostCycles = await pruneGhostWeekCycles();
-    const reassignedCycleEvents = await normalizeTimesheetCycleAssignments();
+    const normalized = await normalizeTimesheetData();
 
     process.send?.({
       type: 'job-success',
       payload: {
         mode: 'latest',
         latestLimitPerChannel,
-        normalizedWeekCycleBoundaries,
-        deletedGhostCycles,
-        reassignedCycleEvents,
+        normalizedWeekCycleBoundaries: normalized.normalizedWeekCycleBoundaries,
+        deletedGhostCycles: normalized.deletedGhostCycles,
+        reassignedCycleEvents: normalized.reassignedCycleEvents,
+        deletedNonResetCycles: normalized.deletedNonResetCycles,
         processed: result
       }
     });
@@ -373,9 +418,7 @@ const run = async () => {
       onProgress: (progress) => emitBackfillProgress(progress, 22, 82)
     });
     sendProgress(88, 'Normalizare cicluri si reasignare pontaje...');
-    const normalizedWeekCycleBoundaries = await normalizeWeekCycleBoundaries();
-    const deletedGhostCycles = await pruneGhostWeekCycles();
-    const reassignedCycleEvents = await normalizeTimesheetCycleAssignments();
+    const normalized = await normalizeTimesheetData();
 
     process.send?.({
       type: 'job-success',
@@ -383,9 +426,10 @@ const run = async () => {
         mode: 'since',
         days,
         sinceDate: sinceDate.toISOString(),
-        normalizedWeekCycleBoundaries,
-        deletedGhostCycles,
-        reassignedCycleEvents,
+        normalizedWeekCycleBoundaries: normalized.normalizedWeekCycleBoundaries,
+        deletedGhostCycles: normalized.deletedGhostCycles,
+        reassignedCycleEvents: normalized.reassignedCycleEvents,
+        deletedNonResetCycles: normalized.deletedNonResetCycles,
         processed: result
       }
     });
@@ -419,9 +463,7 @@ const run = async () => {
       }
     });
     sendProgress(90, 'Reimport finalizat. Se normalizeaza ciclurile...');
-    const normalizedWeekCycleBoundaries = await normalizeWeekCycleBoundaries();
-    const deletedGhostCycles = await pruneGhostWeekCycles();
-    const reassignedCycleEvents = await normalizeTimesheetCycleAssignments();
+    const normalized = await normalizeTimesheetData();
     sendProgress(97, 'Ultime verificari inainte de finalizare...');
 
     process.send?.({
@@ -429,9 +471,10 @@ const run = async () => {
       payload: {
         mode: 'all',
         deleted: 'all-operational-data',
-        normalizedWeekCycleBoundaries,
-        deletedGhostCycles,
-        reassignedCycleEvents,
+        normalizedWeekCycleBoundaries: normalized.normalizedWeekCycleBoundaries,
+        deletedGhostCycles: normalized.deletedGhostCycles,
+        reassignedCycleEvents: normalized.reassignedCycleEvents,
+        deletedNonResetCycles: normalized.deletedNonResetCycles,
         processed: result
       }
     });

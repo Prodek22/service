@@ -94,6 +94,48 @@ const findCycleForEventAt = async (serviceCode: string, at: Date): Promise<WeekC
   prisma.weekCycle.findFirst({
     where: {
       serviceCode,
+      resetMessageId: {
+        not: null
+      },
+      startedAt: {
+        lte: at
+      },
+      OR: [
+        {
+          endedAt: null
+        },
+        {
+          endedAt: {
+            gt: at
+          }
+        }
+      ]
+    },
+    orderBy: {
+      startedAt: 'desc'
+    }
+  });
+
+const findLatestResetCycleBeforeAt = async (serviceCode: string, at: Date): Promise<WeekCycle | null> =>
+  prisma.weekCycle.findFirst({
+    where: {
+      serviceCode,
+      resetMessageId: {
+        not: null
+      },
+      startedAt: {
+        lte: at
+      }
+    },
+    orderBy: {
+      startedAt: 'desc'
+    }
+  });
+
+const findAnyCycleForEventAt = async (serviceCode: string, at: Date): Promise<WeekCycle | null> =>
+  prisma.weekCycle.findFirst({
+    where: {
+      serviceCode,
       startedAt: {
         lte: at
       },
@@ -117,6 +159,16 @@ const ensureCycleForEventAt = async (serviceCode: string, at: Date): Promise<Wee
   const existing = await findCycleForEventAt(serviceCode, at);
   if (existing) {
     return existing;
+  }
+
+  const latestResetCycle = await findLatestResetCycleBeforeAt(serviceCode, at);
+  if (latestResetCycle) {
+    return latestResetCycle;
+  }
+
+  const fallbackCycle = await findAnyCycleForEventAt(serviceCode, at);
+  if (fallbackCycle) {
+    return fallbackCycle;
   }
 
   return ensureCurrentCycle(serviceCode, at);
@@ -161,6 +213,9 @@ const handleResetCycle = async (serviceCode: string, at: Date, messageId: string
     const previousCycle = await tx.weekCycle.findFirst({
       where: {
         serviceCode,
+        resetMessageId: {
+          not: null
+        },
         startedAt: {
           lt: at
         }
@@ -171,6 +226,9 @@ const handleResetCycle = async (serviceCode: string, at: Date, messageId: string
     const nextCycle = await tx.weekCycle.findFirst({
       where: {
         serviceCode,
+        resetMessageId: {
+          not: null
+        },
         startedAt: {
           gt: at
         }
