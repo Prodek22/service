@@ -12,6 +12,7 @@ export const DashboardPage = () => {
   const [maintenanceMessage, setMaintenanceMessage] = useState<string | null>(null);
   const [maintenanceBusy, setMaintenanceBusy] = useState(false);
   const [jobStatus, setJobStatus] = useState<MaintenanceJobStatus | null>(null);
+  const [displayedProgress, setDisplayedProgress] = useState(0);
   const pollTimerRef = useRef<number | null>(null);
 
   const stopPolling = () => {
@@ -37,7 +38,7 @@ export const DashboardPage = () => {
       if (status.state === 'running') {
         pollTimerRef.current = window.setTimeout(() => {
           void pollJobStatus();
-        }, 3000);
+        }, 1000);
         return;
       }
 
@@ -69,6 +70,7 @@ export const DashboardPage = () => {
   const startBackgroundJob = async (endpoint: string, body: Record<string, unknown>, startedLabel: string) => {
     setMaintenanceBusy(true);
     setMaintenanceMessage(null);
+    setDisplayedProgress(0);
 
     try {
       const response = await apiPost<MaintenanceStartResponse>(endpoint, body);
@@ -90,6 +92,31 @@ export const DashboardPage = () => {
       stopPolling();
     };
   }, []);
+
+  useEffect(() => {
+    if (!jobStatus || jobStatus.state !== 'running') {
+      if (jobStatus?.state === 'success') {
+        setDisplayedProgress(100);
+      }
+      return;
+    }
+
+    const target = Math.max(0, Math.min(100, jobStatus.progressPercent ?? 0));
+    const timer = window.setInterval(() => {
+      setDisplayedProgress((current) => {
+        if (current >= target) {
+          return current;
+        }
+
+        const next = current + Math.max(1, Math.ceil((target - current) / 6));
+        return Math.min(target, next);
+      });
+    }, 120);
+
+    return () => {
+      window.clearInterval(timer);
+    };
+  }, [jobStatus?.state, jobStatus?.progressPercent]);
 
   const syncEmployeesIncremental = async () => {
     await startBackgroundJob(
@@ -178,9 +205,9 @@ export const DashboardPage = () => {
         {jobStatus?.state === 'running' ? (
           <div>
             <p>
-              Progres: {jobStatus.progressPercent ?? 0}% {jobStatus.progressMessage ? `- ${jobStatus.progressMessage}` : ''}
+              Progres: {Math.round(displayedProgress)}% {jobStatus.progressMessage ? `- ${jobStatus.progressMessage}` : ''}
             </p>
-            <progress value={jobStatus.progressPercent ?? 0} max={100} style={{ width: '100%' }} />
+            <progress value={displayedProgress} max={100} style={{ width: '100%' }} />
           </div>
         ) : null}
         {maintenanceMessage ? <p>{maintenanceMessage}</p> : null}

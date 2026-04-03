@@ -86,33 +86,38 @@ const toMessageInput = (message: Message): MessageInput => ({
 
 const processCvChannelMessage = async (
   message: Message,
-  memberFilter: Awaited<ReturnType<typeof createGuildMemberFilter>>
+  employeeRosterByUserId: Map<string, { cvRank: string | null; rpNickname: string | null; joinedAt: Date | null }>
 ): Promise<boolean> => {
   if (message.author?.bot) {
     return false;
   }
 
-  if (!message.author?.id || !(await memberFilter.isGuildMember(message.author.id))) {
+  if (!message.author?.id) {
     return false;
   }
 
   const payload = toMessageInput(message);
   const associated = await attachIdImageFromReply(payload);
-
-  if (!associated && (await memberFilter.hasEmployeeRole(message.author.id))) {
-    const rankFromRole = await memberFilter.getCvRank(message.author.id);
-    const nicknameFromGuild = await memberFilter.getRpNickname(message.author.id);
-    const entryDateFromGuild = await memberFilter.getGuildJoinedAt(message.author.id);
-    const result = await processCvMessage(payload, { rankFromRole, nicknameFromGuild, entryDateFromGuild });
-    return Boolean(result);
+  if (associated) {
+    return true;
   }
 
-  return associated;
+  const rosterEntry = employeeRosterByUserId.get(message.author.id);
+  if (!rosterEntry) {
+    return false;
+  }
+
+  const result = await processCvMessage(payload, {
+    rankFromRole: rosterEntry.cvRank,
+    nicknameFromGuild: rosterEntry.rpNickname,
+    entryDateFromGuild: rosterEntry.joinedAt
+  });
+
+  return Boolean(result);
 };
 
 const processTimesheetChannelMessage = async (
-  message: Message,
-  _memberFilter: Awaited<ReturnType<typeof createGuildMemberFilter>>
+  message: Message
 ): Promise<boolean> => {
   const payload = toMessageInput(message);
   const parsed = parseTimesheetMessage(payload.content);
@@ -172,7 +177,9 @@ const backfillAll = async (
     await onBatch?.(batchScanned, batchAccepted, scanned, processed, batches);
 
     before = messages[0]?.id;
-    await sleep(300);
+    if (messages.length >= 90 && env.BACKFILL_BATCH_DELAY_MS > 0) {
+      await sleep(env.BACKFILL_BATCH_DELAY_MS);
+    }
   }
 
   return processed;
@@ -231,7 +238,9 @@ const backfillSince = async (
     }
 
     before = oldest.id;
-    await sleep(300);
+    if (messages.length >= 90 && env.BACKFILL_BATCH_DELAY_MS > 0) {
+      await sleep(env.BACKFILL_BATCH_DELAY_MS);
+    }
   }
 
   return processed;
@@ -254,6 +263,17 @@ export const runBackfill = async (options: BackfillOptions): Promise<BackfillRes
   try {
     await client.login(env.DISCORD_TOKEN);
     const memberFilter = await createGuildMemberFilter(client);
+    const employeeRoster = await memberFilter.listEmployeeMembers();
+    const employeeRosterByUserId = new Map(
+      employeeRoster.map((member) => [
+        member.userId,
+        {
+          cvRank: member.cvRank,
+          rpNickname: member.rpNickname,
+          joinedAt: member.joinedAt
+        }
+      ])
+    );
 
     const guild = await client.guilds.fetch(env.DISCORD_GUILD_ID);
     const [cvRaw, timesheetRaw] = await Promise.all([
@@ -265,8 +285,8 @@ export const runBackfill = async (options: BackfillOptions): Promise<BackfillRes
       throw new Error('Canalele configurate trebuie sa fie GuildText.');
     }
 
-    const cvHandler = (message: Message) => processCvChannelMessage(message, memberFilter);
-    const timesheetHandler = (message: Message) => processTimesheetChannelMessage(message, memberFilter);
+    const cvHandler = (message: Message) => processCvChannelMessage(message, employeeRosterByUserId);
+    const timesheetHandler = (message: Message) => processTimesheetChannelMessage(message);
 
     const latestLimit = options.latestLimitPerChannel ?? 100;
     const channels = options.channels;

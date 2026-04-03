@@ -16,6 +16,7 @@ const envSchema = z.object({
   TIMESHEET_DAILY_SYNC_ENABLED: z.enum(['true', 'false']).default('true'),
   TIMESHEET_SYNC_INTERVAL_HOURS: z.string().default('24'),
   TIMESHEET_SYNC_DAYS: z.string().default('14'),
+  BACKFILL_BATCH_DELAY_MS: z.string().default('120'),
   DATABASE_URL: z.string().min(1),
   PORT: z.string().default('3001')
 });
@@ -33,6 +34,7 @@ export const env = {
   AUTH_COOKIE_SECURE: parsed.data.AUTH_COOKIE_SECURE === 'true',
   TIMESHEET_DAILY_SYNC_ENABLED: parsed.data.TIMESHEET_DAILY_SYNC_ENABLED === 'true',
   TIMESHEET_SYNC_INTERVAL_HOURS: Number.parseInt(parsed.data.TIMESHEET_SYNC_INTERVAL_HOURS, 10) || 24,
-  TIMESHEET_SYNC_DAYS: Number.parseInt(parsed.data.TIMESHEET_SYNC_DAYS, 10) || 14
+  TIMESHEET_SYNC_DAYS: Number.parseInt(parsed.data.TIMESHEET_SYNC_DAYS, 10) || 14,
+  BACKFILL_BATCH_DELAY_MS: Math.max(0, Number.parseInt(parsed.data.BACKFILL_BATCH_DELAY_MS, 10) || 120)
 };
 
