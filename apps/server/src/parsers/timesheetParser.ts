@@ -53,11 +53,17 @@ const parseServiceCode = (rawText: string): string | undefined => {
 };
 
 const parseDeltaSeconds = (rawText: string): number | undefined => {
-  const normalized = normalizeWhitespace(rawText);
+  const normalized = normalizeWhitespace(rawText.replace(/[*_`~]/g, ''));
+  const lower = normalized.toLowerCase();
+
+  // In messages like "a adaugat -90 minute ..., facandu-i noul timp sa fie 9 ore, 10 minute..."
+  // we only parse the delta segment before "noul timp", otherwise we'd incorrectly read the final total.
+  const newTotalIndex = lower.indexOf('noul timp');
+  const deltaSource = newTotalIndex >= 0 ? normalized.slice(0, newTotalIndex) : normalized;
 
   // We explicitly parse numeric signs so "-893 minute" remains negative even if text says "adaugat".
-  const signedMinutes = normalized.match(/([+-]?\d+)\s*minute?/i);
-  const secondsPart = normalized.match(/([+-]?\d+)\s*sec(?:unde?)?/i);
+  const signedMinutes = deltaSource.match(/([+-]?\d+)\s*minute?/i);
+  const secondsPart = deltaSource.match(/([+-]?\d+)\s*sec(?:unde?)?/i);
 
   if (!signedMinutes && !secondsPart) {
     return undefined;
