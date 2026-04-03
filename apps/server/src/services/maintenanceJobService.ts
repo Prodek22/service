@@ -2,13 +2,14 @@
 import path from 'path';
 import { fork } from 'child_process';
 
-export type MaintenanceJobType = 'sync-new' | 'sync-timesheet-window' | 'rebuild-all';
+export type MaintenanceJobType = 'sync-new' | 'sync-timesheet-window' | 'rebuild-all' | 'sync-employees-incremental';
 
 export type MaintenanceJobState = 'idle' | 'running' | 'success' | 'failed';
 
 export type MaintenanceJobPayload = {
   latestLimitPerChannel?: number;
   days?: number;
+  lookbackDays?: number;
 };
 
 export type MaintenanceJobStatus = {

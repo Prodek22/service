@@ -2,7 +2,6 @@
 import { apiGet, apiPost } from '../api/client';
 import {
   DashboardResponse,
-  DeleteOldResponse,
   MaintenanceJobStatus,
   MaintenanceStartResponse
 } from '../types';
@@ -92,33 +91,12 @@ export const DashboardPage = () => {
     };
   }, []);
 
-  const deleteOldData = async () => {
-    const confirmed = window.confirm(
-      'Sigur vrei sa stergi datele mai vechi de 90 zile? Actiunea va elimina CV-uri si pontaje vechi.'
+  const syncEmployeesIncremental = async () => {
+    await startBackgroundJob(
+      '/maintenance/sync-employees-incremental',
+      { lookbackDays: 14 },
+      'Sync incremental angajati pornit.'
     );
-
-    if (!confirmed) {
-      return;
-    }
-
-    setMaintenanceBusy(true);
-    setMaintenanceMessage(null);
-
-    try {
-      const result = await apiPost<DeleteOldResponse>('/maintenance/delete-old', { olderThanDays: 90 });
-      setMaintenanceMessage(
-        `Sterse: ${result.deleted.employees} angajati, ${result.deleted.timeEvents} evenimente, ${result.deleted.weekCycles} cicluri.`
-      );
-      await loadDashboard();
-    } catch (actionError) {
-      setMaintenanceMessage(actionError instanceof Error ? actionError.message : 'Nu am putut sterge datele vechi.');
-    } finally {
-      setMaintenanceBusy(false);
-    }
-  };
-
-  const syncNewResults = async () => {
-    await startBackgroundJob('/maintenance/sync-new', { latestLimitPerChannel: 100 }, 'Rescan pornit.');
   };
 
   const syncLastTwoWeeksTimesheets = async () => {
@@ -163,11 +141,8 @@ export const DashboardPage = () => {
       <div className="card">
         <h3>Actiuni rapide</h3>
         <div className="filters">
-          <button type="button" onClick={() => void deleteOldData()} disabled={maintenanceBusy}>
-            Sterge date vechi
-          </button>
-          <button type="button" onClick={() => void syncNewResults()} disabled={maintenanceBusy}>
-            Cauta rezultate noi
+          <button type="button" onClick={() => void syncEmployeesIncremental()} disabled={maintenanceBusy}>
+            Sync incremental angajati
           </button>
           <button type="button" onClick={() => void syncLastTwoWeeksTimesheets()} disabled={maintenanceBusy}>
             Sincronizeaza pontaje 14 zile

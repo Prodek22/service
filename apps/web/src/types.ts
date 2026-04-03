@@ -135,7 +135,7 @@ export type SyncTimesheetWindowResponse = {
 
 export type MaintenanceJobStatus = {
   id: string | null;
-  type: 'sync-new' | 'sync-timesheet-window' | 'rebuild-all' | null;
+  type: 'sync-new' | 'sync-timesheet-window' | 'rebuild-all' | 'sync-employees-incremental' | null;
   state: 'idle' | 'running' | 'success' | 'failed';
   startedAt: string | null;
   finishedAt: string | null;

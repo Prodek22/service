@@ -1,12 +1,16 @@
-﻿import { prisma } from '../db/prisma';
+import { Client, GatewayIntentBits, Partials } from 'discord.js';
+import { env } from '../config/env';
+import { prisma } from '../db/prisma';
 import { runBackfill } from '../services/backfillRunner';
+import { createGuildMemberFilter } from '../services/guildMemberFilter';
 
 type WorkerInput = {
   id: string;
-  type: 'sync-new' | 'sync-timesheet-window' | 'rebuild-all';
+  type: 'sync-new' | 'sync-timesheet-window' | 'rebuild-all' | 'sync-employees-incremental';
   payload?: {
     latestLimitPerChannel?: number;
     days?: number;
+    lookbackDays?: number;
   };
 };
 
@@ -19,8 +23,130 @@ const getInput = (): WorkerInput => {
   return JSON.parse(raw) as WorkerInput;
 };
 
+const runIncrementalEmployeeSync = async (lookbackDaysInput?: number) => {
+  const lookbackDays = Math.max(1, Math.min(lookbackDaysInput ?? 14, 60));
+
+  const client = new Client({
+    intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers],
+    partials: [Partials.GuildMember]
+  });
+
+  try {
+    await client.login(env.DISCORD_TOKEN);
+    const memberFilter = await createGuildMemberFilter(client);
+    const roster = await memberFilter.listEmployeeMembers();
+    const rosterIds = new Set(roster.map((member) => member.userId));
+
+    const staleUsers = await prisma.employee.findMany({
+      where: {
+        discordUserId: {
+          not: null
+        },
+        NOT: {
+          discordUserId: {
+            in: [...rosterIds]
+          }
+        }
+      },
+      select: {
+        id: true,
+        discordUserId: true
+      }
+    });
+
+    const staleIds = staleUsers.map((employee) => employee.id);
+    let deletedEmployees = 0;
+    if (staleIds.length) {
+      const result = await prisma.employee.deleteMany({
+        where: {
+          id: {
+            in: staleIds
+          }
+        }
+      });
+      deletedEmployees = result.count;
+    }
+
+    let updatedProfiles = 0;
+    for (const member of roster) {
+      const profileUpdate: {
+        nickname?: string;
+        rank?: string;
+      } = {};
+
+      if (member.rpNickname) {
+        profileUpdate.nickname = member.rpNickname;
+      }
+
+      if (member.cvRank) {
+        profileUpdate.rank = member.cvRank;
+      }
+
+      if (!Object.keys(profileUpdate).length) {
+        continue;
+      }
+
+      const updated = await prisma.employee.updateMany({
+        where: {
+          discordUserId: member.userId
+        },
+        data: profileUpdate
+      });
+
+      updatedProfiles += updated.count;
+    }
+
+    const latestCv = await prisma.employee.findFirst({
+      where: {
+        cvPostedAt: {
+          not: null
+        }
+      },
+      orderBy: {
+        cvPostedAt: 'desc'
+      },
+      select: {
+        cvPostedAt: true
+      }
+    });
+
+    const sinceDate = latestCv?.cvPostedAt
+      ? new Date(latestCv.cvPostedAt.getTime() - 6 * 60 * 60 * 1000)
+      : new Date(Date.now() - lookbackDays * 24 * 60 * 60 * 1000);
+
+    const backfillResult = await runBackfill({
+      mode: 'since',
+      sinceDate,
+      channels: ['cv']
+    });
+
+    return {
+      mode: 'incremental-employees',
+      lookbackDays,
+      sinceDate: sinceDate.toISOString(),
+      rosterCount: roster.length,
+      deletedEmployees,
+      updatedProfiles,
+      processed: backfillResult
+    };
+  } finally {
+    client.destroy();
+  }
+};
+
 const run = async () => {
   const input = getInput();
+
+  if (input.type === 'sync-employees-incremental') {
+    const result = await runIncrementalEmployeeSync(input.payload?.lookbackDays);
+
+    process.send?.({
+      type: 'job-success',
+      payload: result
+    });
+
+    return;
+  }
 
   if (input.type === 'sync-new') {
     const latestLimitPerChannel = Math.max(1, Math.min(input.payload?.latestLimitPerChannel ?? 100, 100));

@@ -68,6 +68,25 @@ maintenanceRouter.post('/sync-new', (req, res) => {
   }
 });
 
+maintenanceRouter.post('/sync-employees-incremental', (req, res) => {
+  try {
+    const input = Number.parseInt(String(req.body?.lookbackDays ?? '14'), 10);
+    const lookbackDays = Number.isNaN(input) ? 14 : Math.max(1, Math.min(input, 60));
+
+    const status = startMaintenanceJob('sync-employees-incremental', { lookbackDays });
+
+    res.status(202).json({
+      ok: true,
+      message: 'Incremental employee sync started',
+      job: status
+    });
+  } catch (error) {
+    res
+      .status(409)
+      .json({ error: error instanceof Error ? error.message : 'Could not start incremental employee sync job' });
+  }
+});
+
 maintenanceRouter.post('/sync-timesheet-window', (req, res) => {
   try {
     const input = Number.parseInt(String(req.body?.days ?? '14'), 10);
