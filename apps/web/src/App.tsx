@@ -69,7 +69,13 @@ const PublicLayout = ({ isAuthenticated, username, onLogout }: PublicLayoutProps
         <h1>Pontaj Service</h1>
         <p>Vizualizare publică read-only</p>
       </div>
-      <div className="public-actions">
+    </header>
+    <main className="content">
+      <TimesheetPage readOnly />
+    </main>
+    <footer className="public-footer">
+      <span>Copyright © {new Date().getFullYear()} Prodek.ink. All rights reserved.</span>
+      <div className="public-footer-admin">
         {isAuthenticated ? (
           <>
             <span>Conectat: {username ?? 'admin'}</span>
@@ -79,13 +85,12 @@ const PublicLayout = ({ isAuthenticated, username, onLogout }: PublicLayoutProps
             </button>
           </>
         ) : (
-          <Link to="/login">Login admin</Link>
+          <Link to="/login" className="footer-admin-link">
+            admin access
+          </Link>
         )}
       </div>
-    </header>
-    <main className="content">
-      <TimesheetPage readOnly />
-    </main>
+    </footer>
   </div>
 );
 

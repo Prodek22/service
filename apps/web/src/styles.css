@@ -131,6 +131,50 @@ a {
   cursor: pointer;
 }
 
+.public-footer {
+  border-top: 1px solid var(--line);
+  padding: 12px 24px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: space-between;
+  align-items: center;
+  color: var(--muted);
+  background: rgba(255, 249, 241, 0.72);
+}
+
+.public-footer-admin {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.public-footer-admin a,
+.public-footer-admin button {
+  border: 1px solid #c9ad95;
+  border-radius: 8px;
+  padding: 6px 10px;
+  background: #fffdf9;
+  color: var(--ink);
+  text-decoration: none;
+  font: inherit;
+}
+
+.public-footer-admin button {
+  cursor: pointer;
+}
+
+.footer-admin-link {
+  opacity: 0.42;
+  letter-spacing: 0.02em;
+  font-size: 0.78rem;
+  text-transform: lowercase;
+}
+
+.footer-admin-link:hover {
+  opacity: 0.9;
+}
+
 .card {
   background: var(--card);
   border: 1px solid var(--line);
