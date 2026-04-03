@@ -144,7 +144,7 @@ export const TimesheetPage = ({ readOnly = false }: TimesheetPageProps) => {
           ))}
           {!cycles.length && <option value="">Nu exista cicluri</option>}
         </select>
-        <a href={exportLink}>Export CSV</a>
+        {!readOnly ? <a href={exportLink}>Export CSV</a> : null}
       </div>
 
       <div className="card table-wrapper timesheet-table-wrap">
