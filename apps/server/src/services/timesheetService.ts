@@ -168,7 +168,7 @@ export const markTimesheetMessageDeleted = async (messageId: string): Promise<vo
 };
 
 export const getWeekCycles = async (serviceCode?: string) => {
-  const cycles = await prisma.weekCycle.findMany({
+  return prisma.weekCycle.findMany({
     where: {
       ...(serviceCode ? { serviceCode } : {}),
       OR: [
@@ -189,9 +189,6 @@ export const getWeekCycles = async (serviceCode?: string) => {
     },
     orderBy: [{ startedAt: 'desc' }, { id: 'desc' }]
   });
-
-  // Defensive cleanup in read path: hide malformed zero-length closed cycles.
-  return cycles.filter((cycle) => !cycle.endedAt || cycle.endedAt.getTime() > cycle.startedAt.getTime());
 };
 
 export const getCycleTotals = async (cycleId: number) => {
