@@ -81,6 +81,56 @@ a {
   padding: 24px;
 }
 
+.public-shell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-rows: auto 1fr;
+}
+
+.public-header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--line);
+  background: rgba(255, 249, 241, 0.88);
+  backdrop-filter: blur(4px);
+}
+
+.public-header h1 {
+  margin: 0;
+  font-size: 1.3rem;
+}
+
+.public-header p {
+  margin: 4px 0 0;
+  color: var(--muted);
+}
+
+.public-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.public-actions a,
+.public-actions button {
+  border: 1px solid #c9ad95;
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: #fffdf9;
+  color: var(--ink);
+  text-decoration: none;
+  font: inherit;
+}
+
+.public-actions button {
+  cursor: pointer;
+}
+
 .card {
   background: var(--card);
   border: 1px solid var(--line);

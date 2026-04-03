@@ -24,11 +24,10 @@ export const createApp = () => {
 
   app.use('/api/health', healthRouter);
   app.use('/api/auth', authRouter);
-  app.use('/api', requireAuth);
-  app.use('/api/dashboard', dashboardRouter);
-  app.use('/api/employees', employeesRouter);
   app.use('/api/timesheet', timesheetRouter);
-  app.use('/api/maintenance', maintenanceRouter);
+  app.use('/api/dashboard', requireAuth, dashboardRouter);
+  app.use('/api/employees', requireAuth, employeesRouter);
+  app.use('/api/maintenance', requireAuth, maintenanceRouter);
 
   app.use((_req, res) => {
     res.status(404).json({ error: 'Not found' });

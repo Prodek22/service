@@ -1,6 +1,6 @@
-﻿import { useEffect, useMemo, useState } from 'react';
-import { NavLink, Route, Routes } from 'react-router-dom';
-import { ApiError, apiPost, apiGet } from './api/client';
+import { ReactNode, useEffect, useMemo, useState } from 'react';
+import { Link, NavLink, Navigate, Route, Routes } from 'react-router-dom';
+import { ApiError, apiGet, apiPost } from './api/client';
 import { DashboardPage } from './pages/DashboardPage';
 import { EmployeesPage } from './pages/EmployeesPage';
 import { LoginPage } from './pages/LoginPage';
@@ -12,6 +12,82 @@ type AuthState = {
   authenticated: boolean;
   username: string | null;
 };
+
+const LoadingCard = () => (
+  <div className="auth-shell">
+    <div className="auth-card">
+      <p>Se verifică sesiunea...</p>
+    </div>
+  </div>
+);
+
+type AdminLayoutProps = {
+  username: string;
+  onLogout: () => Promise<void>;
+  children: ReactNode;
+};
+
+const AdminLayout = ({ username, onLogout, children }: AdminLayoutProps) => (
+  <div className="layout">
+    <aside className="sidebar">
+      <h1>Service Admin</h1>
+      <nav>
+        <NavLink to="/admin" end className={({ isActive }) => (isActive ? 'active' : '')}>
+          Dashboard
+        </NavLink>
+        <NavLink to="/admin/employees" className={({ isActive }) => (isActive ? 'active' : '')}>
+          Angajati & CV-uri
+        </NavLink>
+        <NavLink to="/admin/timesheet" className={({ isActive }) => (isActive ? 'active' : '')}>
+          Pontaj saptamanal
+        </NavLink>
+        <NavLink to="/" className={({ isActive }) => (isActive ? 'active' : '')}>
+          Pagina publica
+        </NavLink>
+      </nav>
+      <div className="sidebar-footer">
+        <span>Logat ca: {username}</span>
+        <button type="button" onClick={() => void onLogout()}>
+          Logout
+        </button>
+      </div>
+    </aside>
+    <main className="content">{children}</main>
+  </div>
+);
+
+type PublicLayoutProps = {
+  isAuthenticated: boolean;
+  username: string | null;
+  onLogout: () => Promise<void>;
+};
+
+const PublicLayout = ({ isAuthenticated, username, onLogout }: PublicLayoutProps) => (
+  <div className="public-shell">
+    <header className="public-header">
+      <div>
+        <h1>Pontaj Service</h1>
+        <p>Vizualizare publică read-only</p>
+      </div>
+      <div className="public-actions">
+        {isAuthenticated ? (
+          <>
+            <span>Conectat: {username ?? 'admin'}</span>
+            <Link to="/admin">Panou admin</Link>
+            <button type="button" onClick={() => void onLogout()}>
+              Logout
+            </button>
+          </>
+        ) : (
+          <Link to="/login">Login admin</Link>
+        )}
+      </div>
+    </header>
+    <main className="content">
+      <TimesheetPage readOnly />
+    </main>
+  </div>
+);
 
 export const App = () => {
   const [auth, setAuth] = useState<AuthState>({
@@ -66,43 +142,36 @@ export const App = () => {
 
   const headerUser = useMemo(() => auth.username ?? 'admin', [auth.username]);
 
-  if (!auth.checked) {
-    return <div className="auth-shell"><div className="auth-card"><p>Se verifică sesiunea...</p></div></div>;
-  }
+  const renderAdminPage = (content: ReactNode) => {
+    if (!auth.checked) {
+      return <LoadingCard />;
+    }
 
-  if (!auth.authenticated) {
-    return <LoginPage loading={loginLoading} onLogin={handleLogin} />;
-  }
+    if (!auth.authenticated) {
+      return <Navigate to="/login" replace />;
+    }
+
+    return (
+      <AdminLayout username={headerUser} onLogout={handleLogout}>
+        {content}
+      </AdminLayout>
+    );
+  };
 
   return (
-    <div className="layout">
-      <aside className="sidebar">
-        <h1>Service Admin</h1>
-        <nav>
-          <NavLink to="/" end className={({ isActive }) => (isActive ? 'active' : '')}>
-            Dashboard
-          </NavLink>
-          <NavLink to="/employees" className={({ isActive }) => (isActive ? 'active' : '')}>
-            Angajati & CV-uri
-          </NavLink>
-          <NavLink to="/timesheet" className={({ isActive }) => (isActive ? 'active' : '')}>
-            Pontaj saptamanal
-          </NavLink>
-        </nav>
-        <div className="sidebar-footer">
-          <span>Logat ca: {headerUser}</span>
-          <button type="button" onClick={() => void handleLogout()}>
-            Logout
-          </button>
-        </div>
-      </aside>
-      <main className="content">
-        <Routes>
-          <Route path="/" element={<DashboardPage />} />
-          <Route path="/employees" element={<EmployeesPage />} />
-          <Route path="/timesheet" element={<TimesheetPage />} />
-        </Routes>
-      </main>
-    </div>
+    <Routes>
+      <Route
+        path="/"
+        element={<PublicLayout isAuthenticated={auth.authenticated} username={auth.username} onLogout={handleLogout} />}
+      />
+      <Route path="/login" element={auth.authenticated ? <Navigate to="/admin" replace /> : <LoginPage loading={loginLoading} onLogin={handleLogin} />} />
+      <Route path="/admin" element={renderAdminPage(<DashboardPage />)} />
+      <Route path="/admin/employees" element={renderAdminPage(<EmployeesPage />)} />
+      <Route path="/admin/timesheet" element={renderAdminPage(<TimesheetPage />)} />
+      <Route path="/dashboard" element={<Navigate to="/admin" replace />} />
+      <Route path="/employees" element={<Navigate to="/admin/employees" replace />} />
+      <Route path="/timesheet" element={<Navigate to="/admin/timesheet" replace />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   );
 };

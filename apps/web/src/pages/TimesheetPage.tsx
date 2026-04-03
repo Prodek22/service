@@ -3,7 +3,11 @@ import { apiBaseUrl, apiGet, apiPost } from '../api/client';
 import { TimeEventHistoryResponse, TimesheetSummaryResponse, WeekCycle } from '../types';
 import { formatCurrency, formatDateTime, formatMinutes } from '../utils/format';
 
-export const TimesheetPage = () => {
+type TimesheetPageProps = {
+  readOnly?: boolean;
+};
+
+export const TimesheetPage = ({ readOnly = false }: TimesheetPageProps) => {
   const [cycles, setCycles] = useState<WeekCycle[]>([]);
   const [selectedCycleId, setSelectedCycleId] = useState<number | null>(null);
   const [summary, setSummary] = useState<TimesheetSummaryResponse | null>(null);
@@ -49,7 +53,7 @@ export const TimesheetPage = () => {
   };
 
   const togglePayrollStatus = async (employeeId: number | null, isPaid: boolean) => {
-    if (!employeeId || !selectedCycleId || !summary) {
+    if (readOnly || !employeeId || !selectedCycleId || !summary) {
       return;
     }
 
@@ -159,15 +163,19 @@ export const TimesheetPage = () => {
                   {formatCurrency(row.salaryTotal)}
                 </td>
                 <td>
-                  <label>
-                    <input
-                      type="checkbox"
-                      checked={row.payroll.isPaid}
-                      disabled={!row.employeeId || Boolean(row.employeeId && payrollBusyByEmployee[row.employeeId])}
-                      onChange={(event) => void togglePayrollStatus(row.employeeId, event.target.checked)}
-                    />{' '}
-                    {row.payroll.isPaid ? 'DA' : 'NU'}
-                  </label>
+                  {readOnly ? (
+                    <span className={`badge ${row.payroll.isPaid ? 'ok' : 'muted'}`}>{row.payroll.isPaid ? 'DA' : 'NU'}</span>
+                  ) : (
+                    <label>
+                      <input
+                        type="checkbox"
+                        checked={row.payroll.isPaid}
+                        disabled={!row.employeeId || Boolean(row.employeeId && payrollBusyByEmployee[row.employeeId])}
+                        onChange={(event) => void togglePayrollStatus(row.employeeId, event.target.checked)}
+                      />{' '}
+                      {row.payroll.isPaid ? 'DA' : 'NU'}
+                    </label>
+                  )}
                 </td>
                 <td>
                   <button
