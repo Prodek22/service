@@ -52,6 +52,9 @@ export const TimesheetPage = ({ readOnly = false }: TimesheetPageProps) => {
     setHistoryRows(response.history);
   };
 
+  const getTotalAdjustmentsSeconds = (row: TimesheetSummaryResponse['totals'][number]) =>
+    row.positiveAdjustmentSeconds + Math.abs(row.negativeAdjustmentSeconds);
+
   const togglePayrollStatus = async (employeeId: number | null, isPaid: boolean) => {
     if (readOnly || !employeeId || !selectedCycleId || !summary) {
       return;
@@ -137,11 +140,7 @@ export const TimesheetPage = ({ readOnly = false }: TimesheetPageProps) => {
               <th>Nickname</th>
               <th>Rank</th>
               <th>Total timp (min)</th>
-              <th>Timp normal (min)</th>
-              <th>Ajustari manuale (min)</th>
-              <th>+ Ajustari (min)</th>
-              <th>- Ajustari (min)</th>
-              <th>Nr ajustari</th>
+              <th>Total ajustari (min)</th>
               <th>Salariu</th>
               <th>Platit</th>
               <th>Istoric</th>
@@ -154,11 +153,13 @@ export const TimesheetPage = ({ readOnly = false }: TimesheetPageProps) => {
                 <td>{row.displayName}</td>
                 <td>{row.rank ?? '-'}</td>
                 <td>{formatMinutes(row.totalSeconds)}</td>
-                <td>{formatMinutes(row.normalSeconds)}</td>
-                <td>{formatMinutes(row.manualAdjustmentSeconds)}</td>
-                <td>{formatMinutes(row.positiveAdjustmentSeconds)}</td>
-                <td>{formatMinutes(Math.abs(row.negativeAdjustmentSeconds))}</td>
-                <td>{row.manualAdjustmentsCount}</td>
+                <td
+                  title={`+ Ajustari: ${formatMinutes(row.positiveAdjustmentSeconds)} | - Ajustari: ${formatMinutes(
+                    Math.abs(row.negativeAdjustmentSeconds)
+                  )}`}
+                >
+                  {formatMinutes(getTotalAdjustmentsSeconds(row))}
+                </td>
                 <td title={`Baza: ${formatCurrency(row.baseSalary)} | Bonus top: ${formatCurrency(row.topBonus)}`}>
                   {formatCurrency(row.salaryTotal)}
                 </td>
@@ -190,7 +191,7 @@ export const TimesheetPage = ({ readOnly = false }: TimesheetPageProps) => {
             ))}
             {!summary?.totals.length ? (
               <tr>
-                <td colSpan={12}>Nu exista pontaje in ciclul selectat.</td>
+                <td colSpan={8}>Nu exista pontaje in ciclul selectat.</td>
               </tr>
             ) : null}
           </tbody>
