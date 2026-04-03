@@ -25,12 +25,6 @@ type EmployeeTotal = {
   salaryTotal: number;
 };
 
-const CYCLE_ACTIVITY_EVENT_TYPES: TimeEventType[] = [
-  TimeEventType.CLOCK_IN,
-  TimeEventType.CLOCK_OUT,
-  TimeEventType.MANUAL_ADJUSTMENT
-];
-
 const PAYROLL_REFERENCE_SECONDS = 7 * 60 * 60;
 const PAYROLL_MAX_SECONDS = 21 * 60 * 60;
 const TOP_BONUSES = [25000, 20000, 15000] as const;
@@ -245,29 +239,14 @@ export const markTimesheetMessageDeleted = async (messageId: string): Promise<vo
   });
 };
 
-export const getWeekCycles = async (serviceCode?: string) => {
-  return prisma.weekCycle.findMany({
+export const getWeekCycles = async (serviceCode?: string, limit = 6) =>
+  prisma.weekCycle.findMany({
     where: {
-      ...(serviceCode ? { serviceCode } : {}),
-      OR: [
-        {
-          endedAt: null
-        },
-        {
-          timeEvents: {
-            some: {
-              isDeleted: false,
-              eventType: {
-                in: CYCLE_ACTIVITY_EVENT_TYPES
-              }
-            }
-          }
-        }
-      ]
+      ...(serviceCode ? { serviceCode } : {})
     },
-    orderBy: [{ startedAt: 'desc' }, { id: 'desc' }]
+    orderBy: [{ startedAt: 'desc' }, { id: 'desc' }],
+    take: Math.max(1, Math.min(limit, 20))
   });
-};
 
 export const getCycleTotals = async (cycleId: number) => {
   const events = await prisma.timeEvent.findMany({
