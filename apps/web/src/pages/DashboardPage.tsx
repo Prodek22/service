@@ -141,14 +141,33 @@ export const DashboardPage = () => {
       <div className="card">
         <h3>Actiuni rapide</h3>
         <div className="filters">
-          <button type="button" onClick={() => void syncEmployeesIncremental()} disabled={maintenanceBusy}>
-            Sync incremental angajati
+          <button
+            type="button"
+            className="btn-danger-action"
+            onClick={() => void syncEmployeesIncremental()}
+            disabled={maintenanceBusy}
+          >
+            <span>Sync incremental angajati</span>
+            <span className="warning-triangle" aria-hidden="true">
+              <span>!</span>
+            </span>
           </button>
-          <button type="button" onClick={() => void syncLastTwoWeeksTimesheets()} disabled={maintenanceBusy}>
-            Sincronizeaza pontaje 14 zile
+          <button
+            type="button"
+            className="btn-danger-action"
+            onClick={() => void syncLastTwoWeeksTimesheets()}
+            disabled={maintenanceBusy}
+          >
+            <span>Sincronizeaza pontaje 14 zile</span>
+            <span className="warning-triangle" aria-hidden="true">
+              <span>!</span>
+            </span>
           </button>
-          <button type="button" onClick={() => void rebuildAllData()} disabled={maintenanceBusy}>
-            Reset complet + reimport
+          <button type="button" className="btn-danger-action" onClick={() => void rebuildAllData()} disabled={maintenanceBusy}>
+            <span>Reset complet + reimport</span>
+            <span className="warning-triangle" aria-hidden="true">
+              <span>!</span>
+            </span>
           </button>
         </div>
         {jobStatus?.state === 'running' ? <p>Job in desfasurare: {jobStatus.type} (ID: {jobStatus.id})</p> : null}

@@ -118,6 +118,45 @@ a {
   cursor: pointer;
 }
 
+.filters button.btn-danger-action {
+  background: #dc3545;
+  border-color: #b02a37;
+  color: #fff;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.filters button.btn-danger-action:hover {
+  background: #bb2d3b;
+  border-color: #a52834;
+}
+
+.filters button.btn-danger-action:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.warning-triangle {
+  position: relative;
+  width: 0;
+  height: 0;
+  border-left: 10px solid transparent;
+  border-right: 10px solid transparent;
+  border-bottom: 18px solid #ffc107;
+}
+
+.warning-triangle > span {
+  position: absolute;
+  left: -3px;
+  top: 4px;
+  font-size: 12px;
+  line-height: 1;
+  font-weight: 900;
+  color: #111;
+}
+
 .table-wrapper {
   overflow-x: auto;
 }
