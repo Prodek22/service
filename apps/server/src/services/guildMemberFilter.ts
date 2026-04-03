@@ -1,11 +1,13 @@
 ﻿import { Client, Guild, GuildMember } from 'discord.js';
 import { env } from '../config/env';
-import { normalizeForCompare } from '../utils/normalize';
+import { normalizeForCompare, normalizeWhitespace } from '../utils/normalize';
 
 type MemberSnapshot = {
   checkedAt: number;
   exists: boolean;
   hasEmployeeRole: boolean;
+  cvRank: string | null;
+  rpNickname: string | null;
 };
 
 type NameIndex = {
@@ -17,6 +19,35 @@ const CACHE_TTL_MS = 5 * 60 * 1000;
 const NAME_INDEX_TTL_MS = 5 * 60 * 1000;
 
 const normalizeRoleName = (name: string): string => normalizeForCompare(name);
+
+type RankRoleMapping = {
+  rank: string;
+  roleNames: string[];
+};
+
+const CV_RANK_ROLE_PRIORITY: RankRoleMapping[] = [
+  {
+    rank: 'Mecanic-Senior',
+    roleNames: ['mecanic-senior', 'mecanic senior']
+  },
+  {
+    rank: 'Mecanic',
+    roleNames: ['mecanic']
+  },
+  {
+    rank: 'Mecani-Junior',
+    roleNames: ['mecani-junior', 'mecani junior', 'mecanic-junior', 'mecanic junior']
+  },
+  {
+    rank: 'Ucenic',
+    roleNames: ['ucenic']
+  }
+];
+
+const rankRoleIndex = CV_RANK_ROLE_PRIORITY.map((entry) => ({
+  rank: entry.rank,
+  normalizedRoleNames: new Set(entry.roleNames.map((name) => normalizeRoleName(name)))
+}));
 
 const isKnownMemberFetchError = (error: unknown): boolean => {
   const candidate = error as { code?: number | string };
@@ -32,10 +63,32 @@ const collectMemberNames = (member: GuildMember): string[] => {
   return [...new Set(values)];
 };
 
+const extractRpNickname = (member: GuildMember): string | null => {
+  const candidates = [member.nickname, member.displayName]
+    .filter(Boolean)
+    .map((value) => normalizeWhitespace(String(value)));
+
+  for (const candidate of candidates) {
+    const match = candidate.match(/^(.+?)\s*-\s*\d{2,}$/);
+    if (!match) {
+      continue;
+    }
+
+    const nickname = normalizeWhitespace(match[1]);
+    if (nickname) {
+      return nickname;
+    }
+  }
+
+  return null;
+};
+
 export type GuildMemberFilter = {
   guild: Guild;
   isGuildMember: (userId: string) => Promise<boolean>;
   hasEmployeeRole: (userId: string) => Promise<boolean>;
+  getCvRank: (userId: string) => Promise<string | null>;
+  getRpNickname: (userId: string) => Promise<string | null>;
   isKnownMemberName: (name: string) => Promise<boolean>;
 };
 
@@ -57,6 +110,20 @@ export const createGuildMemberFilter = async (client: Client): Promise<GuildMemb
     return member.roles.cache.some((role) => normalizeRoleName(role.name) === employeeRoleName);
   };
 
+  const computeCvRank = (member: GuildMember): string | null => {
+    const memberRoleNames = new Set(member.roles.cache.map((role) => normalizeRoleName(role.name)));
+
+    for (const mapping of rankRoleIndex) {
+      for (const roleName of mapping.normalizedRoleNames) {
+        if (memberRoleNames.has(roleName)) {
+          return mapping.rank;
+        }
+      }
+    }
+
+    return null;
+  };
+
   const readMember = async (userId: string): Promise<MemberSnapshot> => {
     const cached = memberCache.get(userId);
     if (cached && isSnapshotFresh(cached.checkedAt)) {
@@ -68,7 +135,9 @@ export const createGuildMemberFilter = async (client: Client): Promise<GuildMemb
       const snapshot: MemberSnapshot = {
         checkedAt: Date.now(),
         exists: true,
-        hasEmployeeRole: computeHasEmployeeRole(member)
+        hasEmployeeRole: computeHasEmployeeRole(member),
+        cvRank: computeCvRank(member),
+        rpNickname: extractRpNickname(member)
       };
 
       memberCache.set(userId, snapshot);
@@ -81,7 +150,9 @@ export const createGuildMemberFilter = async (client: Client): Promise<GuildMemb
       const snapshot: MemberSnapshot = {
         checkedAt: Date.now(),
         exists: false,
-        hasEmployeeRole: false
+        hasEmployeeRole: false,
+        cvRank: null,
+        rpNickname: null
       };
 
       memberCache.set(userId, snapshot);
@@ -120,6 +191,22 @@ export const createGuildMemberFilter = async (client: Client): Promise<GuildMemb
     hasEmployeeRole: async (userId: string) => {
       const snapshot = await readMember(userId);
       return snapshot.exists && snapshot.hasEmployeeRole;
+    },
+    getCvRank: async (userId: string) => {
+      const snapshot = await readMember(userId);
+      if (!snapshot.exists) {
+        return null;
+      }
+
+      return snapshot.cvRank;
+    },
+    getRpNickname: async (userId: string) => {
+      const snapshot = await readMember(userId);
+      if (!snapshot.exists) {
+        return null;
+      }
+
+      return snapshot.rpNickname;
     },
     isKnownMemberName: async (name: string) => {
       const normalized = normalizeForCompare(name);

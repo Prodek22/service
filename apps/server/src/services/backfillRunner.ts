@@ -88,7 +88,9 @@ const processCvChannelMessage = async (
   const associated = await attachIdImageFromReply(payload);
 
   if (!associated && (await memberFilter.hasEmployeeRole(message.author.id))) {
-    const result = await processCvMessage(payload);
+    const rankFromRole = await memberFilter.getCvRank(message.author.id);
+    const nicknameFromGuild = await memberFilter.getRpNickname(message.author.id);
+    const result = await processCvMessage(payload, { rankFromRole, nicknameFromGuild });
     return Boolean(result);
   }
 

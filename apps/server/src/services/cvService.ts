@@ -156,7 +156,13 @@ const attachImageToExistingCv = async (
   return updated;
 };
 
-export const processCvMessage = async (message: MessageInput) => {
+export const processCvMessage = async (
+  message: MessageInput,
+  options?: {
+    rankFromRole?: string | null;
+    nicknameFromGuild?: string | null;
+  }
+) => {
   const parsed = parseCvMessage(message.content, message.attachments);
   const imageFromAttachments = message.attachments.find((attachment) =>
     isImageAttachment(attachment.name, attachment.contentType)
@@ -198,7 +204,7 @@ export const processCvMessage = async (message: MessageInput) => {
 
   const nextData = {
     discordUserId: message.authorId,
-    nickname: parsed.nickname,
+    nickname: options?.nicknameFromGuild ?? parsed.nickname,
     fullName: parsed.fullName,
     phone: parsed.phone,
     plateNumber: parsed.plateNumber,
@@ -206,7 +212,7 @@ export const processCvMessage = async (message: MessageInput) => {
     monthsInCity: parsed.monthsInCity,
     employerName: parsed.employerName,
     recommendation: parsed.recommendation,
-    rank: parsed.rank,
+    rank: options?.rankFromRole ?? parsed.rank,
     idImageUrl: parsed.idImageUrl ?? imageFromAttachments,
     cvMessageId: message.id,
     cvChannelId: message.channelId,
