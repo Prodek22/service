@@ -159,6 +159,7 @@ export const EmployeesPage = () => {
           <option value="updated_at">Sortare: Ultima actualizare</option>
           <option value="months">Sortare: Luni in oras</option>
           <option value="full_name">Sortare: Nume</option>
+          <option value="rank">Sortare: Rank</option>
         </select>
         <button onClick={() => setSortDir((current) => (current === 'asc' ? 'desc' : 'asc'))}>
           Directie: {sortDir === 'asc' ? 'Asc' : 'Desc'}

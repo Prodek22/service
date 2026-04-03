@@ -11,10 +11,38 @@ const allowedSort: Record<string, string> = {
   iban: 'iban',
   months: 'monthsInCity',
   nickname: 'nickname',
-  full_name: 'fullName'
+  full_name: 'fullName',
+  rank: 'rank'
 };
 
 export const employeesRouter = Router();
+
+const rankSortValue = (rank?: string | null): number => {
+  const normalized = normalizeForCompare(rank ?? '');
+
+  if (normalized === 'mecanic senior' || normalized === 'mecanic-senior') {
+    return 4;
+  }
+
+  if (normalized === 'mecanic') {
+    return 3;
+  }
+
+  if (
+    normalized === 'mecani junior' ||
+    normalized === 'mecani-junior' ||
+    normalized === 'mecanic junior' ||
+    normalized === 'mecanic-junior'
+  ) {
+    return 2;
+  }
+
+  if (normalized === 'ucenic') {
+    return 1;
+  }
+
+  return 0;
+};
 
 employeesRouter.get('/', async (req, res) => {
   const page = Number.parseInt(String(req.query.page ?? '1'), 10);
@@ -46,17 +74,37 @@ employeesRouter.get('/', async (req, res) => {
     ...(incompleteOnly ? { status: EmployeeStatus.INCOMPLETE } : {})
   };
 
-  const [items, total] = await Promise.all([
-    prisma.employee.findMany({
-      where,
-      skip: (Math.max(page, 1) - 1) * Math.max(pageSize, 1),
-      take: Math.max(pageSize, 1),
-      orderBy: {
-        [sortBy]: sortDir
-      }
-    }),
-    prisma.employee.count({ where })
-  ]);
+  const offset = (Math.max(page, 1) - 1) * Math.max(pageSize, 1);
+  const limit = Math.max(pageSize, 1);
+
+  const [items, total] =
+    sortByInput === 'rank'
+      ? await (async () => {
+          const allItems = await prisma.employee.findMany({ where });
+          const sorted = [...allItems].sort((a, b) => {
+            const delta = rankSortValue(a.rank) - rankSortValue(b.rank);
+
+            if (delta !== 0) {
+              return sortDir === 'asc' ? delta : -delta;
+            }
+
+            const fallback = a.createdAt.getTime() - b.createdAt.getTime();
+            return sortDir === 'asc' ? fallback : -fallback;
+          });
+
+          return [sorted.slice(offset, offset + limit), allItems.length] as const;
+        })()
+      : await Promise.all([
+          prisma.employee.findMany({
+            where,
+            skip: offset,
+            take: limit,
+            orderBy: {
+              [sortBy]: sortDir
+            }
+          }),
+          prisma.employee.count({ where })
+        ]);
 
   res.json({
     items: items.map((item) => ({
