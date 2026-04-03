@@ -123,32 +123,78 @@ const ensureCycleForEventAt = async (serviceCode: string, at: Date): Promise<Wee
 };
 
 const handleResetCycle = async (serviceCode: string, at: Date, messageId: string): Promise<WeekCycle> => {
-  const openCycle = await prisma.weekCycle.findFirst({
-    where: {
-      serviceCode,
-      endedAt: null
-    },
-    orderBy: {
-      startedAt: 'desc'
-    }
-  });
-
-  if (openCycle) {
-    // A real reset message closes the current cycle; this is the weekly boundary source of truth.
-    await prisma.weekCycle.update({
-      where: { id: openCycle.id },
-      data: {
-        endedAt: at
+  return prisma.$transaction(async (tx) => {
+    const existingByResetMessage = await tx.weekCycle.findFirst({
+      where: {
+        serviceCode,
+        resetMessageId: messageId
       }
     });
-  }
 
-  return prisma.weekCycle.create({
-    data: {
-      serviceCode,
-      startedAt: at,
-      resetMessageId: messageId
+    if (existingByResetMessage) {
+      return existingByResetMessage;
     }
+
+    const existingAtSameStart = await tx.weekCycle.findFirst({
+      where: {
+        serviceCode,
+        startedAt: at
+      },
+      orderBy: {
+        id: 'desc'
+      }
+    });
+
+    if (existingAtSameStart) {
+      if (!existingAtSameStart.resetMessageId) {
+        return tx.weekCycle.update({
+          where: { id: existingAtSameStart.id },
+          data: {
+            resetMessageId: messageId
+          }
+        });
+      }
+
+      return existingAtSameStart;
+    }
+
+    const previousCycle = await tx.weekCycle.findFirst({
+      where: {
+        serviceCode,
+        startedAt: {
+          lt: at
+        }
+      },
+      orderBy: [{ startedAt: 'desc' }, { id: 'desc' }]
+    });
+
+    const nextCycle = await tx.weekCycle.findFirst({
+      where: {
+        serviceCode,
+        startedAt: {
+          gt: at
+        }
+      },
+      orderBy: [{ startedAt: 'asc' }, { id: 'asc' }]
+    });
+
+    if (previousCycle && (!previousCycle.endedAt || previousCycle.endedAt.getTime() > at.getTime())) {
+      await tx.weekCycle.update({
+        where: { id: previousCycle.id },
+        data: {
+          endedAt: at
+        }
+      });
+    }
+
+    return tx.weekCycle.create({
+      data: {
+        serviceCode,
+        startedAt: at,
+        endedAt: nextCycle?.startedAt ?? null,
+        resetMessageId: messageId
+      }
+    });
   });
 };
 
@@ -242,7 +288,10 @@ export const markTimesheetMessageDeleted = async (messageId: string): Promise<vo
 export const getWeekCycles = async (serviceCode?: string, limit = 6) =>
   prisma.weekCycle.findMany({
     where: {
-      ...(serviceCode ? { serviceCode } : {})
+      ...(serviceCode ? { serviceCode } : {}),
+      resetMessageId: {
+        not: null
+      }
     },
     orderBy: [{ startedAt: 'desc' }, { id: 'desc' }],
     take: Math.max(1, Math.min(limit, 20))

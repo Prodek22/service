@@ -40,6 +40,38 @@ const pruneGhostWeekCycles = async (): Promise<number> => {
   return Number(deleted) || 0;
 };
 
+const normalizeWeekCycleBoundaries = async (): Promise<number> => {
+  const updated = await prisma.$executeRawUnsafe(`
+    UPDATE week_cycles wc
+    JOIN (
+      SELECT
+        base.id,
+        (
+          SELECT nxt.started_at
+          FROM week_cycles nxt
+          WHERE nxt.service_code = base.service_code
+            AND (
+              nxt.started_at > base.started_at
+              OR (nxt.started_at = base.started_at AND nxt.id > base.id)
+            )
+          ORDER BY nxt.started_at ASC, nxt.id ASC
+          LIMIT 1
+        ) AS computed_end
+      FROM week_cycles base
+    ) calc ON calc.id = wc.id
+    SET wc.ended_at = calc.computed_end
+    WHERE (
+      wc.ended_at IS NULL AND calc.computed_end IS NOT NULL
+    ) OR (
+      wc.ended_at IS NOT NULL AND calc.computed_end IS NULL
+    ) OR (
+      wc.ended_at IS NOT NULL AND calc.computed_end IS NOT NULL AND wc.ended_at <> calc.computed_end
+    )
+  `);
+
+  return Number(updated) || 0;
+};
+
 const normalizeTimesheetCycleAssignments = async (): Promise<number> => {
   const updated = await prisma.$executeRawUnsafe(`
     UPDATE time_events te
@@ -243,6 +275,7 @@ const run = async () => {
       mode: 'latest',
       latestLimitPerChannel
     });
+    const normalizedWeekCycleBoundaries = await normalizeWeekCycleBoundaries();
     const deletedGhostCycles = await pruneGhostWeekCycles();
     const reassignedCycleEvents = await normalizeTimesheetCycleAssignments();
 
@@ -251,6 +284,7 @@ const run = async () => {
       payload: {
         mode: 'latest',
         latestLimitPerChannel,
+        normalizedWeekCycleBoundaries,
         deletedGhostCycles,
         reassignedCycleEvents,
         processed: result
@@ -305,6 +339,7 @@ const run = async () => {
       sinceDate,
       channels: ['timesheet']
     });
+    const normalizedWeekCycleBoundaries = await normalizeWeekCycleBoundaries();
     const deletedGhostCycles = await pruneGhostWeekCycles();
     const reassignedCycleEvents = await normalizeTimesheetCycleAssignments();
 
@@ -314,6 +349,7 @@ const run = async () => {
         mode: 'since',
         days,
         sinceDate: sinceDate.toISOString(),
+        normalizedWeekCycleBoundaries,
         deletedGhostCycles,
         reassignedCycleEvents,
         processed: result
@@ -333,6 +369,7 @@ const run = async () => {
     await prisma.$executeRawUnsafe('SET FOREIGN_KEY_CHECKS = 1');
 
     const result = await runBackfill({ mode: 'all' });
+    const normalizedWeekCycleBoundaries = await normalizeWeekCycleBoundaries();
     const deletedGhostCycles = await pruneGhostWeekCycles();
     const reassignedCycleEvents = await normalizeTimesheetCycleAssignments();
 
@@ -341,6 +378,7 @@ const run = async () => {
       payload: {
         mode: 'all',
         deleted: 'all-operational-data',
+        normalizedWeekCycleBoundaries,
         deletedGhostCycles,
         reassignedCycleEvents,
         processed: result
