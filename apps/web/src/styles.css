@@ -361,6 +361,21 @@ th {
   box-shadow: none;
 }
 
+.timesheet-user-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.timesheet-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  object-fit: cover;
+  border: 1px solid #c7cfde;
+  box-shadow: 0 1px 4px rgba(24, 33, 49, 0.15);
+}
+
 .badge {
   display: inline-block;
   padding: 3px 7px;

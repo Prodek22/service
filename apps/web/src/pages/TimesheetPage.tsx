@@ -55,6 +55,12 @@ export const TimesheetPage = ({ readOnly = false }: TimesheetPageProps) => {
   const getTotalAdjustmentsSeconds = (row: TimesheetSummaryResponse['totals'][number]) =>
     row.positiveAdjustmentSeconds + Math.abs(row.negativeAdjustmentSeconds);
 
+  const getAvatarFallback = (label: string) =>
+    `https://ui-avatars.com/api/?name=${encodeURIComponent(label)}&background=2f2c4d&color=ffffff&size=64&bold=true`;
+
+  const getAvatarUrl = (row: TimesheetSummaryResponse['totals'][number]) =>
+    row.discordUserId ? `https://unavatar.io/discord/${row.discordUserId}` : getAvatarFallback(row.displayName);
+
   const togglePayrollStatus = async (employeeId: number | null, isPaid: boolean) => {
     if (readOnly || !employeeId || !selectedCycleId || !summary) {
       return;
@@ -150,7 +156,31 @@ export const TimesheetPage = ({ readOnly = false }: TimesheetPageProps) => {
             {summary?.totals.map((row) => (
               <tr key={row.key}>
                 <td>{row.employeeCode ?? '-'}</td>
-                <td>{row.displayName}</td>
+                <td>
+                  {readOnly ? (
+                    <div className="timesheet-user-cell">
+                      <img
+                        className="timesheet-avatar"
+                        src={getAvatarUrl(row)}
+                        alt={row.displayName}
+                        loading="lazy"
+                        referrerPolicy="no-referrer"
+                        onError={(event) => {
+                          const target = event.currentTarget;
+                          if (target.dataset.fallbackApplied === 'true') {
+                            return;
+                          }
+
+                          target.dataset.fallbackApplied = 'true';
+                          target.src = getAvatarFallback(row.displayName);
+                        }}
+                      />
+                      <span>{row.displayName}</span>
+                    </div>
+                  ) : (
+                    row.displayName
+                  )}
+                </td>
                 <td>{row.rank ?? '-'}</td>
                 <td>{formatMinutes(row.totalSeconds)}</td>
                 <td
