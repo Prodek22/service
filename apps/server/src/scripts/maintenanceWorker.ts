@@ -360,13 +360,14 @@ const run = async () => {
   }
 
   if (input.type === 'rebuild-all') {
-    await prisma.$executeRawUnsafe('SET FOREIGN_KEY_CHECKS = 0');
-    await prisma.$executeRawUnsafe('TRUNCATE TABLE time_events');
-    await prisma.$executeRawUnsafe('TRUNCATE TABLE week_cycles');
-    await prisma.$executeRawUnsafe('TRUNCATE TABLE employee_cv_raw');
-    await prisma.$executeRawUnsafe('TRUNCATE TABLE employee_aliases');
-    await prisma.$executeRawUnsafe('TRUNCATE TABLE employees');
-    await prisma.$executeRawUnsafe('SET FOREIGN_KEY_CHECKS = 1');
+    await prisma.$transaction([
+      prisma.timeEvent.deleteMany({}),
+      prisma.timesheetPayrollStatus.deleteMany({}),
+      prisma.weekCycle.deleteMany({}),
+      prisma.employeeCvRaw.deleteMany({}),
+      prisma.employeeAlias.deleteMany({}),
+      prisma.employee.deleteMany({})
+    ]);
 
     const result = await runBackfill({ mode: 'all' });
     const normalizedWeekCycleBoundaries = await normalizeWeekCycleBoundaries();
@@ -393,12 +394,6 @@ const run = async () => {
 
 run()
   .catch(async (error) => {
-    try {
-      await prisma.$executeRawUnsafe('SET FOREIGN_KEY_CHECKS = 1');
-    } catch {
-      // noop
-    }
-
     process.send?.({
       type: 'job-failed',
       payload: {
