@@ -96,6 +96,38 @@ const ensureCurrentCycle = async (serviceCode: string, at: Date): Promise<WeekCy
   });
 };
 
+const findCycleForEventAt = async (serviceCode: string, at: Date): Promise<WeekCycle | null> =>
+  prisma.weekCycle.findFirst({
+    where: {
+      serviceCode,
+      startedAt: {
+        lte: at
+      },
+      OR: [
+        {
+          endedAt: null
+        },
+        {
+          endedAt: {
+            gt: at
+          }
+        }
+      ]
+    },
+    orderBy: {
+      startedAt: 'desc'
+    }
+  });
+
+const ensureCycleForEventAt = async (serviceCode: string, at: Date): Promise<WeekCycle> => {
+  const existing = await findCycleForEventAt(serviceCode, at);
+  if (existing) {
+    return existing;
+  }
+
+  return ensureCurrentCycle(serviceCode, at);
+};
+
 const handleResetCycle = async (serviceCode: string, at: Date, messageId: string): Promise<WeekCycle> => {
   const openCycle = await prisma.weekCycle.findFirst({
     where: {
@@ -154,8 +186,8 @@ export const processTimesheetMessage = async (message: MessageInput) => {
     if (existingEvent?.weekCycleId && existingEvent.serviceCode === serviceCode) {
       weekCycleId = existingEvent.weekCycleId;
     } else {
-      const currentCycle = await ensureCurrentCycle(serviceCode, message.createdAt);
-      weekCycleId = currentCycle.id;
+      const cycle = await ensureCycleForEventAt(serviceCode, message.createdAt);
+      weekCycleId = cycle.id;
     }
   }
 

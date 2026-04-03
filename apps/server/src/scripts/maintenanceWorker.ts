@@ -265,13 +265,11 @@ const run = async () => {
       ? new Date(openCycle.startedAt.getTime() - 60 * 60 * 1000)
       : null;
 
-    let sinceDate = fallbackSinceDate;
-    if (incrementalSinceDate.getTime() < sinceDate.getTime()) {
-      sinceDate = incrementalSinceDate;
-    }
-    if (openCycleSinceDate && openCycleSinceDate.getTime() < sinceDate.getTime()) {
-      sinceDate = openCycleSinceDate;
-    }
+    const sinceDate = openCycleSinceDate
+      ? openCycleSinceDate
+      : incrementalSinceDate.getTime() > fallbackSinceDate.getTime()
+        ? incrementalSinceDate
+        : fallbackSinceDate;
 
     const result = await runBackfill({
       mode: 'since',
