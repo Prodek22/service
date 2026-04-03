@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useMemo, useState } from 'react';
+﻿import { ReactNode, useEffect, useMemo, useState } from 'react';
 import { Link, NavLink, Navigate, Route, Routes } from 'react-router-dom';
 import { ApiError, apiGet, apiPost } from './api/client';
 import { DashboardPage } from './pages/DashboardPage';
@@ -16,7 +16,7 @@ type AuthState = {
 const LoadingCard = () => (
   <div className="auth-shell">
     <div className="auth-card">
-      <p>Se verifică sesiunea...</p>
+      <p>Se verificÄƒ sesiunea...</p>
     </div>
   </div>
 );
@@ -62,38 +62,49 @@ type PublicLayoutProps = {
   onLogout: () => Promise<void>;
 };
 
-const PublicLayout = ({ isAuthenticated, username, onLogout }: PublicLayoutProps) => (
-  <div className="public-shell">
-    <header className="public-header">
-      <div>
-        <h1>Pontaj Service</h1>
-        <p>Vizualizare publică read-only</p>
-      </div>
-    </header>
-    <main className="content">
-      <TimesheetPage readOnly />
-    </main>
-    <footer className="public-footer">
-      <span>Copyright © {new Date().getFullYear()} Prodek.ink. All rights reserved.</span>
-      <div className="public-footer-admin">
-        {isAuthenticated ? (
-          <>
-            <span>Conectat: {username ?? 'admin'}</span>
-            <Link to="/admin">Panou admin</Link>
-            <button type="button" onClick={() => void onLogout()}>
-              Logout
-            </button>
-          </>
-        ) : (
-          <Link to="/login" className="footer-admin-link">
-            admin access
-          </Link>
-        )}
-      </div>
-    </footer>
-  </div>
-);
+const PublicLayout = ({ isAuthenticated, username, onLogout }: PublicLayoutProps) => {
+  const [showAdminAccess, setShowAdminAccess] = useState(false);
 
+  return (
+    <div className="public-shell">
+      <header className="public-header">
+        <div>
+          <h1>Pontaj Service</h1>
+          <p>Vizualizare publica read-only</p>
+        </div>
+      </header>
+      <main className="content">
+        <TimesheetPage readOnly />
+      </main>
+      <footer className="public-footer">
+        <p className="public-footer-copy">
+          Copyright © {new Date().getFullYear()} Prodek.ink. All rights{' '}
+          <button type="button" className="reserved-trigger" onClick={() => setShowAdminAccess((current) => !current)}>
+            reserved
+          </button>
+          .
+        </p>
+        {showAdminAccess ? (
+          <div className="public-footer-admin">
+            {isAuthenticated ? (
+              <>
+                <span>Conectat: {username ?? 'admin'}</span>
+                <Link to="/admin">Panou admin</Link>
+                <button type="button" onClick={() => void onLogout()}>
+                  Logout
+                </button>
+              </>
+            ) : (
+              <Link to="/login" className="footer-admin-link">
+                admin access
+              </Link>
+            )}
+          </div>
+        ) : null}
+      </footer>
+    </div>
+  );
+};
 export const App = () => {
   const [auth, setAuth] = useState<AuthState>({
     checked: false,
@@ -180,3 +191,4 @@ export const App = () => {
     </Routes>
   );
 };
+
