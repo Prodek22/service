@@ -53,7 +53,7 @@ const parseServiceCode = (rawText: string): string | undefined => {
 };
 
 const parseDeltaSeconds = (rawText: string): number | undefined => {
-  const normalized = normalizeWhitespace(rawText.replace(/[*_`~]/g, ''));
+  const normalized = normalizeWhitespace(rawText.replace(/[*_`~]/g, '').replace(/−/g, '-'));
   const lower = normalized.toLowerCase();
 
   // In messages like "a adaugat -90 minute ..., facandu-i noul timp sa fie 9 ore, 10 minute..."
@@ -62,25 +62,48 @@ const parseDeltaSeconds = (rawText: string): number | undefined => {
   const deltaSource = newTotalIndex >= 0 ? normalized.slice(0, newTotalIndex) : normalized;
 
   // We explicitly parse numeric signs so "-893 minute" remains negative even if text says "adaugat".
-  const signedHours = deltaSource.match(/([+-]?\d+)\s*(?:ora|ore)\b/i);
-  const signedMinutes = deltaSource.match(/([+-]?\d+)\s*minute?/i);
-  const secondsPart = deltaSource.match(/([+-]?\d+)\s*sec(?:unde?)?/i);
+  const signedHours = deltaSource.match(/([+-]?\s*\d+)\s*(?:ora|ore)\b/i);
+  const signedMinutes = deltaSource.match(/([+-]?\s*\d+)\s*minute?/i);
+  const secondsPart = deltaSource.match(/([+-]?\s*\d+)\s*sec(?:unde?)?/i);
 
   if (!signedHours && !signedMinutes && !secondsPart) {
     return undefined;
   }
 
-  const hourValue = signedHours ? Number.parseInt(signedHours[1], 10) : 0;
-  let minuteValue = signedMinutes ? Number.parseInt(signedMinutes[1], 10) : 0;
-  let secondValue = secondsPart ? Number.parseInt(secondsPart[1], 10) : 0;
+  const rawHour = signedHours?.[1]?.replace(/\s+/g, '') ?? '';
+  const rawMinute = signedMinutes?.[1]?.replace(/\s+/g, '') ?? '';
+  const rawSecond = secondsPart?.[1]?.replace(/\s+/g, '') ?? '';
 
-  // Keep a consistent sign across fragmented delta text (e.g. "-1 ore, 55 minute, 40 secunde").
-  if (hourValue < 0 && minuteValue > 0) {
-    minuteValue = -minuteValue;
-  }
+  let hourValue = rawHour ? Number.parseInt(rawHour, 10) : 0;
+  let minuteValue = rawMinute ? Number.parseInt(rawMinute, 10) : 0;
+  let secondValue = rawSecond ? Number.parseInt(rawSecond, 10) : 0;
 
-  if ((hourValue < 0 || minuteValue < 0) && secondValue > 0) {
-    secondValue = -secondValue;
+  const hourHasExplicitSign = /^[-+]/.test(rawHour);
+  const minuteHasExplicitSign = /^[-+]/.test(rawMinute);
+  const secondHasExplicitSign = /^[-+]/.test(rawSecond);
+
+  const hasNegativeCue =
+    /\b(?:minus|scaz(?:ut|and|ute)?|retras|retrage|dedus|penaliz(?:are|at|ata)?)\b/i.test(deltaSource) ||
+    /-\s*\d+/.test(deltaSource);
+  const hasPositiveCue = /\b(?:adaug(?:at|and|ate)?|plus)\b/i.test(deltaSource);
+
+  const inferredSign =
+    hourValue < 0 || minuteValue < 0 || secondValue < 0
+      ? -1
+      : hourValue > 0 || minuteValue > 0 || secondValue > 0
+        ? hasNegativeCue && !hasPositiveCue
+          ? -1
+          : 1
+        : 1;
+
+  if (inferredSign < 0) {
+    if (hourValue > 0 && !hourHasExplicitSign) hourValue = -hourValue;
+    if (minuteValue > 0 && !minuteHasExplicitSign) minuteValue = -minuteValue;
+    if (secondValue > 0 && !secondHasExplicitSign) secondValue = -secondValue;
+  } else if (inferredSign > 0) {
+    if (hourValue < 0 && !hourHasExplicitSign) hourValue = -hourValue;
+    if (minuteValue < 0 && !minuteHasExplicitSign) minuteValue = -minuteValue;
+    if (secondValue < 0 && !secondHasExplicitSign) secondValue = -secondValue;
   }
 
   return hourValue * 3600 + minuteValue * 60 + secondValue;

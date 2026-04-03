@@ -250,8 +250,28 @@ const run = async () => {
     const incrementalSinceDate = latestStored?.eventAt
       ? new Date(latestStored.eventAt.getTime() - 6 * 60 * 60 * 1000)
       : fallbackSinceDate;
-    const sinceDate =
-      incrementalSinceDate.getTime() > fallbackSinceDate.getTime() ? incrementalSinceDate : fallbackSinceDate;
+    const openCycle = await prisma.weekCycle.findFirst({
+      where: {
+        endedAt: null
+      },
+      orderBy: {
+        startedAt: 'desc'
+      },
+      select: {
+        startedAt: true
+      }
+    });
+    const openCycleSinceDate = openCycle?.startedAt
+      ? new Date(openCycle.startedAt.getTime() - 60 * 60 * 1000)
+      : null;
+
+    let sinceDate = fallbackSinceDate;
+    if (incrementalSinceDate.getTime() < sinceDate.getTime()) {
+      sinceDate = incrementalSinceDate;
+    }
+    if (openCycleSinceDate && openCycleSinceDate.getTime() < sinceDate.getTime()) {
+      sinceDate = openCycleSinceDate;
+    }
 
     const result = await runBackfill({
       mode: 'since',
