@@ -1,0 +1,12 @@
+node_modules
+.env
+.env.*
+!.env.example
+apps/*/dist
+apps/*/.vite
+*.tsbuildinfo
+apps/server/prisma/dev.db
+apps/server/prisma/dev.db-journal
+.DS_Store
+npm-debug.log*
+

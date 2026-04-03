@@ -1,0 +1,133 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum EmployeeStatus {
+  ACTIVE
+  INCOMPLETE
+  DELETED
+}
+
+enum ParseStatus {
+  SUCCESS
+  PARTIAL
+  FAILED
+}
+
+enum TimeEventType {
+  CLOCK_IN
+  CLOCK_OUT
+  MANUAL_ADJUSTMENT
+  WEEKLY_RESET
+  UNKNOWN
+}
+
+model Employee {
+  id               Int            @id @default(autoincrement())
+  discordUserId    String?        @map("discord_user_id")
+  nickname         String?
+  fullName         String?        @map("full_name")
+  phone            String?
+  plateNumber      String?        @map("plate_number")
+  iban             String?        @unique
+  monthsInCity     Int?           @map("months_in_city")
+  employerName     String?        @map("employer_name")
+  recommendation   String?
+  rank             String?
+  idImageUrl       String?        @map("id_image_url")
+  cvMessageId      String?        @unique @map("cv_message_id")
+  cvChannelId      String?        @map("cv_channel_id")
+  cvPostedAt       DateTime?      @map("cv_posted_at")
+  status           EmployeeStatus @default(INCOMPLETE)
+  createdAt        DateTime       @default(now()) @map("created_at")
+  updatedAt        DateTime       @updatedAt @map("updated_at")
+  deletedAt        DateTime?      @map("deleted_at")
+
+  cvRawEntries     EmployeeCvRaw[]
+  aliases          EmployeeAlias[]
+  timeEvents       TimeEvent[]
+
+  @@index([discordUserId])
+  @@index([fullName])
+  @@index([nickname])
+  @@map("employees")
+}
+
+model EmployeeCvRaw {
+  id                 Int        @id @default(autoincrement())
+  employeeId         Int        @map("employee_id")
+  rawText            String     @map("raw_text") @db.LongText
+  rawAttachmentsJson String?    @map("raw_attachments_json") @db.LongText
+  parseStatus        ParseStatus @default(PARTIAL) @map("parse_status")
+  parseNotes         String?    @map("parse_notes") @db.Text
+  createdAt          DateTime   @default(now()) @map("created_at")
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([employeeId])
+  @@map("employee_cv_raw")
+}
+
+model EmployeeAlias {
+  id         Int      @id @default(autoincrement())
+  employeeId Int      @map("employee_id")
+  aliasType  String   @map("alias_type")
+  aliasValue String   @map("alias_value")
+  normalized String
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeId, normalized])
+  @@index([normalized])
+  @@map("employee_aliases")
+}
+
+model WeekCycle {
+  id             Int       @id @default(autoincrement())
+  serviceCode    String    @map("service_code")
+  startedAt      DateTime  @map("started_at")
+  endedAt        DateTime? @map("ended_at")
+  resetMessageId String?   @map("reset_message_id")
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  timeEvents TimeEvent[]
+
+  @@index([serviceCode])
+  @@index([startedAt])
+  @@map("week_cycles")
+}
+
+model TimeEvent {
+  id                Int           @id @default(autoincrement())
+  discordMessageId  String        @unique @map("discord_message_id")
+  channelId         String        @map("channel_id")
+  discordUserId     String?       @map("discord_user_id")
+  actorDiscordUserId String?      @map("actor_discord_user_id")
+  actorName         String?       @map("actor_name")
+  targetEmployeeId  Int?          @map("target_employee_id")
+  targetEmployeeName String?      @map("target_employee_name")
+  serviceCode       String?       @map("service_code")
+  eventType         TimeEventType @map("event_type")
+  deltaSeconds      Int?          @map("delta_seconds")
+  rawText           String        @map("raw_text") @db.LongText
+  eventAt           DateTime      @map("event_at")
+  weekCycleId       Int?          @map("week_cycle_id")
+  isDeleted         Boolean       @default(false) @map("is_deleted")
+  createdAt         DateTime      @default(now()) @map("created_at")
+
+  weekCycle WeekCycle? @relation(fields: [weekCycleId], references: [id], onDelete: SetNull)
+  employee  Employee?  @relation(fields: [targetEmployeeId], references: [id], onDelete: SetNull)
+
+  @@index([discordUserId])
+  @@index([serviceCode])
+  @@index([eventAt])
+  @@index([weekCycleId])
+  @@map("time_events")
+}
+

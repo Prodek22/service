@@ -1,0 +1,21 @@
+{
+  "name": "gta5-fivem-discord-automation",
+  "private": true,
+  "version": "1.0.0",
+  "workspaces": [
+    "apps/server",
+    "apps/web"
+  ],
+  "scripts": {
+    "dev": "concurrently -n server,web -c cyan,magenta \"npm run dev -w @gta-service/server\" \"npm run dev -w @gta-service/web\"",
+    "build": "npm run build --workspaces --if-present",
+    "start": "npm run start -w @gta-service/server",
+    "db:migrate": "npm run db:migrate -w @gta-service/server",
+    "db:generate": "npm run db:generate -w @gta-service/server",
+    "backfill": "npm run backfill -w @gta-service/server"
+  },
+  "devDependencies": {
+    "concurrently": "^9.0.1"
+  }
+}
+

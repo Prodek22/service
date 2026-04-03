@@ -1,0 +1,89 @@
+export type Employee = {
+  id: number;
+  iban: string | null;
+  monthsInCity: number | null;
+  nickname: string | null;
+  fullName: string | null;
+  phone: string | null;
+  rank: string | null;
+  cvPostedAt: string | null;
+  idImageUrl: string | null;
+  status: 'ACTIVE' | 'INCOMPLETE' | 'DELETED';
+  employerName: string | null;
+  recommendation: string | null;
+  plateNumber: string | null;
+  isIncomplete: boolean;
+  missingIdImage: boolean;
+};
+
+export type EmployeesResponse = {
+  items: Employee[];
+  pagination: {
+    page: number;
+    pageSize: number;
+    total: number;
+    totalPages: number;
+  };
+};
+
+export type DashboardResponse = {
+  currentCycleId: number | null;
+  totalActiveEmployees: number;
+  totalIncompleteCvs: number;
+  totalWeekSeconds: number;
+  totalWeekLabel: string;
+  topEmployees: Array<{
+    displayName: string;
+    totalSeconds: number;
+    totalLabel: string;
+  }>;
+};
+
+export type WeekCycle = {
+  id: number;
+  serviceCode: string;
+  startedAt: string;
+  endedAt: string | null;
+  resetMessageId: string | null;
+};
+
+export type TimesheetSummaryResponse = {
+  cycleId: number | null;
+  totals: Array<{
+    key: string;
+    employeeId: number | null;
+    displayName: string;
+    discordUserId: string | null;
+    totalSeconds: number;
+    normalSeconds: number;
+    manualAdjustmentSeconds: number;
+    positiveAdjustmentSeconds: number;
+    negativeAdjustmentSeconds: number;
+    manualAdjustmentsCount: number;
+    eventsCount: number;
+    totalLabel: string;
+    normalLabel: string;
+    manualLabel: string;
+  }>;
+};
+
+export type TimeEventHistoryResponse = {
+  cycleId: number;
+  history: Array<{
+    id: number;
+    eventType: string;
+    deltaSeconds: number | null;
+    rawText: string;
+    eventAt: string;
+    serviceCode: string | null;
+  }>;
+};
+
+export type EmployeeCvRawEntry = {
+  id: number;
+  rawText: string;
+  rawAttachmentsJson: string | null;
+  parseStatus: 'SUCCESS' | 'PARTIAL' | 'FAILED';
+  parseNotes: string | null;
+  createdAt: string;
+};
