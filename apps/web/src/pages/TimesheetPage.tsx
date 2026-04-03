@@ -58,7 +58,8 @@ export const TimesheetPage = () => {
         >
           {cycles.map((cycle) => (
             <option key={cycle.id} value={cycle.id}>
-              Ciclu #{cycle.id} - {cycle.serviceCode} ({formatDateTime(cycle.startedAt)} {'->'} {formatDateTime(cycle.endedAt)})
+              Ciclu #{cycle.id} - {cycle.serviceCode} ({formatDateTime(cycle.startedAt)} {'->'}{' '}
+              {cycle.endedAt ? formatDateTime(cycle.endedAt) : 'Prezent'})
             </option>
           ))}
           {!cycles.length && <option value="">Nu exista cicluri</option>}

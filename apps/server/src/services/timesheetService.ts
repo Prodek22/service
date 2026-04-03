@@ -152,14 +152,21 @@ export const getWeekCycles = async (serviceCode?: string) =>
   prisma.weekCycle.findMany({
     where: {
       ...(serviceCode ? { serviceCode } : {}),
-      timeEvents: {
-        some: {
-          isDeleted: false,
-          eventType: {
-            in: CYCLE_ACTIVITY_EVENT_TYPES
+      OR: [
+        {
+          endedAt: null
+        },
+        {
+          timeEvents: {
+            some: {
+              isDeleted: false,
+              eventType: {
+                in: CYCLE_ACTIVITY_EVENT_TYPES
+              }
+            }
           }
         }
-      }
+      ]
     },
     orderBy: {
       startedAt: 'desc'
@@ -239,7 +246,9 @@ export const getCycleTotals = async (cycleId: number) => {
     current.eventsCount += 1;
   }
 
-  return [...totals.values()].sort((a, b) => b.totalSeconds - a.totalSeconds);
+  return [...totals.values()]
+    .filter((row) => row.employeeId != null)
+    .sort((a, b) => b.totalSeconds - a.totalSeconds);
 };
 
 export const getEmployeeCycleHistory = async (cycleId: number, employeeId: number) =>

@@ -1,3 +1,4 @@
+import { TimeEventType } from '@prisma/client';
 import { Client, GatewayIntentBits, Partials } from 'discord.js';
 import { env } from '../config/env';
 import { prisma } from '../db/prisma';
@@ -55,6 +56,43 @@ const runIncrementalEmployeeSync = async (lookbackDaysInput?: number) => {
     });
 
     const staleIds = staleUsers.map((employee) => employee.id);
+    const staleDiscordUserIds = staleUsers
+      .map((employee) => employee.discordUserId)
+      .filter((value): value is string => Boolean(value));
+
+    let deletedTimeEvents = 0;
+    if (staleIds.length || staleDiscordUserIds.length) {
+      const result = await prisma.timeEvent.deleteMany({
+        where: {
+          eventType: {
+            in: [TimeEventType.CLOCK_IN, TimeEventType.CLOCK_OUT, TimeEventType.MANUAL_ADJUSTMENT]
+          },
+          OR: [
+            ...(staleIds.length
+              ? [
+                  {
+                    targetEmployeeId: {
+                      in: staleIds
+                    }
+                  }
+                ]
+              : []),
+            ...(staleDiscordUserIds.length
+              ? [
+                  {
+                    discordUserId: {
+                      in: staleDiscordUserIds
+                    }
+                  }
+                ]
+              : [])
+          ]
+        }
+      });
+
+      deletedTimeEvents = result.count;
+    }
+
     let deletedEmployees = 0;
     if (staleIds.length) {
       const result = await prisma.employee.deleteMany({
@@ -125,6 +163,7 @@ const runIncrementalEmployeeSync = async (lookbackDaysInput?: number) => {
       lookbackDays,
       sinceDate: sinceDate.toISOString(),
       rosterCount: roster.length,
+      deletedTimeEvents,
       deletedEmployees,
       updatedProfiles,
       processed: backfillResult
