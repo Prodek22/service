@@ -74,19 +74,10 @@ const processByChannel = async (
   if (message.channelId === env.TIMESHEET_CHANNEL_ID) {
     const parsed = parseTimesheetMessage(message.content ?? '');
 
-    if (parsed.discordUserId && !(await memberFilter.isGuildMember(parsed.discordUserId))) {
+    // Timesheet channel is treated as authoritative event stream. We avoid dropping events
+    // when users left guild or when text mentions do not map to current member cache.
+    if (parsed.eventType === 'UNKNOWN') {
       return;
-    }
-
-    if (parsed.actorDiscordUserId && !(await memberFilter.isGuildMember(parsed.actorDiscordUserId))) {
-      return;
-    }
-
-    if (!parsed.discordUserId && parsed.targetEmployeeName) {
-      const isKnownByName = await memberFilter.isKnownMemberName(parsed.targetEmployeeName);
-      if (!isKnownByName) {
-        return;
-      }
     }
 
     await processTimesheetMessage(toMessageInput(message));

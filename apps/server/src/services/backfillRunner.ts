@@ -64,23 +64,14 @@ const processCvChannelMessage = async (
 
 const processTimesheetChannelMessage = async (
   message: Message,
-  memberFilter: Awaited<ReturnType<typeof createGuildMemberFilter>>
+  _memberFilter: Awaited<ReturnType<typeof createGuildMemberFilter>>
 ): Promise<boolean> => {
   const parsed = parseTimesheetMessage(message.content ?? '');
 
-  if (parsed.discordUserId && !(await memberFilter.isGuildMember(parsed.discordUserId))) {
+  // Timesheet channel is treated as authoritative event stream. We avoid dropping events
+  // when users left guild or when text mentions do not map to current member cache.
+  if (parsed.eventType === 'UNKNOWN') {
     return false;
-  }
-
-  if (parsed.actorDiscordUserId && !(await memberFilter.isGuildMember(parsed.actorDiscordUserId))) {
-    return false;
-  }
-
-  if (!parsed.discordUserId && parsed.targetEmployeeName) {
-    const isKnownByName = await memberFilter.isKnownMemberName(parsed.targetEmployeeName);
-    if (!isKnownByName) {
-      return false;
-    }
   }
 
   await processTimesheetMessage(toMessageInput(message));
