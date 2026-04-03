@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { apiGet, apiPost } from '../api/client';
-import { DashboardResponse, DeleteOldResponse, SyncNewResponse } from '../types';
+import { DashboardResponse, DeleteOldResponse, RebuildAllResponse, SyncNewResponse } from '../types';
 
 export const DashboardPage = () => {
   const [data, setData] = useState<DashboardResponse | null>(null);
@@ -62,6 +62,31 @@ export const DashboardPage = () => {
     }
   };
 
+  const rebuildAllData = async () => {
+    const confirmed = window.confirm(
+      'Actiune critica: se sterg toate datele operationale (CV + pontaj) si se ruleaza reimport complet. Continui?'
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setMaintenanceBusy(true);
+    setMaintenanceMessage(null);
+
+    try {
+      const result = await apiPost<RebuildAllResponse>('/maintenance/rebuild-all', {});
+      setMaintenanceMessage(
+        `Reset complet finalizat. Reimportat: ${result.processed.cvProcessed} CV, ${result.processed.timesheetProcessed} pontaje.`
+      );
+      await loadDashboard();
+    } catch (actionError) {
+      setMaintenanceMessage(actionError instanceof Error ? actionError.message : 'Nu am putut executa resetul complet.');
+    } finally {
+      setMaintenanceBusy(false);
+    }
+  };
+
   return (
     <section>
       <h2>Dashboard</h2>
@@ -93,6 +118,9 @@ export const DashboardPage = () => {
           </button>
           <button type="button" onClick={() => void syncNewResults()} disabled={maintenanceBusy}>
             Cauta rezultate noi
+          </button>
+          <button type="button" onClick={() => void rebuildAllData()} disabled={maintenanceBusy}>
+            Reset complet + reimport
           </button>
         </div>
         {maintenanceMessage ? <p>{maintenanceMessage}</p> : null}

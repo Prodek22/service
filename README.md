@@ -201,6 +201,7 @@ Maintenance (necesita login):
 
 - `POST /api/maintenance/delete-old` (body: `{ "olderThanDays": 90 }`)
 - `POST /api/maintenance/sync-new` (body: `{ "latestLimitPerChannel": 100 }`)
+- `POST /api/maintenance/rebuild-all` (sterge complet datele operationale si ruleaza backfill complet)
 
 ## Cum functioneaza parsarea CV
 

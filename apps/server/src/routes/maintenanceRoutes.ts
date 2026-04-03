@@ -1,10 +1,20 @@
-﻿import { Router } from 'express';
+﻿import { Response, Router } from 'express';
 import { prisma } from '../db/prisma';
 import { runBackfill } from '../services/backfillRunner';
 
 let syncInProgress = false;
 
 export const maintenanceRouter = Router();
+
+const ensureSingleMaintenanceRun = (res: Response): boolean => {
+  if (syncInProgress) {
+    res.status(409).json({ error: 'Maintenance already in progress.' });
+    return false;
+  }
+
+  syncInProgress = true;
+  return true;
+};
 
 maintenanceRouter.post('/delete-old', async (req, res) => {
   const input = Number.parseInt(String(req.body?.olderThanDays ?? '90'), 10);
@@ -50,15 +60,12 @@ maintenanceRouter.post('/delete-old', async (req, res) => {
 });
 
 maintenanceRouter.post('/sync-new', async (req, res) => {
-  if (syncInProgress) {
-    res.status(409).json({ error: 'Sync already in progress.' });
+  if (!ensureSingleMaintenanceRun(res)) {
     return;
   }
 
   const input = Number.parseInt(String(req.body?.latestLimitPerChannel ?? '100'), 10);
   const latestLimitPerChannel = Number.isNaN(input) ? 100 : Math.max(1, Math.min(input, 100));
-
-  syncInProgress = true;
 
   try {
     const result = await runBackfill({
@@ -71,6 +78,44 @@ maintenanceRouter.post('/sync-new', async (req, res) => {
       latestLimitPerChannel,
       processed: result
     });
+  } catch (error) {
+    res.status(500).json({ error: error instanceof Error ? error.message : 'Sync failed' });
+  } finally {
+    syncInProgress = false;
+  }
+});
+
+maintenanceRouter.post('/rebuild-all', async (_req, res) => {
+  if (!ensureSingleMaintenanceRun(res)) {
+    return;
+  }
+
+  try {
+    // Full data reset for operational tables, preserving admin auth users and migration metadata.
+    await prisma.$executeRawUnsafe('SET FOREIGN_KEY_CHECKS = 0');
+    await prisma.$executeRawUnsafe('TRUNCATE TABLE time_events');
+    await prisma.$executeRawUnsafe('TRUNCATE TABLE week_cycles');
+    await prisma.$executeRawUnsafe('TRUNCATE TABLE employee_cv_raw');
+    await prisma.$executeRawUnsafe('TRUNCATE TABLE employee_aliases');
+    await prisma.$executeRawUnsafe('TRUNCATE TABLE employees');
+    await prisma.$executeRawUnsafe('SET FOREIGN_KEY_CHECKS = 1');
+
+    const result = await runBackfill({ mode: 'all' });
+
+    res.json({
+      ok: true,
+      deleted: {
+        employees: 'all',
+        employeeCvRaw: 'all',
+        employeeAliases: 'all',
+        weekCycles: 'all',
+        timeEvents: 'all'
+      },
+      processed: result
+    });
+  } catch (error) {
+    await prisma.$executeRawUnsafe('SET FOREIGN_KEY_CHECKS = 1');
+    res.status(500).json({ error: error instanceof Error ? error.message : 'Full rebuild failed' });
   } finally {
     syncInProgress = false;
   }

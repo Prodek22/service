@@ -111,3 +111,18 @@ export type SyncNewResponse = {
     timesheetProcessed: number;
   };
 };
+
+export type RebuildAllResponse = {
+  ok: boolean;
+  deleted: {
+    employees: 'all';
+    employeeCvRaw: 'all';
+    employeeAliases: 'all';
+    weekCycles: 'all';
+    timeEvents: 'all';
+  };
+  processed: {
+    cvProcessed: number;
+    timesheetProcessed: number;
+  };
+};
