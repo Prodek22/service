@@ -370,6 +370,21 @@ th {
   box-shadow: none;
 }
 
+.cycle-select {
+  min-width: min(100%, 480px);
+  border: 1px solid #2d2a49 !important;
+  background: linear-gradient(180deg, #313056 0%, #272448 100%) !important;
+  color: #f1f4ff !important;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  box-shadow: 0 6px 14px rgba(36, 33, 63, 0.22);
+}
+
+.cycle-select option {
+  background: #ffffff;
+  color: #223042;
+}
+
 .timesheet-user-cell {
   display: inline-flex;
   align-items: center;

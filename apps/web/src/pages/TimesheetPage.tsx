@@ -123,14 +123,13 @@ export const TimesheetPage = ({ readOnly = false }: TimesheetPageProps) => {
 
       <div className="card filters">
         <select
+          className="cycle-select"
           value={selectedCycleId ?? ''}
           onChange={(event) => setSelectedCycleId(Number.parseInt(event.target.value, 10) || null)}
         >
           {cycles.map((cycle) => (
             <option key={cycle.id} value={cycle.id}>
-              Ciclu #{cycle.id} - {cycle.serviceCode} ({formatDateTime(cycle.startedAt)} {'->'}{' '}
-              {cycle.endedAt ? formatDateTime(cycle.endedAt) : 'Prezent'}
-              {cycle.endedAt ? '' : ' | Ciclu curent'})
+              {formatDateTime(cycle.startedAt)} {'->'} {cycle.endedAt ? formatDateTime(cycle.endedAt) : 'Prezent'}
             </option>
           ))}
           {!cycles.length && <option value="">Nu exista cicluri</option>}
