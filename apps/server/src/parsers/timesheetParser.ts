@@ -62,22 +62,28 @@ const parseDeltaSeconds = (rawText: string): number | undefined => {
   const deltaSource = newTotalIndex >= 0 ? normalized.slice(0, newTotalIndex) : normalized;
 
   // We explicitly parse numeric signs so "-893 minute" remains negative even if text says "adaugat".
+  const signedHours = deltaSource.match(/([+-]?\d+)\s*(?:ora|ore)\b/i);
   const signedMinutes = deltaSource.match(/([+-]?\d+)\s*minute?/i);
   const secondsPart = deltaSource.match(/([+-]?\d+)\s*sec(?:unde?)?/i);
 
-  if (!signedMinutes && !secondsPart) {
+  if (!signedHours && !signedMinutes && !secondsPart) {
     return undefined;
   }
 
-  const minuteValue = signedMinutes ? Number.parseInt(signedMinutes[1], 10) : 0;
+  const hourValue = signedHours ? Number.parseInt(signedHours[1], 10) : 0;
+  let minuteValue = signedMinutes ? Number.parseInt(signedMinutes[1], 10) : 0;
   let secondValue = secondsPart ? Number.parseInt(secondsPart[1], 10) : 0;
 
-  // If minutes are negative and seconds are positive textually, keep the same sign.
-  if (minuteValue < 0 && secondValue > 0) {
+  // Keep a consistent sign across fragmented delta text (e.g. "-1 ore, 55 minute, 40 secunde").
+  if (hourValue < 0 && minuteValue > 0) {
+    minuteValue = -minuteValue;
+  }
+
+  if ((hourValue < 0 || minuteValue < 0) && secondValue > 0) {
     secondValue = -secondValue;
   }
 
-  return minuteValue * 60 + secondValue;
+  return hourValue * 3600 + minuteValue * 60 + secondValue;
 };
 
 export const parseTimesheetMessage = (rawText: string): ParsedTimeEvent => {
