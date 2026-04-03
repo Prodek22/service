@@ -133,6 +133,20 @@ const normalizeTimesheetCycleAssignments = async (): Promise<number> => {
   return Number(updated) || 0;
 };
 
+const snapshotMissingEventRanks = async (): Promise<number> => {
+  const updated = await prisma.$executeRawUnsafe(`
+    UPDATE time_events te
+    JOIN employees e ON e.id = te.target_employee_id
+    SET te.target_employee_rank = e.rank
+    WHERE te.target_employee_rank IS NULL
+      AND te.target_employee_id IS NOT NULL
+      AND te.is_deleted = 0
+      AND te.event_type IN ('CLOCK_IN', 'CLOCK_OUT', 'MANUAL_ADJUSTMENT')
+  `);
+
+  return Number(updated) || 0;
+};
+
 const pruneNonResetWeekCycles = async (): Promise<number> => {
   const deleted = await prisma.$executeRawUnsafe(`
     DELETE wc
@@ -152,17 +166,20 @@ const normalizeTimesheetData = async (): Promise<{
   deletedGhostCycles: number;
   reassignedCycleEvents: number;
   deletedNonResetCycles: number;
+  snapshottedEventRanks: number;
 }> => {
   const normalizedWeekCycleBoundaries = await normalizeWeekCycleBoundaries();
   const deletedGhostCycles = await pruneGhostWeekCycles();
   const reassignedCycleEvents = await normalizeTimesheetCycleAssignments();
+  const snapshottedEventRanks = await snapshotMissingEventRanks();
   const deletedNonResetCycles = await pruneNonResetWeekCycles();
 
   return {
     normalizedWeekCycleBoundaries,
     deletedGhostCycles,
     reassignedCycleEvents,
-    deletedNonResetCycles
+    deletedNonResetCycles,
+    snapshottedEventRanks
   };
 };
 
@@ -363,6 +380,7 @@ const run = async () => {
         deletedGhostCycles: normalized.deletedGhostCycles,
         reassignedCycleEvents: normalized.reassignedCycleEvents,
         deletedNonResetCycles: normalized.deletedNonResetCycles,
+        snapshottedEventRanks: normalized.snapshottedEventRanks,
         processed: result
       }
     });
@@ -430,6 +448,7 @@ const run = async () => {
         deletedGhostCycles: normalized.deletedGhostCycles,
         reassignedCycleEvents: normalized.reassignedCycleEvents,
         deletedNonResetCycles: normalized.deletedNonResetCycles,
+        snapshottedEventRanks: normalized.snapshottedEventRanks,
         processed: result
       }
     });
@@ -475,6 +494,7 @@ const run = async () => {
         deletedGhostCycles: normalized.deletedGhostCycles,
         reassignedCycleEvents: normalized.reassignedCycleEvents,
         deletedNonResetCycles: normalized.deletedNonResetCycles,
+        snapshottedEventRanks: normalized.snapshottedEventRanks,
         processed: result
       }
     });

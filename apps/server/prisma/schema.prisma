@@ -146,6 +146,7 @@ model TimeEvent {
   actorName         String?       @map("actor_name")
   targetEmployeeId  Int?          @map("target_employee_id")
   targetEmployeeName String?      @map("target_employee_name")
+  targetEmployeeRank String?      @map("target_employee_rank")
   serviceCode       String?       @map("service_code")
   eventType         TimeEventType @map("event_type")
   deltaSeconds      Int?          @map("delta_seconds")

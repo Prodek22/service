@@ -266,7 +266,8 @@ export const processTimesheetMessage = async (message: MessageInput) => {
     select: {
       weekCycleId: true,
       eventType: true,
-      serviceCode: true
+      serviceCode: true,
+      targetEmployeeRank: true
     }
   });
 
@@ -292,6 +293,8 @@ export const processTimesheetMessage = async (message: MessageInput) => {
     fullName: parsed.targetEmployeeName
   });
 
+  const resolvedRankSnapshot = existingEvent?.targetEmployeeRank ?? employee?.rank ?? null;
+
   const event = await prisma.timeEvent.upsert({
     where: {
       discordMessageId: message.id
@@ -303,6 +306,7 @@ export const processTimesheetMessage = async (message: MessageInput) => {
       actorName: parsed.actorName,
       targetEmployeeId: employee?.id,
       targetEmployeeName: parsed.targetEmployeeName,
+      targetEmployeeRank: resolvedRankSnapshot,
       serviceCode,
       eventType: parsed.eventType as TimeEventType,
       deltaSeconds: parsed.deltaSeconds,
@@ -319,6 +323,7 @@ export const processTimesheetMessage = async (message: MessageInput) => {
       actorName: parsed.actorName,
       targetEmployeeId: employee?.id,
       targetEmployeeName: parsed.targetEmployeeName,
+      targetEmployeeRank: resolvedRankSnapshot,
       serviceCode,
       eventType: parsed.eventType as TimeEventType,
       deltaSeconds: parsed.deltaSeconds,
@@ -389,7 +394,7 @@ export const getCycleTotals = async (cycleId: number) => {
         key,
         employeeId: event.targetEmployeeId,
         employeeCode: event.employee?.iban ?? null,
-        rank: event.employee?.rank ?? null,
+        rank: event.targetEmployeeRank ?? event.employee?.rank ?? null,
         displayName:
           event.employee?.nickname ??
           event.employee?.fullName ??
@@ -413,6 +418,9 @@ export const getCycleTotals = async (cycleId: number) => {
 
     const current = totals.get(key)!;
     const delta = event.deltaSeconds ?? 0;
+    if (!current.rank) {
+      current.rank = event.targetEmployeeRank ?? event.employee?.rank ?? null;
+    }
 
     if (event.eventType === TimeEventType.CLOCK_OUT) {
       current.normalSeconds += delta;
