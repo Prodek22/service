@@ -78,7 +78,7 @@ const PublicLayout = ({ isAuthenticated, username, onLogout }: PublicLayoutProps
       </main>
       <footer className="public-footer">
         <p className="public-footer-copy">
-          Copyright © {new Date().getFullYear()} Prodek.ink. All rights{' '}
+          Copyright © {new Date().getFullYear()} <span className="brand-word">𝐏𝐫𝐨𝐝𝐞𝐤</span>.ink. All rights{' '}
           <span className="reserved-trigger" onClick={() => setShowAdminAccess((current) => !current)}>
             reserved
           </span>
