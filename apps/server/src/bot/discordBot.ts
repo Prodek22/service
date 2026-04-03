@@ -107,7 +107,8 @@ const processByChannel = async (
   }
 
   if (message.channelId === env.TIMESHEET_CHANNEL_ID) {
-    const parsed = parseTimesheetMessage(message.content ?? '');
+    const payload = toMessageInput(message);
+    const parsed = parseTimesheetMessage(payload.content);
 
     // Timesheet channel is treated as authoritative event stream. We avoid dropping events
     // when users left guild or when text mentions do not map to current member cache.
@@ -115,7 +116,7 @@ const processByChannel = async (
       return;
     }
 
-    await processTimesheetMessage(toMessageInput(message));
+    await processTimesheetMessage(payload);
   }
 };
 
