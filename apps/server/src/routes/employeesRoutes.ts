@@ -17,6 +17,34 @@ const allowedSort: Record<string, string> = {
 
 export const employeesRouter = Router();
 
+type RankTab = 'all' | 'mecanic_senior' | 'mecanic' | 'mecani_junior' | 'ucenic' | 'unknown';
+
+const resolveRankTab = (value: string): RankTab => {
+  const normalized = normalizeForCompare(value);
+
+  if (normalized === 'mecanic senior' || normalized === 'mecanic_senior') {
+    return 'mecanic_senior';
+  }
+
+  if (normalized === 'mecanic') {
+    return 'mecanic';
+  }
+
+  if (normalized === 'mecani junior' || normalized === 'mecanic junior' || normalized === 'mecani_junior') {
+    return 'mecani_junior';
+  }
+
+  if (normalized === 'ucenic') {
+    return 'ucenic';
+  }
+
+  if (normalized === 'unknown') {
+    return 'unknown';
+  }
+
+  return 'all';
+};
+
 const rankSortValue = (rank?: string | null): number => {
   const normalized = normalizeForCompare(rank ?? '');
 
@@ -49,6 +77,41 @@ const getEntrySortTimestamp = (employee: {
   createdAt: Date;
 }): number => (employee.cvPostedAt ?? employee.createdAt).getTime();
 
+const rankMatchesTab = (rank: string | null, rankTab: RankTab): boolean => {
+  if (rankTab === 'all') {
+    return true;
+  }
+
+  const normalized = normalizeForCompare(rank ?? '');
+
+  if (!normalized) {
+    return rankTab === 'unknown';
+  }
+
+  if (normalized === 'mecanic senior' || normalized === 'mecanic-senior') {
+    return rankTab === 'mecanic_senior';
+  }
+
+  if (
+    normalized === 'mecani junior' ||
+    normalized === 'mecani-junior' ||
+    normalized === 'mecanic junior' ||
+    normalized === 'mecanic-junior'
+  ) {
+    return rankTab === 'mecani_junior';
+  }
+
+  if (normalized === 'mecanic') {
+    return rankTab === 'mecanic';
+  }
+
+  if (normalized === 'ucenic') {
+    return rankTab === 'ucenic';
+  }
+
+  return rankTab === 'unknown';
+};
+
 employeesRouter.get('/', async (req, res) => {
   const page = Number.parseInt(String(req.query.page ?? '1'), 10);
   const pageSize = Number.parseInt(String(req.query.pageSize ?? '20'), 10);
@@ -56,6 +119,7 @@ employeesRouter.get('/', async (req, res) => {
   const status = String(req.query.status ?? '').trim();
   const missingImage = toBoolean(req.query.missingImage);
   const incompleteOnly = toBoolean(req.query.incompleteOnly);
+  const rankTab = resolveRankTab(String(req.query.rankTab ?? 'all'));
 
   const sortByInput = String(req.query.sortBy ?? 'created_at');
   const sortBy = allowedSort[sortByInput] ?? 'createdAt';
@@ -83,10 +147,11 @@ employeesRouter.get('/', async (req, res) => {
   const limit = Math.max(pageSize, 1);
 
   const [items, total] =
-    sortByInput === 'rank' || sortByInput === 'created_at'
+    sortByInput === 'rank' || sortByInput === 'created_at' || rankTab !== 'all'
       ? await (async () => {
           const allItems = await prisma.employee.findMany({ where });
-          const sorted = [...allItems].sort((a, b) => {
+          const rankFiltered = allItems.filter((item) => rankMatchesTab(item.rank, rankTab));
+          const sorted = [...rankFiltered].sort((a, b) => {
             if (sortByInput === 'rank') {
               const delta = rankSortValue(a.rank) - rankSortValue(b.rank);
               if (delta !== 0) {
@@ -98,7 +163,7 @@ employeesRouter.get('/', async (req, res) => {
             return sortDir === 'asc' ? fallback : -fallback;
           });
 
-          return [sorted.slice(offset, offset + limit), allItems.length] as const;
+          return [sorted.slice(offset, offset + limit), rankFiltered.length] as const;
         })()
       : await Promise.all([
           prisma.employee.findMany({

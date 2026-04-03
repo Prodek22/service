@@ -19,6 +19,7 @@ export const EmployeesPage = () => {
   const [page, setPage] = useState(1);
   const [sortBy, setSortBy] = useState('created_at');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
+  const [rankTab, setRankTab] = useState<'all' | 'mecanic_senior' | 'mecanic' | 'mecani_junior' | 'ucenic'>('all');
 
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
   const [editForm, setEditForm] = useState<EmployeeEdit>({});
@@ -50,8 +51,10 @@ export const EmployeesPage = () => {
       params.set('incompleteOnly', 'true');
     }
 
+    params.set('rankTab', rankTab);
+
     return params.toString();
-  }, [page, search, status, missingImage, incompleteOnly, sortBy, sortDir]);
+  }, [page, search, status, missingImage, incompleteOnly, sortBy, sortDir, rankTab]);
 
   const load = async () => {
     setLoading(true);
@@ -110,6 +113,59 @@ export const EmployeesPage = () => {
   return (
     <section>
       <h2>Angajati / CV-uri</h2>
+
+      <div className="rank-tabs">
+        <button
+          type="button"
+          className={rankTab === 'all' ? 'active' : ''}
+          onClick={() => {
+            setPage(1);
+            setRankTab('all');
+          }}
+        >
+          Toți
+        </button>
+        <button
+          type="button"
+          className={rankTab === 'mecanic_senior' ? 'active' : ''}
+          onClick={() => {
+            setPage(1);
+            setRankTab('mecanic_senior');
+          }}
+        >
+          Mecanic-Senior
+        </button>
+        <button
+          type="button"
+          className={rankTab === 'mecanic' ? 'active' : ''}
+          onClick={() => {
+            setPage(1);
+            setRankTab('mecanic');
+          }}
+        >
+          Mecanic
+        </button>
+        <button
+          type="button"
+          className={rankTab === 'mecani_junior' ? 'active' : ''}
+          onClick={() => {
+            setPage(1);
+            setRankTab('mecani_junior');
+          }}
+        >
+          Mecani-Junior
+        </button>
+        <button
+          type="button"
+          className={rankTab === 'ucenic' ? 'active' : ''}
+          onClick={() => {
+            setPage(1);
+            setRankTab('ucenic');
+          }}
+        >
+          Ucenic
+        </button>
+      </div>
 
       <div className="card filters">
         <input
