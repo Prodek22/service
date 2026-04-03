@@ -1,20 +1,12 @@
-﻿import { Response, Router } from 'express';
+﻿import { Router } from 'express';
 import { prisma } from '../db/prisma';
-import { runBackfill } from '../services/backfillRunner';
-
-let syncInProgress = false;
+import { getMaintenanceStatus, startMaintenanceJob } from '../services/maintenanceJobService';
 
 export const maintenanceRouter = Router();
 
-const ensureSingleMaintenanceRun = (res: Response): boolean => {
-  if (syncInProgress) {
-    res.status(409).json({ error: 'Maintenance already in progress.' });
-    return false;
-  }
-
-  syncInProgress = true;
-  return true;
-};
+maintenanceRouter.get('/job-status', (_req, res) => {
+  res.json(getMaintenanceStatus());
+});
 
 maintenanceRouter.post('/delete-old', async (req, res) => {
   const input = Number.parseInt(String(req.body?.olderThanDays ?? '90'), 10);
@@ -59,92 +51,50 @@ maintenanceRouter.post('/delete-old', async (req, res) => {
   });
 });
 
-maintenanceRouter.post('/sync-new', async (req, res) => {
-  if (!ensureSingleMaintenanceRun(res)) {
-    return;
-  }
-
-  const input = Number.parseInt(String(req.body?.latestLimitPerChannel ?? '100'), 10);
-  const latestLimitPerChannel = Number.isNaN(input) ? 100 : Math.max(1, Math.min(input, 100));
-
+maintenanceRouter.post('/sync-new', (req, res) => {
   try {
-    const result = await runBackfill({
-      mode: 'latest',
-      latestLimitPerChannel
-    });
+    const input = Number.parseInt(String(req.body?.latestLimitPerChannel ?? '100'), 10);
+    const latestLimitPerChannel = Number.isNaN(input) ? 100 : Math.max(1, Math.min(input, 100));
 
-    res.json({
+    const status = startMaintenanceJob('sync-new', { latestLimitPerChannel });
+
+    res.status(202).json({
       ok: true,
-      latestLimitPerChannel,
-      processed: result
+      message: 'Sync new started',
+      job: status
     });
   } catch (error) {
-    res.status(500).json({ error: error instanceof Error ? error.message : 'Sync failed' });
-  } finally {
-    syncInProgress = false;
+    res.status(409).json({ error: error instanceof Error ? error.message : 'Could not start sync-new job' });
   }
 });
 
-maintenanceRouter.post('/sync-timesheet-window', async (req, res) => {
-  if (!ensureSingleMaintenanceRun(res)) {
-    return;
-  }
-
-  const input = Number.parseInt(String(req.body?.days ?? '14'), 10);
-  const days = Number.isNaN(input) ? 14 : Math.max(1, Math.min(input, 90));
-  const sinceDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
-
+maintenanceRouter.post('/sync-timesheet-window', (req, res) => {
   try {
-    const result = await runBackfill({
-      mode: 'since',
-      sinceDate,
-      channels: ['timesheet']
-    });
+    const input = Number.parseInt(String(req.body?.days ?? '14'), 10);
+    const days = Number.isNaN(input) ? 14 : Math.max(1, Math.min(input, 90));
 
-    res.json({
+    const status = startMaintenanceJob('sync-timesheet-window', { days });
+
+    res.status(202).json({
       ok: true,
-      days,
-      processed: result
+      message: 'Timesheet window sync started',
+      job: status
     });
   } catch (error) {
-    res.status(500).json({ error: error instanceof Error ? error.message : 'Timesheet window sync failed' });
-  } finally {
-    syncInProgress = false;
+    res.status(409).json({ error: error instanceof Error ? error.message : 'Could not start timesheet sync job' });
   }
 });
 
-maintenanceRouter.post('/rebuild-all', async (_req, res) => {
-  if (!ensureSingleMaintenanceRun(res)) {
-    return;
-  }
-
+maintenanceRouter.post('/rebuild-all', (_req, res) => {
   try {
-    // Full data reset for operational tables, preserving admin auth users and migration metadata.
-    await prisma.$executeRawUnsafe('SET FOREIGN_KEY_CHECKS = 0');
-    await prisma.$executeRawUnsafe('TRUNCATE TABLE time_events');
-    await prisma.$executeRawUnsafe('TRUNCATE TABLE week_cycles');
-    await prisma.$executeRawUnsafe('TRUNCATE TABLE employee_cv_raw');
-    await prisma.$executeRawUnsafe('TRUNCATE TABLE employee_aliases');
-    await prisma.$executeRawUnsafe('TRUNCATE TABLE employees');
-    await prisma.$executeRawUnsafe('SET FOREIGN_KEY_CHECKS = 1');
+    const status = startMaintenanceJob('rebuild-all');
 
-    const result = await runBackfill({ mode: 'all' });
-
-    res.json({
+    res.status(202).json({
       ok: true,
-      deleted: {
-        employees: 'all',
-        employeeCvRaw: 'all',
-        employeeAliases: 'all',
-        weekCycles: 'all',
-        timeEvents: 'all'
-      },
-      processed: result
+      message: 'Full rebuild started',
+      job: status
     });
   } catch (error) {
-    await prisma.$executeRawUnsafe('SET FOREIGN_KEY_CHECKS = 1');
-    res.status(500).json({ error: error instanceof Error ? error.message : 'Full rebuild failed' });
-  } finally {
-    syncInProgress = false;
+    res.status(409).json({ error: error instanceof Error ? error.message : 'Could not start rebuild job' });
   }
 });

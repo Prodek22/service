@@ -202,10 +202,11 @@ Pontaj:
 
 Maintenance (necesita login):
 
+- `GET /api/maintenance/job-status`
 - `POST /api/maintenance/delete-old` (body: `{ "olderThanDays": 90 }`)
-- `POST /api/maintenance/sync-new` (body: `{ "latestLimitPerChannel": 100 }`)
-- `POST /api/maintenance/sync-timesheet-window` (body: `{ "days": 14 }`)
-- `POST /api/maintenance/rebuild-all` (sterge complet datele operationale si ruleaza backfill complet)
+- `POST /api/maintenance/sync-new` (porneste job async, body: `{ "latestLimitPerChannel": 100 }`)
+- `POST /api/maintenance/sync-timesheet-window` (porneste job async, body: `{ "days": 14 }`)
+- `POST /api/maintenance/rebuild-all` (porneste job async: sterge complet datele operationale + backfill complet)
 
 ## Cum functioneaza parsarea CV
 

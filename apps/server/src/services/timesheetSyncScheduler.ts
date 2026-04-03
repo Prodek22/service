@@ -1,23 +1,22 @@
 ﻿import { env } from '../config/env';
-import { runBackfill } from './backfillRunner';
+import { getMaintenanceStatus, startMaintenanceJob } from './maintenanceJobService';
 
 let timer: NodeJS.Timeout | null = null;
 
-const runTimesheetSync = async () => {
-  const sinceDate = new Date(Date.now() - env.TIMESHEET_SYNC_DAYS * 24 * 60 * 60 * 1000);
+const triggerTimesheetSync = () => {
+  const current = getMaintenanceStatus();
+  if (current.state === 'running') {
+    console.log('[timesheet-sync] skipped because another maintenance job is running');
+    return;
+  }
 
   try {
-    const result = await runBackfill({
-      mode: 'since',
-      sinceDate,
-      channels: ['timesheet']
-    });
-
+    const status = startMaintenanceJob('sync-timesheet-window', { days: env.TIMESHEET_SYNC_DAYS });
     console.log(
-      `[timesheet-sync] completed for last ${env.TIMESHEET_SYNC_DAYS} days. Processed: ${result.timesheetProcessed}`
+      `[timesheet-sync] started job ${status.id} for last ${env.TIMESHEET_SYNC_DAYS} days (background worker)`
     );
   } catch (error) {
-    console.error('[timesheet-sync] failed', error);
+    console.error('[timesheet-sync] failed to start', error);
   }
 };
 
@@ -27,11 +26,11 @@ export const startTimesheetSyncScheduler = () => {
     return;
   }
 
-  void runTimesheetSync();
+  triggerTimesheetSync();
 
   const intervalMs = Math.max(1, env.TIMESHEET_SYNC_INTERVAL_HOURS) * 60 * 60 * 1000;
   timer = setInterval(() => {
-    void runTimesheetSync();
+    triggerTimesheetSync();
   }, intervalMs);
 
   console.log(

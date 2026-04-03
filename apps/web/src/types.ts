@@ -129,9 +129,22 @@ export type RebuildAllResponse = {
 
 export type SyncTimesheetWindowResponse = {
   ok: boolean;
-  days: number;
-  processed: {
-    cvProcessed: number;
-    timesheetProcessed: number;
-  };
+  message: string;
+  job: MaintenanceJobStatus;
+};
+
+export type MaintenanceJobStatus = {
+  id: string | null;
+  type: 'sync-new' | 'sync-timesheet-window' | 'rebuild-all' | null;
+  state: 'idle' | 'running' | 'success' | 'failed';
+  startedAt: string | null;
+  finishedAt: string | null;
+  result: Record<string, unknown> | null;
+  error: string | null;
+};
+
+export type MaintenanceStartResponse = {
+  ok: boolean;
+  message: string;
+  job: MaintenanceJobStatus;
 };
