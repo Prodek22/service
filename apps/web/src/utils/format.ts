@@ -26,3 +26,5 @@ export const formatMinutes = (seconds: number): string => {
   const minutes = Math.round(seconds / 60);
   return `${minutes} min`;
 };
+
+export const formatCurrency = (value: number): string => `${value.toLocaleString('ro-RO')} $`;

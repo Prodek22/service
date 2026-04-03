@@ -100,25 +100,37 @@ timesheetRouter.get('/export.csv', async (req, res) => {
   const rows = [
     [
       'Employee',
+      'Employee ID',
+      'Rank',
       'Discord User ID',
       'Total Seconds',
       'Total (h/m)',
+      'Payable Seconds (cap 21h)',
       'Normal Seconds',
       'Manual Adjustment Seconds',
       'Positive Adjustments',
       'Negative Adjustments',
-      'Manual Adjustments Count'
+      'Manual Adjustments Count',
+      'Base Salary',
+      'Top Bonus',
+      'Salary Total'
     ],
     ...totals.map((item) => [
       item.displayName,
+      item.employeeCode ?? '',
+      item.rank ?? '',
       item.discordUserId ?? '',
       String(item.totalSeconds),
       secondsToHm(item.totalSeconds),
+      String(item.payableSeconds),
       String(item.normalSeconds),
       String(item.manualAdjustmentSeconds),
       String(item.positiveAdjustmentSeconds),
       String(item.negativeAdjustmentSeconds),
-      String(item.manualAdjustmentsCount)
+      String(item.manualAdjustmentsCount),
+      String(item.baseSalary),
+      String(item.topBonus),
+      String(item.salaryTotal)
     ])
   ];
 

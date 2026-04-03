@@ -53,6 +53,7 @@ export type TimesheetSummaryResponse = {
     key: string;
     employeeId: number | null;
     employeeCode: string | null;
+    rank: string | null;
     displayName: string;
     discordUserId: string | null;
     totalSeconds: number;
@@ -62,6 +63,10 @@ export type TimesheetSummaryResponse = {
     negativeAdjustmentSeconds: number;
     manualAdjustmentsCount: number;
     eventsCount: number;
+    payableSeconds: number;
+    baseSalary: number;
+    topBonus: number;
+    salaryTotal: number;
     totalLabel: string;
     normalLabel: string;
     manualLabel: string;

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { apiBaseUrl, apiGet } from '../api/client';
 import { TimeEventHistoryResponse, TimesheetSummaryResponse, WeekCycle } from '../types';
-import { formatDateTime, formatMinutes } from '../utils/format';
+import { formatCurrency, formatDateTime, formatMinutes } from '../utils/format';
 
 export const TimesheetPage = () => {
   const [cycles, setCycles] = useState<WeekCycle[]>([]);
@@ -79,6 +79,7 @@ export const TimesheetPage = () => {
               <th>+ Ajustari (min)</th>
               <th>- Ajustari (min)</th>
               <th>Nr ajustari</th>
+              <th>Salariu</th>
               <th>Istoric</th>
             </tr>
           </thead>
@@ -93,6 +94,9 @@ export const TimesheetPage = () => {
                 <td>{formatMinutes(row.positiveAdjustmentSeconds)}</td>
                 <td>{formatMinutes(Math.abs(row.negativeAdjustmentSeconds))}</td>
                 <td>{row.manualAdjustmentsCount}</td>
+                <td title={`Baza: ${formatCurrency(row.baseSalary)} | Bonus top: ${formatCurrency(row.topBonus)}`}>
+                  {formatCurrency(row.salaryTotal)}
+                </td>
                 <td>
                   <button
                     className="btn-history"
@@ -106,7 +110,7 @@ export const TimesheetPage = () => {
             ))}
             {!summary?.totals.length ? (
               <tr>
-                <td colSpan={9}>Nu exista pontaje in ciclul selectat.</td>
+                <td colSpan={10}>Nu exista pontaje in ciclul selectat.</td>
               </tr>
             ) : null}
           </tbody>
