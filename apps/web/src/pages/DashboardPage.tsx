@@ -1,16 +1,66 @@
 import { useEffect, useState } from 'react';
-import { apiGet } from '../api/client';
-import { DashboardResponse } from '../types';
+import { apiGet, apiPost } from '../api/client';
+import { DashboardResponse, DeleteOldResponse, SyncNewResponse } from '../types';
 
 export const DashboardPage = () => {
   const [data, setData] = useState<DashboardResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [maintenanceMessage, setMaintenanceMessage] = useState<string | null>(null);
+  const [maintenanceBusy, setMaintenanceBusy] = useState(false);
 
-  useEffect(() => {
+  const loadDashboard = async () => {
+    setError(null);
+    setData(null);
     void apiGet<DashboardResponse>('/dashboard')
       .then(setData)
       .catch((loadError) => setError(loadError instanceof Error ? loadError.message : 'Eroare dashboard'));
+  };
+
+  useEffect(() => {
+    void loadDashboard();
   }, []);
+
+  const deleteOldData = async () => {
+    const confirmed = window.confirm(
+      'Sigur vrei sa stergi datele mai vechi de 90 zile? Actiunea va elimina CV-uri si pontaje vechi.'
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setMaintenanceBusy(true);
+    setMaintenanceMessage(null);
+
+    try {
+      const result = await apiPost<DeleteOldResponse>('/maintenance/delete-old', { olderThanDays: 90 });
+      setMaintenanceMessage(
+        `Sterse: ${result.deleted.employees} angajati, ${result.deleted.timeEvents} evenimente, ${result.deleted.weekCycles} cicluri.`
+      );
+      await loadDashboard();
+    } catch (actionError) {
+      setMaintenanceMessage(actionError instanceof Error ? actionError.message : 'Nu am putut sterge datele vechi.');
+    } finally {
+      setMaintenanceBusy(false);
+    }
+  };
+
+  const syncNewResults = async () => {
+    setMaintenanceBusy(true);
+    setMaintenanceMessage(null);
+
+    try {
+      const result = await apiPost<SyncNewResponse>('/maintenance/sync-new', { latestLimitPerChannel: 100 });
+      setMaintenanceMessage(
+        `Rescan finalizat. CV procesate: ${result.processed.cvProcessed}, pontaje procesate: ${result.processed.timesheetProcessed}.`
+      );
+      await loadDashboard();
+    } catch (actionError) {
+      setMaintenanceMessage(actionError instanceof Error ? actionError.message : 'Nu am putut cauta rezultate noi.');
+    } finally {
+      setMaintenanceBusy(false);
+    }
+  };
 
   return (
     <section>
@@ -33,6 +83,19 @@ export const DashboardPage = () => {
           <span>ID ciclu curent</span>
           <strong>{data?.currentCycleId ?? '-'}</strong>
         </article>
+      </div>
+
+      <div className="card">
+        <h3>Actiuni rapide</h3>
+        <div className="filters">
+          <button type="button" onClick={() => void deleteOldData()} disabled={maintenanceBusy}>
+            Sterge date vechi
+          </button>
+          <button type="button" onClick={() => void syncNewResults()} disabled={maintenanceBusy}>
+            Cauta rezultate noi
+          </button>
+        </div>
+        {maintenanceMessage ? <p>{maintenanceMessage}</p> : null}
       </div>
 
       <div className="card">

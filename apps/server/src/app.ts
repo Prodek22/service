@@ -7,6 +7,7 @@ import { authRouter } from './routes/authRoutes';
 import { dashboardRouter } from './routes/dashboardRoutes';
 import { employeesRouter } from './routes/employeesRoutes';
 import { healthRouter } from './routes/healthRoutes';
+import { maintenanceRouter } from './routes/maintenanceRoutes';
 import { timesheetRouter } from './routes/timesheetRoutes';
 
 export const createApp = () => {
@@ -27,6 +28,7 @@ export const createApp = () => {
   app.use('/api/dashboard', dashboardRouter);
   app.use('/api/employees', employeesRouter);
   app.use('/api/timesheet', timesheetRouter);
+  app.use('/api/maintenance', maintenanceRouter);
 
   app.use((_req, res) => {
     res.status(404).json({ error: 'Not found' });

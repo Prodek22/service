@@ -92,3 +92,22 @@ export type AuthMeResponse = {
   authenticated: boolean;
   username?: string;
 };
+
+export type DeleteOldResponse = {
+  ok: boolean;
+  olderThanDays: number;
+  deleted: {
+    timeEvents: number;
+    weekCycles: number;
+    employees: number;
+  };
+};
+
+export type SyncNewResponse = {
+  ok: boolean;
+  latestLimitPerChannel: number;
+  processed: {
+    cvProcessed: number;
+    timesheetProcessed: number;
+  };
+};

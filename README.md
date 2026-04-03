@@ -197,6 +197,11 @@ Pontaj:
 - `GET /api/timesheet/employee/:employeeId/history?cycleId=4`
 - `GET /api/timesheet/export.csv?cycleId=4`
 
+Maintenance (necesita login):
+
+- `POST /api/maintenance/delete-old` (body: `{ "olderThanDays": 90 }`)
+- `POST /api/maintenance/sync-new` (body: `{ "latestLimitPerChannel": 100 }`)
+
 ## Cum functioneaza parsarea CV
 
 - normalizare text (`lowercase`, eliminare diacritice la comparatii, whitespace curat)
