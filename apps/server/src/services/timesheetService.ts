@@ -80,15 +80,34 @@ const handleResetCycle = async (serviceCode: string, at: Date, messageId: string
 export const processTimesheetMessage = async (message: MessageInput) => {
   const parsed = parseTimesheetMessage(message.content);
   const serviceCode = parsed.serviceCode ?? 'service';
+  const existingEvent = await prisma.timeEvent.findUnique({
+    where: {
+      discordMessageId: message.id
+    },
+    select: {
+      weekCycleId: true,
+      eventType: true,
+      serviceCode: true
+    }
+  });
 
   let weekCycleId: number | null = null;
 
   if (parsed.eventType === 'WEEKLY_RESET') {
-    const resetCycle = await handleResetCycle(serviceCode, message.createdAt, message.id);
-    weekCycleId = resetCycle.id;
+    // Idempotency: if this reset message already exists, do not create a new cycle again.
+    if (existingEvent?.eventType === TimeEventType.WEEKLY_RESET && existingEvent.weekCycleId) {
+      weekCycleId = existingEvent.weekCycleId;
+    } else {
+      const resetCycle = await handleResetCycle(serviceCode, message.createdAt, message.id);
+      weekCycleId = resetCycle.id;
+    }
   } else if (serviceCode) {
-    const currentCycle = await ensureCurrentCycle(serviceCode, message.createdAt);
-    weekCycleId = currentCycle.id;
+    if (existingEvent?.weekCycleId && existingEvent.serviceCode === serviceCode) {
+      weekCycleId = existingEvent.weekCycleId;
+    } else {
+      const currentCycle = await ensureCurrentCycle(serviceCode, message.createdAt);
+      weekCycleId = currentCycle.id;
+    }
   }
 
   const employee = await findEmployeeBestMatch({
@@ -148,8 +167,8 @@ export const markTimesheetMessageDeleted = async (messageId: string): Promise<vo
   });
 };
 
-export const getWeekCycles = async (serviceCode?: string) =>
-  prisma.weekCycle.findMany({
+export const getWeekCycles = async (serviceCode?: string) => {
+  const cycles = await prisma.weekCycle.findMany({
     where: {
       ...(serviceCode ? { serviceCode } : {}),
       OR: [
@@ -168,10 +187,12 @@ export const getWeekCycles = async (serviceCode?: string) =>
         }
       ]
     },
-    orderBy: {
-      startedAt: 'desc'
-    }
+    orderBy: [{ startedAt: 'desc' }, { id: 'desc' }]
   });
+
+  // Defensive cleanup in read path: hide malformed zero-length closed cycles.
+  return cycles.filter((cycle) => !cycle.endedAt || cycle.endedAt.getTime() > cycle.startedAt.getTime());
+};
 
 export const getCycleTotals = async (cycleId: number) => {
   const events = await prisma.timeEvent.findMany({

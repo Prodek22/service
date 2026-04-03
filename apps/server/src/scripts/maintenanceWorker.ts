@@ -24,6 +24,22 @@ const getInput = (): WorkerInput => {
   return JSON.parse(raw) as WorkerInput;
 };
 
+const pruneGhostWeekCycles = async (): Promise<number> => {
+  const deleted = await prisma.$executeRawUnsafe(`
+    DELETE wc
+    FROM week_cycles wc
+    LEFT JOIN time_events te
+      ON te.week_cycle_id = wc.id
+      AND te.is_deleted = 0
+      AND te.event_type IN ('CLOCK_IN', 'CLOCK_OUT', 'MANUAL_ADJUSTMENT')
+    WHERE wc.ended_at IS NOT NULL
+      AND wc.ended_at <= wc.started_at
+      AND te.id IS NULL
+  `);
+
+  return Number(deleted) || 0;
+};
+
 const runIncrementalEmployeeSync = async (lookbackDaysInput?: number) => {
   const lookbackDays = Math.max(1, Math.min(lookbackDaysInput ?? 14, 60));
 
@@ -157,6 +173,7 @@ const runIncrementalEmployeeSync = async (lookbackDaysInput?: number) => {
       sinceDate,
       channels: ['cv']
     });
+    const deletedGhostCycles = await pruneGhostWeekCycles();
 
     return {
       mode: 'incremental-employees',
@@ -165,6 +182,7 @@ const runIncrementalEmployeeSync = async (lookbackDaysInput?: number) => {
       rosterCount: roster.length,
       deletedTimeEvents,
       deletedEmployees,
+      deletedGhostCycles,
       updatedProfiles,
       processed: backfillResult
     };
@@ -193,12 +211,14 @@ const run = async () => {
       mode: 'latest',
       latestLimitPerChannel
     });
+    const deletedGhostCycles = await pruneGhostWeekCycles();
 
     process.send?.({
       type: 'job-success',
       payload: {
         mode: 'latest',
         latestLimitPerChannel,
+        deletedGhostCycles,
         processed: result
       }
     });
@@ -215,12 +235,14 @@ const run = async () => {
       sinceDate,
       channels: ['timesheet']
     });
+    const deletedGhostCycles = await pruneGhostWeekCycles();
 
     process.send?.({
       type: 'job-success',
       payload: {
         mode: 'since',
         days,
+        deletedGhostCycles,
         processed: result
       }
     });
@@ -238,12 +260,14 @@ const run = async () => {
     await prisma.$executeRawUnsafe('SET FOREIGN_KEY_CHECKS = 1');
 
     const result = await runBackfill({ mode: 'all' });
+    const deletedGhostCycles = await pruneGhostWeekCycles();
 
     process.send?.({
       type: 'job-success',
       payload: {
         mode: 'all',
         deleted: 'all-operational-data',
+        deletedGhostCycles,
         processed: result
       }
     });
