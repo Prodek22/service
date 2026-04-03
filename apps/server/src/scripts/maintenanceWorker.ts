@@ -233,7 +233,25 @@ const run = async () => {
 
   if (input.type === 'sync-timesheet-window') {
     const days = Math.max(1, Math.min(input.payload?.days ?? 14, 90));
-    const sinceDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+    const fallbackSinceDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+    const latestStored = await prisma.timeEvent.findFirst({
+      where: {
+        channelId: env.TIMESHEET_CHANNEL_ID
+      },
+      orderBy: {
+        eventAt: 'desc'
+      },
+      select: {
+        eventAt: true
+      }
+    });
+
+    // Incremental sync from the newest stored point, with overlap buffer to avoid misses.
+    const incrementalSinceDate = latestStored?.eventAt
+      ? new Date(latestStored.eventAt.getTime() - 6 * 60 * 60 * 1000)
+      : fallbackSinceDate;
+    const sinceDate =
+      incrementalSinceDate.getTime() > fallbackSinceDate.getTime() ? incrementalSinceDate : fallbackSinceDate;
 
     const result = await runBackfill({
       mode: 'since',
@@ -247,6 +265,7 @@ const run = async () => {
       payload: {
         mode: 'since',
         days,
+        sinceDate: sinceDate.toISOString(),
         deletedGhostCycles,
         processed: result
       }
