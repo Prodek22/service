@@ -1,7 +1,7 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { apiGet, apiPatch } from '../api/client';
 import { Employee, EmployeeCvRawEntry, EmployeesResponse } from '../types';
-import { formatDateTime } from '../utils/format';
+import { formatDate, formatDateTime } from '../utils/format';
 
 type EmployeeEdit = Partial<Pick<Employee, 'iban' | 'monthsInCity' | 'nickname' | 'fullName' | 'phone' | 'rank' | 'idImageUrl'>> & {
   status?: Employee['status'];
@@ -194,7 +194,7 @@ export const EmployeesPage = () => {
                 <td>{employee.fullName ?? '-'}</td>
                 <td>{employee.phone ?? '-'}</td>
                 <td>{employee.rank ?? '-'}</td>
-                <td>{formatDateTime(employee.cvPostedAt)}</td>
+                <td>{formatDate(employee.cvPostedAt)}</td>
                 <td>
                   {employee.idImageUrl ? (
                     <a href={employee.idImageUrl} target="_blank" rel="noreferrer">

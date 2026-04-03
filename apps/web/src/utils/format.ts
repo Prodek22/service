@@ -6,6 +6,14 @@ export const formatDateTime = (iso: string | null): string => {
   return new Date(iso).toLocaleString();
 };
 
+export const formatDate = (iso: string | null): string => {
+  if (!iso) {
+    return '-';
+  }
+
+  return new Date(iso).toLocaleDateString();
+};
+
 export const formatHm = (seconds: number): string => {
   const abs = Math.abs(seconds);
   const hours = Math.floor(abs / 3600);

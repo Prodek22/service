@@ -44,6 +44,11 @@ const rankSortValue = (rank?: string | null): number => {
   return 0;
 };
 
+const getEntrySortTimestamp = (employee: {
+  cvPostedAt: Date | null;
+  createdAt: Date;
+}): number => (employee.cvPostedAt ?? employee.createdAt).getTime();
+
 employeesRouter.get('/', async (req, res) => {
   const page = Number.parseInt(String(req.query.page ?? '1'), 10);
   const pageSize = Number.parseInt(String(req.query.pageSize ?? '20'), 10);
@@ -78,17 +83,18 @@ employeesRouter.get('/', async (req, res) => {
   const limit = Math.max(pageSize, 1);
 
   const [items, total] =
-    sortByInput === 'rank'
+    sortByInput === 'rank' || sortByInput === 'created_at'
       ? await (async () => {
           const allItems = await prisma.employee.findMany({ where });
           const sorted = [...allItems].sort((a, b) => {
-            const delta = rankSortValue(a.rank) - rankSortValue(b.rank);
-
-            if (delta !== 0) {
-              return sortDir === 'asc' ? delta : -delta;
+            if (sortByInput === 'rank') {
+              const delta = rankSortValue(a.rank) - rankSortValue(b.rank);
+              if (delta !== 0) {
+                return sortDir === 'asc' ? delta : -delta;
+              }
             }
 
-            const fallback = a.createdAt.getTime() - b.createdAt.getTime();
+            const fallback = getEntrySortTimestamp(a) - getEntrySortTimestamp(b);
             return sortDir === 'asc' ? fallback : -fallback;
           });
 
