@@ -73,6 +73,7 @@ export const TimesheetPage = () => {
             <tr>
               <th>ID</th>
               <th>Nickname</th>
+              <th>Rank</th>
               <th>Total timp (min)</th>
               <th>Timp normal (min)</th>
               <th>Ajustari manuale (min)</th>
@@ -88,6 +89,7 @@ export const TimesheetPage = () => {
               <tr key={row.key}>
                 <td>{row.employeeCode ?? '-'}</td>
                 <td>{row.displayName}</td>
+                <td>{row.rank ?? '-'}</td>
                 <td>{formatMinutes(row.totalSeconds)}</td>
                 <td>{formatMinutes(row.normalSeconds)}</td>
                 <td>{formatMinutes(row.manualAdjustmentSeconds)}</td>
@@ -110,7 +112,7 @@ export const TimesheetPage = () => {
             ))}
             {!summary?.totals.length ? (
               <tr>
-                <td colSpan={10}>Nu exista pontaje in ciclul selectat.</td>
+                <td colSpan={11}>Nu exista pontaje in ciclul selectat.</td>
               </tr>
             ) : null}
           </tbody>
