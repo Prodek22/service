@@ -313,6 +313,54 @@ th {
   color: var(--muted);
 }
 
+.timesheet-table-wrap {
+  padding: 12px;
+  background: linear-gradient(160deg, #ede3d8 0%, #e5d4c3 100%);
+}
+
+.timesheet-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 10px 24px rgba(29, 24, 18, 0.16);
+}
+
+.timesheet-table thead th {
+  background: linear-gradient(180deg, #2f2c4d 0%, #24213f 100%);
+  color: #f3f5ff;
+  border-bottom: none;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0.02em;
+}
+
+.timesheet-table tbody tr:nth-child(odd) {
+  background: #f4f6fb;
+}
+
+.timesheet-table tbody tr:nth-child(even) {
+  background: #e9edf4;
+}
+
+.timesheet-table tbody tr:hover {
+  background: #dde4f1;
+}
+
+.timesheet-table td {
+  border-bottom: 1px solid #d2dae8;
+  color: #253041;
+}
+
+.timesheet-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.timesheet-table .btn-history {
+  box-shadow: none;
+}
+
 .badge {
   display: inline-block;
   padding: 3px 7px;

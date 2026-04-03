@@ -132,8 +132,8 @@ export const TimesheetPage = ({ readOnly = false }: TimesheetPageProps) => {
         <a href={exportLink}>Export CSV</a>
       </div>
 
-      <div className="card table-wrapper">
-        <table>
+      <div className="card table-wrapper timesheet-table-wrap">
+        <table className="timesheet-table">
           <thead>
             <tr>
               <th>ID</th>
