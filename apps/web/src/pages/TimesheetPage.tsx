@@ -71,7 +71,8 @@ export const TimesheetPage = () => {
         <table>
           <thead>
             <tr>
-              <th>Angajat</th>
+              <th>ID</th>
+              <th>Nickname</th>
               <th>Total timp (min)</th>
               <th>Timp normal (min)</th>
               <th>Ajustari manuale (min)</th>
@@ -84,6 +85,7 @@ export const TimesheetPage = () => {
           <tbody>
             {summary?.totals.map((row) => (
               <tr key={row.key}>
+                <td>{row.employeeCode ?? '-'}</td>
                 <td>{row.displayName}</td>
                 <td>{formatMinutes(row.totalSeconds)}</td>
                 <td>{formatMinutes(row.normalSeconds)}</td>
@@ -104,7 +106,7 @@ export const TimesheetPage = () => {
             ))}
             {!summary?.totals.length ? (
               <tr>
-                <td colSpan={8}>Nu exista pontaje in ciclul selectat.</td>
+                <td colSpan={9}>Nu exista pontaje in ciclul selectat.</td>
               </tr>
             ) : null}
           </tbody>

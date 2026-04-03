@@ -52,6 +52,7 @@ export type TimesheetSummaryResponse = {
   totals: Array<{
     key: string;
     employeeId: number | null;
+    employeeCode: string | null;
     displayName: string;
     discordUserId: string | null;
     totalSeconds: number;

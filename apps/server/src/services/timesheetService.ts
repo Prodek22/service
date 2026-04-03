@@ -7,6 +7,7 @@ import { findEmployeeBestMatch } from './employeeMatcher';
 type EmployeeTotal = {
   key: string;
   employeeId: number | null;
+  employeeCode: string | null;
   displayName: string;
   discordUserId: string | null;
   totalSeconds: number;
@@ -224,9 +225,10 @@ export const getCycleTotals = async (cycleId: number) => {
       totals.set(key, {
         key,
         employeeId: event.targetEmployeeId,
+        employeeCode: event.employee?.iban ?? null,
         displayName:
-          event.employee?.fullName ??
           event.employee?.nickname ??
+          event.employee?.fullName ??
           event.targetEmployeeName ??
           event.discordUserId ??
           'Necunoscut',
