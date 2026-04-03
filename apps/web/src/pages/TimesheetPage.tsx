@@ -116,7 +116,8 @@ export const TimesheetPage = () => {
           {cycles.map((cycle) => (
             <option key={cycle.id} value={cycle.id}>
               Ciclu #{cycle.id} - {cycle.serviceCode} ({formatDateTime(cycle.startedAt)} {'->'}{' '}
-              {cycle.endedAt ? formatDateTime(cycle.endedAt) : 'Prezent'})
+              {cycle.endedAt ? formatDateTime(cycle.endedAt) : 'Prezent'}
+              {cycle.endedAt ? '' : ' | Ciclu curent'})
             </option>
           ))}
           {!cycles.length && <option value="">Nu exista cicluri</option>}
@@ -138,7 +139,7 @@ export const TimesheetPage = () => {
               <th>- Ajustari (min)</th>
               <th>Nr ajustari</th>
               <th>Salariu</th>
-              <th>Plătit</th>
+              <th>Platit</th>
               <th>Istoric</th>
             </tr>
           </thead>

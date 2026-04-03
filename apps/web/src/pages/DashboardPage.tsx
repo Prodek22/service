@@ -99,8 +99,12 @@ export const DashboardPage = () => {
     );
   };
 
-  const syncLastTwoWeeksTimesheets = async () => {
-    await startBackgroundJob('/maintenance/sync-timesheet-window', { days: 14 }, 'Sync pontaje 14 zile pornit.');
+  const syncCurrentWeekTimesheets = async () => {
+    await startBackgroundJob(
+      '/maintenance/sync-timesheet-window',
+      { days: 14 },
+      'Sync pontaje saptamana in curs pornit.'
+    );
   };
 
   const rebuildAllData = async () => {
@@ -155,10 +159,10 @@ export const DashboardPage = () => {
           <button
             type="button"
             className="btn-danger-action"
-            onClick={() => void syncLastTwoWeeksTimesheets()}
+            onClick={() => void syncCurrentWeekTimesheets()}
             disabled={maintenanceBusy}
           >
-            <span>Sincronizeaza pontaje 14 zile</span>
+            <span>Sincronizeaza pontaj saptamana in curs</span>
             <span className="warning-triangle" aria-hidden="true">
               <span>!</span>
             </span>
