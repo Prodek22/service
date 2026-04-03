@@ -14,11 +14,23 @@ type BackfillOptions = {
   latestLimitPerChannel?: number;
   channels?: BackfillChannel[];
   sinceDate?: Date;
+  onProgress?: (progress: BackfillProgress) => void | Promise<void>;
 };
 
 export type BackfillResult = {
   cvProcessed: number;
   timesheetProcessed: number;
+};
+
+export type BackfillProgress = {
+  channel: BackfillChannel;
+  mode: BackfillMode;
+  scanned: number;
+  accepted: number;
+  batches: number;
+  batchScanned: number;
+  batchAccepted: number;
+  sinceDate: string | null;
 };
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -133,10 +145,13 @@ const processBatch = async (
 
 const backfillAll = async (
   channel: TextChannel,
-  handler: (message: Message) => Promise<boolean>
+  handler: (message: Message) => Promise<boolean>,
+  onBatch?: (batchScanned: number, batchAccepted: number, scanned: number, accepted: number, batches: number) => void | Promise<void>
 ): Promise<number> => {
   let before: string | undefined;
   let processed = 0;
+  let scanned = 0;
+  let batches = 0;
 
   while (true) {
     const batch = await channel.messages.fetch({
@@ -149,7 +164,12 @@ const backfillAll = async (
     }
 
     const messages = [...batch.values()].sort((a, b) => a.createdTimestamp - b.createdTimestamp);
-    processed += await processBatch(messages, handler);
+    const batchAccepted = await processBatch(messages, handler);
+    const batchScanned = messages.length;
+    processed += batchAccepted;
+    scanned += batchScanned;
+    batches += 1;
+    await onBatch?.(batchScanned, batchAccepted, scanned, processed, batches);
 
     before = messages[0]?.id;
     await sleep(300);
@@ -161,24 +181,30 @@ const backfillAll = async (
 const backfillLatest = async (
   channel: TextChannel,
   handler: (message: Message) => Promise<boolean>,
-  limit: number
+  limit: number,
+  onBatch?: (batchScanned: number, batchAccepted: number, scanned: number, accepted: number, batches: number) => void | Promise<void>
 ): Promise<number> => {
   const batch = await channel.messages.fetch({
     limit: Math.max(1, Math.min(limit, 100))
   });
 
   const messages = [...batch.values()].sort((a, b) => a.createdTimestamp - b.createdTimestamp);
-  return processBatch(messages, handler);
+  const accepted = await processBatch(messages, handler);
+  await onBatch?.(messages.length, accepted, messages.length, accepted, messages.length ? 1 : 0);
+  return accepted;
 };
 
 const backfillSince = async (
   channel: TextChannel,
   handler: (message: Message) => Promise<boolean>,
-  sinceDate: Date
+  sinceDate: Date,
+  onBatch?: (batchScanned: number, batchAccepted: number, scanned: number, accepted: number, batches: number) => void | Promise<void>
 ): Promise<number> => {
   const sinceTs = sinceDate.getTime();
   let before: string | undefined;
   let processed = 0;
+  let scanned = 0;
+  let batches = 0;
 
   while (true) {
     const batch = await channel.messages.fetch({
@@ -192,7 +218,12 @@ const backfillSince = async (
 
     const messages = [...batch.values()].sort((a, b) => a.createdTimestamp - b.createdTimestamp);
     const eligible = messages.filter((message) => message.createdTimestamp >= sinceTs);
-    processed += await processBatch(eligible, handler);
+    const batchAccepted = await processBatch(eligible, handler);
+    const batchScanned = eligible.length;
+    processed += batchAccepted;
+    scanned += batchScanned;
+    batches += 1;
+    await onBatch?.(batchScanned, batchAccepted, scanned, processed, batches);
 
     const oldest = messages[0];
     if (!oldest || oldest.createdTimestamp < sinceTs) {
@@ -240,26 +271,65 @@ export const runBackfill = async (options: BackfillOptions): Promise<BackfillRes
     const latestLimit = options.latestLimitPerChannel ?? 100;
     const channels = options.channels;
     const sinceDate = options.sinceDate;
+    const onProgress = options.onProgress;
 
     let cvProcessed = 0;
     if (includesChannel(channels, 'cv')) {
+      const reportCvProgress = async (
+        batchScanned: number,
+        batchAccepted: number,
+        scanned: number,
+        accepted: number,
+        batches: number
+      ) => {
+        await onProgress?.({
+          channel: 'cv',
+          mode: options.mode,
+          scanned,
+          accepted,
+          batches,
+          batchScanned,
+          batchAccepted,
+          sinceDate: sinceDate ? sinceDate.toISOString() : null
+        });
+      };
+
       if (options.mode === 'all') {
-        cvProcessed = await backfillAll(cvRaw, cvHandler);
+        cvProcessed = await backfillAll(cvRaw, cvHandler, reportCvProgress);
       } else if (options.mode === 'since' && sinceDate) {
-        cvProcessed = await backfillSince(cvRaw, cvHandler, sinceDate);
+        cvProcessed = await backfillSince(cvRaw, cvHandler, sinceDate, reportCvProgress);
       } else {
-        cvProcessed = await backfillLatest(cvRaw, cvHandler, latestLimit);
+        cvProcessed = await backfillLatest(cvRaw, cvHandler, latestLimit, reportCvProgress);
       }
     }
 
     let timesheetProcessed = 0;
     if (includesChannel(channels, 'timesheet')) {
+      const reportTimesheetProgress = async (
+        batchScanned: number,
+        batchAccepted: number,
+        scanned: number,
+        accepted: number,
+        batches: number
+      ) => {
+        await onProgress?.({
+          channel: 'timesheet',
+          mode: options.mode,
+          scanned,
+          accepted,
+          batches,
+          batchScanned,
+          batchAccepted,
+          sinceDate: sinceDate ? sinceDate.toISOString() : null
+        });
+      };
+
       if (options.mode === 'all') {
-        timesheetProcessed = await backfillAll(timesheetRaw, timesheetHandler);
+        timesheetProcessed = await backfillAll(timesheetRaw, timesheetHandler, reportTimesheetProgress);
       } else if (options.mode === 'since' && sinceDate) {
-        timesheetProcessed = await backfillSince(timesheetRaw, timesheetHandler, sinceDate);
+        timesheetProcessed = await backfillSince(timesheetRaw, timesheetHandler, sinceDate, reportTimesheetProgress);
       } else {
-        timesheetProcessed = await backfillLatest(timesheetRaw, timesheetHandler, latestLimit);
+        timesheetProcessed = await backfillLatest(timesheetRaw, timesheetHandler, latestLimit, reportTimesheetProgress);
       }
     }
 

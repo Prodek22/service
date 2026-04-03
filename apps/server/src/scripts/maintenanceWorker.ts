@@ -2,7 +2,7 @@ import { TimeEventType } from '@prisma/client';
 import { Client, GatewayIntentBits, Partials } from 'discord.js';
 import { env } from '../config/env';
 import { prisma } from '../db/prisma';
-import { runBackfill } from '../services/backfillRunner';
+import { BackfillProgress, runBackfill } from '../services/backfillRunner';
 import { createGuildMemberFilter } from '../services/guildMemberFilter';
 
 type WorkerInput = {
@@ -22,6 +22,27 @@ const getInput = (): WorkerInput => {
   }
 
   return JSON.parse(raw) as WorkerInput;
+};
+
+const toPercent = (value: number): number => Math.max(0, Math.min(100, Math.round(value)));
+
+const sendProgress = (percent: number, message: string, extra: Record<string, unknown> = {}) => {
+  process.send?.({
+    type: 'job-progress',
+    payload: {
+      percent: toPercent(percent),
+      message,
+      ...extra
+    }
+  });
+};
+
+const emitBackfillProgress = (progress: BackfillProgress, rangeStart: number, rangeEnd: number) => {
+  const batchFactor = Math.min(progress.batches, 30) / 30;
+  const percent = rangeStart + (rangeEnd - rangeStart) * batchFactor;
+  const channelLabel = progress.channel === 'cv' ? 'CV' : 'pontaje';
+
+  sendProgress(percent, `Backfill ${channelLabel}: ${progress.accepted} acceptate din ${progress.scanned} mesaje.`);
 };
 
 const pruneGhostWeekCycles = async (): Promise<number> => {
@@ -108,9 +129,11 @@ const runIncrementalEmployeeSync = async (lookbackDaysInput?: number) => {
   });
 
   try {
+    sendProgress(5, 'Conectare Discord pentru sync incremental angajati...');
     await client.login(env.DISCORD_TOKEN);
     const memberFilter = await createGuildMemberFilter(client);
     const roster = await memberFilter.listEmployeeMembers();
+    sendProgress(20, `Lista angajati preluata (${roster.length} membri cu rol Angajat).`);
     const rosterIds = new Set(roster.map((member) => member.userId));
 
     const staleUsers = await prisma.employee.findMany({
@@ -232,11 +255,15 @@ const runIncrementalEmployeeSync = async (lookbackDaysInput?: number) => {
       ? new Date(latestCv.cvPostedAt.getTime() - 6 * 60 * 60 * 1000)
       : new Date(Date.now() - lookbackDays * 24 * 60 * 60 * 1000);
 
+    sendProgress(55, `Reimport CV incremental din ${sinceDate.toLocaleString('ro-RO')}...`);
+
     const backfillResult = await runBackfill({
       mode: 'since',
       sinceDate,
-      channels: ['cv']
+      channels: ['cv'],
+      onProgress: (progress) => emitBackfillProgress(progress, 55, 88)
     });
+    sendProgress(92, 'Normalizare date dupa sync incremental...');
     const deletedGhostCycles = await pruneGhostWeekCycles();
 
     return {
@@ -259,6 +286,7 @@ const run = async () => {
   const input = getInput();
 
   if (input.type === 'sync-employees-incremental') {
+    sendProgress(2, 'Pornire sync incremental angajati...');
     const result = await runIncrementalEmployeeSync(input.payload?.lookbackDays);
 
     process.send?.({
@@ -270,11 +298,14 @@ const run = async () => {
   }
 
   if (input.type === 'sync-new') {
+    sendProgress(2, 'Pornire sync mesaje noi...');
     const latestLimitPerChannel = Math.max(1, Math.min(input.payload?.latestLimitPerChannel ?? 100, 100));
     const result = await runBackfill({
       mode: 'latest',
-      latestLimitPerChannel
+      latestLimitPerChannel,
+      onProgress: (progress) => emitBackfillProgress(progress, 20, 80)
     });
+    sendProgress(86, 'Normalizare cicluri si reasignare pontaje...');
     const normalizedWeekCycleBoundaries = await normalizeWeekCycleBoundaries();
     const deletedGhostCycles = await pruneGhostWeekCycles();
     const reassignedCycleEvents = await normalizeTimesheetCycleAssignments();
@@ -295,6 +326,7 @@ const run = async () => {
   }
 
   if (input.type === 'sync-timesheet-window') {
+    sendProgress(2, 'Pornire sync pontaje saptamana in curs...');
     const days = Math.max(1, Math.min(input.payload?.days ?? 14, 90));
     const fallbackSinceDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
     const latestStored = await prisma.timeEvent.findFirst({
@@ -337,8 +369,10 @@ const run = async () => {
     const result = await runBackfill({
       mode: 'since',
       sinceDate,
-      channels: ['timesheet']
+      channels: ['timesheet'],
+      onProgress: (progress) => emitBackfillProgress(progress, 22, 82)
     });
+    sendProgress(88, 'Normalizare cicluri si reasignare pontaje...');
     const normalizedWeekCycleBoundaries = await normalizeWeekCycleBoundaries();
     const deletedGhostCycles = await pruneGhostWeekCycles();
     const reassignedCycleEvents = await normalizeTimesheetCycleAssignments();
@@ -360,6 +394,8 @@ const run = async () => {
   }
 
   if (input.type === 'rebuild-all') {
+    sendProgress(2, 'Pornire reset complet...');
+    sendProgress(8, 'Stergere date operationale existente...');
     await prisma.$transaction([
       prisma.timeEvent.deleteMany({}),
       prisma.timesheetPayrollStatus.deleteMany({}),
@@ -369,10 +405,24 @@ const run = async () => {
       prisma.employee.deleteMany({})
     ]);
 
-    const result = await runBackfill({ mode: 'all' });
+    sendProgress(15, 'Date sterse. Incepe reimportul complet...');
+
+    const result = await runBackfill({
+      mode: 'all',
+      onProgress: (progress) => {
+        if (progress.channel === 'cv') {
+          emitBackfillProgress(progress, 20, 55);
+          return;
+        }
+
+        emitBackfillProgress(progress, 55, 85);
+      }
+    });
+    sendProgress(90, 'Reimport finalizat. Se normalizeaza ciclurile...');
     const normalizedWeekCycleBoundaries = await normalizeWeekCycleBoundaries();
     const deletedGhostCycles = await pruneGhostWeekCycles();
     const reassignedCycleEvents = await normalizeTimesheetCycleAssignments();
+    sendProgress(97, 'Ultime verificari inainte de finalizare...');
 
     process.send?.({
       type: 'job-success',

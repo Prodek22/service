@@ -16,6 +16,8 @@ export type MaintenanceJobStatus = {
   id: string | null;
   type: MaintenanceJobType | null;
   state: MaintenanceJobState;
+  progressPercent: number | null;
+  progressMessage: string | null;
   startedAt: string | null;
   finishedAt: string | null;
   result: Record<string, unknown> | null;
@@ -26,6 +28,8 @@ const status: MaintenanceJobStatus = {
   id: null,
   type: null,
   state: 'idle',
+  progressPercent: null,
+  progressMessage: null,
   startedAt: null,
   finishedAt: null,
   result: null,
@@ -54,6 +58,8 @@ export const startMaintenanceJob = (type: MaintenanceJobType, payload: Maintenan
   status.id = jobId;
   status.type = type;
   status.state = 'running';
+  status.progressPercent = 0;
+  status.progressMessage = 'Job pornit...';
   status.startedAt = new Date().toISOString();
   status.finishedAt = null;
   status.result = null;
@@ -76,8 +82,17 @@ export const startMaintenanceJob = (type: MaintenanceJobType, payload: Maintenan
 
     const data = message as { type?: string; payload?: Record<string, unknown> };
 
+    if (data.type === 'job-progress') {
+      const percentRaw = Number(data.payload?.percent ?? status.progressPercent ?? 0);
+      status.progressPercent = Number.isFinite(percentRaw) ? Math.max(0, Math.min(100, Math.round(percentRaw))) : 0;
+      status.progressMessage = String(data.payload?.message ?? status.progressMessage ?? 'Job in desfasurare...');
+      return;
+    }
+
     if (data.type === 'job-success') {
       status.state = 'success';
+      status.progressPercent = 100;
+      status.progressMessage = 'Job finalizat.';
       status.result = data.payload ?? null;
       status.error = null;
       status.finishedAt = new Date().toISOString();
@@ -85,6 +100,7 @@ export const startMaintenanceJob = (type: MaintenanceJobType, payload: Maintenan
 
     if (data.type === 'job-failed') {
       status.state = 'failed';
+      status.progressMessage = 'Job eșuat.';
       status.result = null;
       status.error = String(data.payload?.error ?? 'Job failed');
       status.finishedAt = new Date().toISOString();

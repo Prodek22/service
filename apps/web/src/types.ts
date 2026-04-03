@@ -149,6 +149,8 @@ export type MaintenanceJobStatus = {
   id: string | null;
   type: 'sync-new' | 'sync-timesheet-window' | 'rebuild-all' | 'sync-employees-incremental' | null;
   state: 'idle' | 'running' | 'success' | 'failed';
+  progressPercent: number | null;
+  progressMessage: string | null;
   startedAt: string | null;
   finishedAt: string | null;
   result: Record<string, unknown> | null;

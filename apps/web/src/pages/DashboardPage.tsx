@@ -175,6 +175,14 @@ export const DashboardPage = () => {
           </button>
         </div>
         {jobStatus?.state === 'running' ? <p>Job in desfasurare: {jobStatus.type} (ID: {jobStatus.id})</p> : null}
+        {jobStatus?.state === 'running' ? (
+          <div>
+            <p>
+              Progres: {jobStatus.progressPercent ?? 0}% {jobStatus.progressMessage ? `- ${jobStatus.progressMessage}` : ''}
+            </p>
+            <progress value={jobStatus.progressPercent ?? 0} max={100} style={{ width: '100%' }} />
+          </div>
+        ) : null}
         {maintenanceMessage ? <p>{maintenanceMessage}</p> : null}
       </div>
 
