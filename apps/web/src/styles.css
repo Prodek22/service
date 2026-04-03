@@ -357,6 +357,15 @@ th {
   border-bottom: none;
 }
 
+.timesheet-table tbody tr.is-paid td {
+  background: #dff3e7 !important;
+  border-bottom-color: #c6e6d4;
+}
+
+.timesheet-table tbody tr.is-paid:hover td {
+  background: #d4ecdE !important;
+}
+
 .timesheet-table .btn-history {
   box-shadow: none;
 }

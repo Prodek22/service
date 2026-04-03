@@ -154,7 +154,7 @@ export const TimesheetPage = ({ readOnly = false }: TimesheetPageProps) => {
           </thead>
           <tbody>
             {summary?.totals.map((row) => (
-              <tr key={row.key}>
+              <tr key={row.key} className={row.payroll.isPaid ? 'is-paid' : undefined}>
                 <td>{row.employeeCode ?? '-'}</td>
                 <td>
                   {readOnly ? (
