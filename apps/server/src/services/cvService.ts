@@ -161,6 +161,7 @@ export const processCvMessage = async (
   options?: {
     rankFromRole?: string | null;
     nicknameFromGuild?: string | null;
+    entryDateFromGuild?: Date | null;
   }
 ) => {
   const parsed = parseCvMessage(message.content, message.attachments);
@@ -216,7 +217,7 @@ export const processCvMessage = async (
     idImageUrl: parsed.idImageUrl ?? imageFromAttachments,
     cvMessageId: message.id,
     cvChannelId: message.channelId,
-    cvPostedAt: message.createdAt,
+    cvPostedAt: options?.entryDateFromGuild ?? message.createdAt,
     deletedAt: null
   };
 

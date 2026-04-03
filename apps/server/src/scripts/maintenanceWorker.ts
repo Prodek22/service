@@ -126,6 +126,7 @@ const runIncrementalEmployeeSync = async (lookbackDaysInput?: number) => {
       const profileUpdate: {
         nickname?: string;
         rank?: string;
+        cvPostedAt?: Date;
       } = {};
 
       if (member.rpNickname) {
@@ -134,6 +135,10 @@ const runIncrementalEmployeeSync = async (lookbackDaysInput?: number) => {
 
       if (member.cvRank) {
         profileUpdate.rank = member.cvRank;
+      }
+
+      if (member.joinedAt) {
+        profileUpdate.cvPostedAt = member.joinedAt;
       }
 
       if (!Object.keys(profileUpdate).length) {

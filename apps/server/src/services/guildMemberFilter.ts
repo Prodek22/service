@@ -8,6 +8,7 @@ type MemberSnapshot = {
   hasEmployeeRole: boolean;
   cvRank: string | null;
   rpNickname: string | null;
+  joinedAt: Date | null;
 };
 
 type NameIndex = {
@@ -89,7 +90,8 @@ export type GuildMemberFilter = {
   hasEmployeeRole: (userId: string) => Promise<boolean>;
   getCvRank: (userId: string) => Promise<string | null>;
   getRpNickname: (userId: string) => Promise<string | null>;
-  listEmployeeMembers: () => Promise<Array<{ userId: string; cvRank: string | null; rpNickname: string | null }>>;
+  getGuildJoinedAt: (userId: string) => Promise<Date | null>;
+  listEmployeeMembers: () => Promise<Array<{ userId: string; cvRank: string | null; rpNickname: string | null; joinedAt: Date | null }>>;
   isKnownMemberName: (name: string) => Promise<boolean>;
 };
 
@@ -138,7 +140,8 @@ export const createGuildMemberFilter = async (client: Client): Promise<GuildMemb
         exists: true,
         hasEmployeeRole: computeHasEmployeeRole(member),
         cvRank: computeCvRank(member),
-        rpNickname: extractRpNickname(member)
+        rpNickname: extractRpNickname(member),
+        joinedAt: member.joinedAt ?? null
       };
 
       memberCache.set(userId, snapshot);
@@ -153,7 +156,8 @@ export const createGuildMemberFilter = async (client: Client): Promise<GuildMemb
         exists: false,
         hasEmployeeRole: false,
         cvRank: null,
-        rpNickname: null
+        rpNickname: null,
+        joinedAt: null
       };
 
       memberCache.set(userId, snapshot);
@@ -183,10 +187,10 @@ export const createGuildMemberFilter = async (client: Client): Promise<GuildMemb
     return nameIndex;
   };
 
-  const listEmployeeMembers = async (): Promise<Array<{ userId: string; cvRank: string | null; rpNickname: string | null }>> => {
+  const listEmployeeMembers = async (): Promise<Array<{ userId: string; cvRank: string | null; rpNickname: string | null; joinedAt: Date | null }>> => {
     const members = await guild.members.fetch();
     const now = Date.now();
-    const employeeMembers: Array<{ userId: string; cvRank: string | null; rpNickname: string | null }> = [];
+    const employeeMembers: Array<{ userId: string; cvRank: string | null; rpNickname: string | null; joinedAt: Date | null }> = [];
 
     for (const member of members.values()) {
       const snapshot: MemberSnapshot = {
@@ -194,7 +198,8 @@ export const createGuildMemberFilter = async (client: Client): Promise<GuildMemb
         exists: true,
         hasEmployeeRole: computeHasEmployeeRole(member),
         cvRank: computeCvRank(member),
-        rpNickname: extractRpNickname(member)
+        rpNickname: extractRpNickname(member),
+        joinedAt: member.joinedAt ?? null
       };
 
       memberCache.set(member.id, snapshot);
@@ -203,7 +208,8 @@ export const createGuildMemberFilter = async (client: Client): Promise<GuildMemb
         employeeMembers.push({
           userId: member.id,
           cvRank: snapshot.cvRank,
-          rpNickname: snapshot.rpNickname
+          rpNickname: snapshot.rpNickname,
+          joinedAt: snapshot.joinedAt
         });
       }
     }
@@ -236,6 +242,14 @@ export const createGuildMemberFilter = async (client: Client): Promise<GuildMemb
       }
 
       return snapshot.rpNickname;
+    },
+    getGuildJoinedAt: async (userId: string) => {
+      const snapshot = await readMember(userId);
+      if (!snapshot.exists) {
+        return null;
+      }
+
+      return snapshot.joinedAt;
     },
     listEmployeeMembers,
     isKnownMemberName: async (name: string) => {

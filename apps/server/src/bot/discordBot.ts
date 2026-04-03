@@ -102,7 +102,8 @@ const processByChannel = async (
 
       const rankFromRole = await memberFilter.getCvRank(message.author.id);
       const nicknameFromGuild = await memberFilter.getRpNickname(message.author.id);
-      await processCvMessage(payload, { rankFromRole, nicknameFromGuild });
+      const entryDateFromGuild = await memberFilter.getGuildJoinedAt(message.author.id);
+      await processCvMessage(payload, { rankFromRole, nicknameFromGuild, entryDateFromGuild });
     }
   }
 
