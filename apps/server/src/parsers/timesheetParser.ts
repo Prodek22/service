@@ -87,10 +87,19 @@ export const parseTimesheetMessage = (rawText: string): ParsedTimeEvent => {
   const firstTextName = textMentions[0]?.name;
   const secondTextName = textMentions[1]?.name;
 
-  const hasClockIn = normalized.includes('pontajul in desfasurare');
-  const hasClockOut = normalized.includes('pontajul incheiat');
-  const hasManualClose = normalized.includes('i a inchis pontajul') || normalized.includes('i s au adaugat');
-  const hasReset = normalized.includes('a resetat toate timpurile');
+  const hasClockIn =
+    /pontaj(?:ul)?/.test(normalized) &&
+    (normalized.includes('in desfasurare') || normalized.includes('inceput') || normalized.includes('pornit'));
+  const hasClockOut =
+    /pontaj(?:ul)?/.test(normalized) &&
+    (normalized.includes('incheiat') || normalized.includes('inchis') || normalized.includes('oprit'));
+  const hasManualClose =
+    normalized.includes('i a inchis pontajul') ||
+    normalized.includes('i s au adaugat') ||
+    normalized.includes('adaugand');
+  const hasReset =
+    normalized.includes('a resetat toate timpurile') ||
+    (/resetat/.test(normalized) && /(toate )?timp(?:urile|urile totale|urile de pontaj)?/.test(normalized));
 
   if (hasReset) {
     return {
@@ -121,7 +130,11 @@ export const parseTimesheetMessage = (rawText: string): ParsedTimeEvent => {
     };
   }
 
-  if (hasManualClose || (typeof deltaSeconds === 'number' && normalized.includes('ajust'))) {
+  if (
+    hasManualClose ||
+    (typeof deltaSeconds === 'number' &&
+      (normalized.includes('ajust') || normalized.includes('adaugand') || normalized.includes('timpului')))
+  ) {
     return {
       eventType: 'MANUAL_ADJUSTMENT',
       actorDiscordUserId: firstDiscordId,

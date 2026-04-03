@@ -13,10 +13,43 @@ import { MessageInput } from '../types';
 import { attachIdImageFromReply, markCvMessageDeleted, processCvMessage } from '../services/cvService';
 import { markTimesheetMessageDeleted, processTimesheetMessage } from '../services/timesheetService';
 
+const buildMessageText = (message: Message): string => {
+  const chunks: string[] = [];
+
+  if (message.content?.trim()) {
+    chunks.push(message.content.trim());
+  }
+
+  for (const embed of message.embeds) {
+    if (embed.title) {
+      chunks.push(embed.title);
+    }
+
+    if (embed.description) {
+      chunks.push(embed.description);
+    }
+
+    for (const field of embed.fields ?? []) {
+      if (field.name) {
+        chunks.push(field.name);
+      }
+      if (field.value) {
+        chunks.push(field.value);
+      }
+    }
+
+    if (embed.footer?.text) {
+      chunks.push(embed.footer.text);
+    }
+  }
+
+  return chunks.join('\n').trim();
+};
+
 const toMessageInput = (message: Message): MessageInput => ({
   id: message.id,
   channelId: message.channelId,
-  content: message.content ?? '',
+  content: buildMessageText(message),
   authorId: message.author?.id,
   createdAt: new Date(message.createdTimestamp),
   updatedAt: message.editedTimestamp ? new Date(message.editedTimestamp) : undefined,
