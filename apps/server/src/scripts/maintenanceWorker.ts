@@ -40,6 +40,33 @@ const pruneGhostWeekCycles = async (): Promise<number> => {
   return Number(deleted) || 0;
 };
 
+const normalizeTimesheetCycleAssignments = async (): Promise<number> => {
+  const updated = await prisma.$executeRawUnsafe(`
+    UPDATE time_events te
+    JOIN (
+      SELECT
+        e.id AS event_id,
+        (
+          SELECT wc.id
+          FROM week_cycles wc
+          WHERE wc.service_code = COALESCE(e.service_code, 'service')
+            AND wc.started_at <= e.event_at
+            AND (wc.ended_at IS NULL OR wc.ended_at > e.event_at)
+          ORDER BY wc.started_at DESC, wc.id DESC
+          LIMIT 1
+        ) AS resolved_cycle_id
+      FROM time_events e
+      WHERE e.is_deleted = 0
+        AND e.event_type IN ('CLOCK_IN', 'CLOCK_OUT', 'MANUAL_ADJUSTMENT')
+    ) resolved ON resolved.event_id = te.id
+    SET te.week_cycle_id = resolved.resolved_cycle_id
+    WHERE resolved.resolved_cycle_id IS NOT NULL
+      AND (te.week_cycle_id IS NULL OR te.week_cycle_id <> resolved.resolved_cycle_id)
+  `);
+
+  return Number(updated) || 0;
+};
+
 const runIncrementalEmployeeSync = async (lookbackDaysInput?: number) => {
   const lookbackDays = Math.max(1, Math.min(lookbackDaysInput ?? 14, 60));
 
@@ -217,6 +244,7 @@ const run = async () => {
       latestLimitPerChannel
     });
     const deletedGhostCycles = await pruneGhostWeekCycles();
+    const reassignedCycleEvents = await normalizeTimesheetCycleAssignments();
 
     process.send?.({
       type: 'job-success',
@@ -224,6 +252,7 @@ const run = async () => {
         mode: 'latest',
         latestLimitPerChannel,
         deletedGhostCycles,
+        reassignedCycleEvents,
         processed: result
       }
     });
@@ -277,6 +306,7 @@ const run = async () => {
       channels: ['timesheet']
     });
     const deletedGhostCycles = await pruneGhostWeekCycles();
+    const reassignedCycleEvents = await normalizeTimesheetCycleAssignments();
 
     process.send?.({
       type: 'job-success',
@@ -285,6 +315,7 @@ const run = async () => {
         days,
         sinceDate: sinceDate.toISOString(),
         deletedGhostCycles,
+        reassignedCycleEvents,
         processed: result
       }
     });
@@ -303,6 +334,7 @@ const run = async () => {
 
     const result = await runBackfill({ mode: 'all' });
     const deletedGhostCycles = await pruneGhostWeekCycles();
+    const reassignedCycleEvents = await normalizeTimesheetCycleAssignments();
 
     process.send?.({
       type: 'job-success',
@@ -310,6 +342,7 @@ const run = async () => {
         mode: 'all',
         deleted: 'all-operational-data',
         deletedGhostCycles,
+        reassignedCycleEvents,
         processed: result
       }
     });

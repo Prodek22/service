@@ -183,12 +183,9 @@ export const processTimesheetMessage = async (message: MessageInput) => {
       weekCycleId = resetCycle.id;
     }
   } else if (serviceCode) {
-    if (existingEvent?.weekCycleId && existingEvent.serviceCode === serviceCode) {
-      weekCycleId = existingEvent.weekCycleId;
-    } else {
-      const cycle = await ensureCycleForEventAt(serviceCode, message.createdAt);
-      weekCycleId = cycle.id;
-    }
+    // Always recompute cycle by event timestamp so reprocessing can fix wrong historical assignments.
+    const cycle = await ensureCycleForEventAt(serviceCode, message.createdAt);
+    weekCycleId = cycle.id;
   }
 
   const employee = await findEmployeeBestMatch({
