@@ -55,11 +55,21 @@ export const TimesheetPage = ({ readOnly = false }: TimesheetPageProps) => {
   const getTotalAdjustmentsSeconds = (row: TimesheetSummaryResponse['totals'][number]) =>
     row.positiveAdjustmentSeconds + Math.abs(row.negativeAdjustmentSeconds);
 
-  const getAvatarFallback = (label: string) =>
-    `https://ui-avatars.com/api/?name=${encodeURIComponent(label)}&background=2f2c4d&color=ffffff&size=64&bold=true`;
+  const getInitials = (label: string) =>
+    label
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part[0]?.toUpperCase() ?? '')
+      .join('') || 'U';
 
-  const getAvatarUrl = (row: TimesheetSummaryResponse['totals'][number]) =>
-    row.discordUserId ? `https://unavatar.io/discord/${row.discordUserId}` : getAvatarFallback(row.displayName);
+  const getAvatarFallback = (label: string) => {
+    const initials = getInitials(label);
+    const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64'><rect width='64' height='64' rx='32' fill='#2f2c4d'/><text x='50%' y='52%' text-anchor='middle' dominant-baseline='middle' font-family='Segoe UI, Arial' font-size='24' fill='#ffffff' font-weight='700'>${initials}</text></svg>`;
+    return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+  };
+
+  const getAvatarUrl = (row: TimesheetSummaryResponse['totals'][number]) => row.avatarUrl ?? getAvatarFallback(row.displayName);
 
   const togglePayrollStatus = async (employeeId: number | null, isPaid: boolean) => {
     if (readOnly || !employeeId || !selectedCycleId || !summary) {

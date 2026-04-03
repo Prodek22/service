@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { TimeEventType } from '@prisma/client';
 import { requireAuth } from '../auth/middleware';
 import { prisma } from '../db/prisma';
+import { resolveDiscordAvatarMap } from '../services/discordAvatarService';
 import { buildCsv, secondsToHm } from '../utils/time';
 import { getCycleTotals, getEmployeeCycleHistory, getWeekCycles } from '../services/timesheetService';
 
@@ -71,11 +72,15 @@ timesheetRouter.get('/summary', async (req, res) => {
         })
       : [];
   const payrollByEmployee = new Map(payrollStatuses.map((item) => [item.employeeId, item]));
+  const avatarByDiscordUserId = await resolveDiscordAvatarMap(
+    totals.map((row) => row.discordUserId).filter((value): value is string => Boolean(value))
+  );
 
   res.json({
     cycleId,
     totals: totals.map((row) => ({
       ...row,
+      avatarUrl: row.discordUserId ? avatarByDiscordUserId[row.discordUserId] ?? null : null,
       totalLabel: secondsToHm(row.totalSeconds),
       normalLabel: secondsToHm(row.normalSeconds),
       manualLabel: secondsToHm(row.manualAdjustmentSeconds),

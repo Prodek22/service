@@ -12,6 +12,7 @@ import { createGuildMemberFilter } from '../services/guildMemberFilter';
 import { MessageInput } from '../types';
 import { attachIdImageFromReply, markCvMessageDeleted, processCvMessage } from '../services/cvService';
 import { markTimesheetMessageDeleted, processTimesheetMessage } from '../services/timesheetService';
+import { setDiscordClient } from './clientStore';
 
 const buildMessageText = (message: Message): string => {
   const chunks: string[] = [];
@@ -207,6 +208,7 @@ export const startDiscordBot = async (): Promise<Client> => {
 
   await client.login(env.DISCORD_TOKEN);
   memberFilter = await createGuildMemberFilter(client);
+  setDiscordClient(client);
 
   return client;
 };

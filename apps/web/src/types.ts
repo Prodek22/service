@@ -56,6 +56,7 @@ export type TimesheetSummaryResponse = {
     rank: string | null;
     displayName: string;
     discordUserId: string | null;
+    avatarUrl: string | null;
     totalSeconds: number;
     normalSeconds: number;
     manualAdjustmentSeconds: number;
