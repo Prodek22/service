@@ -1,7 +1,7 @@
 import { EmployeeStatus, ParseStatus } from '@prisma/client';
 import { prisma } from '../db/prisma';
 import { parseCvMessage } from '../parsers/cvParser';
-import { MessageInput } from '../types';
+import { MessageInput, ParsedCv } from '../types';
 import { normalizeForCompare } from '../utils/normalize';
 import { ensureEmployeeAliases } from './employeeMatcher';
 
@@ -79,8 +79,104 @@ const serializeAttachments = (message: MessageInput): string =>
     }))
   );
 
+const countCvSignals = (parsed: ParsedCv): number => {
+  let count = 0;
+
+  if (parsed.iban) count += 1;
+  if (parsed.fullName) count += 1;
+  if (parsed.phone) count += 1;
+  if (parsed.plateNumber) count += 1;
+  if (parsed.monthsInCity != null) count += 1;
+  if (parsed.nickname) count += 1;
+  if (parsed.employerName) count += 1;
+  if (parsed.recommendation) count += 1;
+  if (parsed.rank) count += 1;
+
+  return count;
+};
+
+const extractMentionedUserId = (content: string): string | undefined => {
+  const mention = content.match(/<@!?(\d{5,})>/);
+  return mention?.[1];
+};
+
+const attachImageToExistingCv = async (
+  message: MessageInput,
+  imageUrl: string
+) => {
+  const candidateUserIds = [message.authorId, extractMentionedUserId(message.content)]
+    .filter(Boolean)
+    .filter((value, index, array) => array.indexOf(value) === index) as string[];
+
+  if (!candidateUserIds.length) {
+    return null;
+  }
+
+  const candidate = await prisma.employee.findFirst({
+    where: {
+      discordUserId: {
+        in: candidateUserIds
+      },
+      cvChannelId: message.channelId,
+      deletedAt: null,
+      OR: [{ idImageUrl: null }, { idImageUrl: '' }]
+    },
+    orderBy: {
+      cvPostedAt: 'desc'
+    }
+  });
+
+  if (!candidate) {
+    return null;
+  }
+
+  const updated = await prisma.employee.update({
+    where: { id: candidate.id },
+    data: {
+      idImageUrl: imageUrl,
+      status: evaluateStatus({
+        iban: candidate.iban,
+        fullName: candidate.fullName,
+        nickname: candidate.nickname,
+        idImageUrl: imageUrl
+      })
+    }
+  });
+
+  await prisma.employeeCvRaw.create({
+    data: {
+      employeeId: candidate.id,
+      rawText: message.content,
+      rawAttachmentsJson: serializeAttachments(message),
+      parseStatus: ParseStatus.PARTIAL,
+      parseNotes: 'Poza asociata automat din mesaj separat'
+    }
+  });
+
+  return updated;
+};
+
 export const processCvMessage = async (message: MessageInput) => {
   const parsed = parseCvMessage(message.content, message.attachments);
+  const imageFromAttachments = message.attachments.find((attachment) =>
+    isImageAttachment(attachment.name, attachment.contentType)
+  )?.url;
+  const cvSignals = countCvSignals(parsed);
+
+  // Skip noise messages from the CV channel and auto-link image-only messages to an existing CV.
+  if (cvSignals === 0 && !parsed.idImageUrl && !imageFromAttachments) {
+    return null;
+  }
+
+  if (cvSignals === 0 && (parsed.idImageUrl || imageFromAttachments)) {
+    const imageUrl = parsed.idImageUrl ?? imageFromAttachments!;
+    const attached = await attachImageToExistingCv(message, imageUrl);
+    if (attached) {
+      return attached;
+    }
+
+    return null;
+  }
 
   let employee = await prisma.employee.findUnique({
     where: {
@@ -99,8 +195,6 @@ export const processCvMessage = async (message: MessageInput) => {
   if (!employee) {
     employee = await findByNameAndNickname(parsed.fullName, parsed.nickname);
   }
-
-  const imageFromAttachments = message.attachments.find((attachment) => isImageAttachment(attachment.name, attachment.contentType))?.url;
 
   const nextData = {
     discordUserId: message.authorId,

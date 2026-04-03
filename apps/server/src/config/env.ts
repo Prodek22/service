@@ -10,6 +10,11 @@ const envSchema = z.object({
   TIMESHEET_CHANNEL_ID: z.string().min(1),
   EMPLOYEE_ROLE_ID: z.string().optional(),
   EMPLOYEE_ROLE_NAME: z.string().default('Angajat'),
+  ADMIN_USERNAME: z.string().min(1),
+  ADMIN_PASSWORD: z.string().min(1),
+  AUTH_JWT_SECRET: z.string().min(16),
+  CORS_ORIGIN: z.string().default('http://localhost:5173'),
+  AUTH_COOKIE_SECURE: z.enum(['true', 'false']).default('true'),
   DATABASE_URL: z.string().min(1),
   PORT: z.string().default('3001')
 });
@@ -23,6 +28,7 @@ if (!parsed.success) {
 
 export const env = {
   ...parsed.data,
-  PORT: Number(parsed.data.PORT)
+  PORT: Number(parsed.data.PORT),
+  AUTH_COOKIE_SECURE: parsed.data.AUTH_COOKIE_SECURE === 'true'
 };
 

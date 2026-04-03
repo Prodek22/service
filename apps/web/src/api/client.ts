@@ -1,31 +1,44 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3001/api';
+﻿const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api';
 
-export const apiGet = async <T>(path: string): Promise<T> => {
-  const response = await fetch(`${API_BASE_URL}${path}`);
+export class ApiError extends Error {
+  status: number;
 
-  if (!response.ok) {
-    const text = await response.text();
-    throw new Error(text || `Request failed: ${response.status}`);
+  constructor(status: number, message: string) {
+    super(message);
+    this.status = status;
   }
+}
 
-  return response.json() as Promise<T>;
-};
-
-export const apiPatch = async <T>(path: string, body: Record<string, unknown>): Promise<T> => {
+const request = async <T>(path: string, init?: RequestInit): Promise<T> => {
   const response = await fetch(`${API_BASE_URL}${path}`, {
-    method: 'PATCH',
+    credentials: 'include',
+    ...init,
     headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(body)
+      'Content-Type': 'application/json',
+      ...(init?.headers ?? {})
+    }
   });
 
   if (!response.ok) {
     const text = await response.text();
-    throw new Error(text || `Request failed: ${response.status}`);
+    throw new ApiError(response.status, text || `Request failed: ${response.status}`);
   }
 
   return response.json() as Promise<T>;
 };
+
+export const apiGet = <T>(path: string): Promise<T> => request(path, { method: 'GET' });
+
+export const apiPost = <T>(path: string, body: Record<string, unknown>): Promise<T> =>
+  request(path, {
+    method: 'POST',
+    body: JSON.stringify(body)
+  });
+
+export const apiPatch = <T>(path: string, body: Record<string, unknown>): Promise<T> =>
+  request(path, {
+    method: 'PATCH',
+    body: JSON.stringify(body)
+  });
 
 export const apiBaseUrl = API_BASE_URL;

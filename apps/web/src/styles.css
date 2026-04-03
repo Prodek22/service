@@ -48,6 +48,23 @@ a {
   gap: 8px;
 }
 
+.sidebar-footer {
+  margin-top: 20px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.22);
+  display: grid;
+  gap: 8px;
+}
+
+.sidebar-footer button {
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  border-radius: 8px;
+  padding: 8px 10px;
+  cursor: pointer;
+}
+
 .sidebar a {
   color: #dce8f5;
   text-decoration: none;
@@ -238,6 +255,43 @@ th {
 
 .error {
   color: var(--danger);
+}
+
+.auth-shell {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(circle at top right, #ffffff, #d9e9f4 48%, #bcd3e2 100%);
+}
+
+.auth-card {
+  width: min(420px, 92vw);
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 20px;
+  display: grid;
+  gap: 10px;
+}
+
+.auth-card p {
+  margin-top: 0;
+  color: var(--muted);
+}
+
+.auth-card input {
+  border: 1px solid #b8c5d6;
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+
+.auth-card button {
+  margin-top: 8px;
+  border: 1px solid #8dcfc4;
+  background: var(--accent-soft);
+  border-radius: 8px;
+  padding: 10px 12px;
+  cursor: pointer;
 }
 
 @media (max-width: 1024px) {

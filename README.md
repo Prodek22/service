@@ -108,6 +108,11 @@ CV_CHANNEL_ID=
 TIMESHEET_CHANNEL_ID=
 EMPLOYEE_ROLE_ID=
 EMPLOYEE_ROLE_NAME=Angajat
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=change_me
+AUTH_JWT_SECRET=change_this_to_a_long_random_secret
+CORS_ORIGIN=http://localhost:5173
+AUTH_COOKIE_SECURE=true
 DATABASE_URL="mysql://user:password@localhost:3306/service_admin"
 PORT=3001
 ```
@@ -115,7 +120,7 @@ PORT=3001
 Optional frontend: `apps/web/.env.example` -> `apps/web/.env`
 
 ```env
-VITE_API_BASE_URL=http://localhost:3001/api
+VITE_API_BASE_URL=/api
 ```
 
 ## Instalare si rulare local
@@ -161,6 +166,12 @@ npm run backfill
 Health:
 
 - `GET /api/health`
+
+Auth:
+
+- `POST /api/auth/login`
+- `POST /api/auth/logout`
+- `GET /api/auth/me`
 
 Dashboard:
 

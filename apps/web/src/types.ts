@@ -87,3 +87,8 @@ export type EmployeeCvRawEntry = {
   parseNotes: string | null;
   createdAt: string;
 };
+
+export type AuthMeResponse = {
+  authenticated: boolean;
+  username?: string;
+};

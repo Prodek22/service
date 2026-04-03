@@ -1,5 +1,5 @@
-import { AttachmentInput, ParsedCv } from '../types';
-import { fuzzyEquals, normalizeForCompare, normalizeLabel, normalizeWhitespace } from '../utils/normalize';
+﻿import { AttachmentInput, ParsedCv } from '../types';
+import { levenshtein, normalizeForCompare, normalizeLabel, normalizeWhitespace } from '../utils/normalize';
 
 type CvFieldKey =
   | 'iban'
@@ -16,7 +16,7 @@ type CvFieldKey =
 const FIELD_SYNONYMS: Record<CvFieldKey, string[]> = {
   iban: ['iban', 'cont bancar', 'nr iban'],
   fullName: ['nume si prenumele', 'nume prenume', 'nume complet', 'nume', 'pronume'],
-  phone: ['numar de telefon', 'telefon', 'nr telefon', 'numar telefon', 'numar tel', 'phone'],
+  phone: ['numar de telefon', 'telefon', 'nr telefon', 'numar telefon', 'numar tel', 'nr tel', 'phone'],
   plateNumber: ['numar de inmatriculare', 'numar inmatriculare', 'nr inmatriculare', 'plate', 'inmatriculare'],
   monthsInCity: ['numarul de luni in oras', 'luni in oras', 'numar luni', 'luni oras'],
   nickname: ['porecla', 'nickname', 'nick', 'nume rp'],
@@ -26,19 +26,115 @@ const FIELD_SYNONYMS: Record<CvFieldKey, string[]> = {
   idImage: ['copie dupa buletin', 'buletin', 'poza buletin', 'id card']
 };
 
+const mentionOnlyRegex = /^<@!?\d+>$|^@[\p{L}0-9_.-]+(?:\s*-\s*\d+)?$/u;
+
+const sanitizePersonName = (value: string | undefined): string | undefined => {
+  if (!value) {
+    return undefined;
+  }
+
+  const trimmed = normalizeWhitespace(value.replace(/<@!?\d+>/g, ''));
+
+  if (!trimmed || mentionOnlyRegex.test(trimmed)) {
+    return undefined;
+  }
+
+  return trimmed;
+};
+
+const sanitizeNickname = (value: string | undefined): string | undefined => {
+  if (!value) {
+    return undefined;
+  }
+
+  const cleaned = normalizeWhitespace(value.replace(/<@!?\d+>/g, '').replace(/^@+/, ''));
+  return cleaned || undefined;
+};
+
+const getDistanceThreshold = (length: number): number => {
+  if (length <= 5) {
+    return 1;
+  }
+
+  if (length <= 12) {
+    return 2;
+  }
+
+  return 3;
+};
+
+const scoreLabelMatch = (label: string, synonym: string): number | null => {
+  const normalizedSynonym = normalizeLabel(synonym);
+
+  if (!label || !normalizedSynonym) {
+    return null;
+  }
+
+  if (label === normalizedSynonym) {
+    return 0;
+  }
+
+  const distance = levenshtein(label, normalizedSynonym);
+  const maxDistance = getDistanceThreshold(normalizedSynonym.length);
+
+  if (distance <= maxDistance && Math.abs(label.length - normalizedSynonym.length) <= maxDistance + 1) {
+    return distance;
+  }
+
+  return null;
+};
+
 const guessFieldKey = (rawLabel: string): CvFieldKey | null => {
   const label = normalizeLabel(rawLabel);
 
-  // Label matching is intentionally permissive so typo-heavy roleplay forms still parse.
+  if (!label) {
+    return null;
+  }
+
+  if (label.includes('angajator')) {
+    return 'employerName';
+  }
+
+  if (label.includes('recomand')) {
+    return 'recommendation';
+  }
+
+  if (label.includes('inmatricul') || label.includes('plate')) {
+    return 'plateNumber';
+  }
+
+  if (label.includes('telefon') || label === 'nr tel' || label === 'tel') {
+    return 'phone';
+  }
+
+  if (label.includes('luni') && label.includes('oras')) {
+    return 'monthsInCity';
+  }
+
+  if (label.includes('buletin') || label.includes('id card')) {
+    return 'idImage';
+  }
+
+  let bestMatch: { field: CvFieldKey; score: number; synonymLength: number } | null = null;
+
   for (const [field, synonyms] of Object.entries(FIELD_SYNONYMS) as [CvFieldKey, string[]][]) {
     for (const synonym of synonyms) {
-      if (fuzzyEquals(label, synonym, 3)) {
-        return field;
+      const score = scoreLabelMatch(label, synonym);
+      if (score == null) {
+        continue;
+      }
+
+      if (
+        !bestMatch ||
+        score < bestMatch.score ||
+        (score === bestMatch.score && synonym.length > bestMatch.synonymLength)
+      ) {
+        bestMatch = { field, score, synonymLength: synonym.length };
       }
     }
   }
 
-  return null;
+  return bestMatch?.field ?? null;
 };
 
 const parseMonths = (value: string): number | undefined => {
@@ -62,15 +158,31 @@ const pickIdImage = (attachments: AttachmentInput[]): string | undefined => {
   return image?.url;
 };
 
+const hasAnyCvSignals = (parsed: ParsedCv): boolean =>
+  Boolean(
+    parsed.iban ||
+      parsed.fullName ||
+      parsed.phone ||
+      parsed.plateNumber ||
+      parsed.monthsInCity != null ||
+      parsed.nickname ||
+      parsed.employerName ||
+      parsed.recommendation ||
+      parsed.rank
+  );
+
 export const parseCvMessage = (content: string, attachments: AttachmentInput[]): ParsedCv => {
   const parsed: ParsedCv = {
     notes: []
   };
 
-  const lines = content.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+  const lines = content
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
 
   for (const line of lines) {
-    const separatorMatch = line.match(/^(.+?)\s*[:\-Ã¢â‚¬â€œ]\s*(.+)$/);
+    const separatorMatch = line.match(/^(.+?)\s*[:\-–]\s*(.+)$/);
     if (!separatorMatch) {
       continue;
     }
@@ -122,13 +234,12 @@ export const parseCvMessage = (content: string, attachments: AttachmentInput[]):
     }
   }
 
-  // Fallback regex extractions handle messages that skip regular "Label: value" formatting.
-  const fallbackIban = content.match(/iban\s*[:\-]?\s*([a-z0-9-]+)/i);
+  const fallbackIban = content.match(/(?:^|\n)\s*iban\s*[:\-]?\s*([a-z0-9-]+)/i);
   if (!parsed.iban && fallbackIban) {
     parsed.iban = fallbackIban[1];
   }
 
-  const fallbackName = content.match(/(?:nume|pronume)\s*(?:si\s*prenumele|prenumele)?\s*[:\-]?\s*([^\n]+)/i);
+  const fallbackName = content.match(/(?:^|\n)\s*(?:nume(?:\s+si\s+prenumele)?|pronume)\s*[:\-]\s*([^\n]+)/i);
   if (!parsed.fullName && fallbackName) {
     parsed.fullName = normalizeWhitespace(fallbackName[1]);
   }
@@ -157,6 +268,18 @@ export const parseCvMessage = (content: string, attachments: AttachmentInput[]):
     parsed.idImageUrl = pickIdImage(attachments);
   }
 
+  parsed.fullName = sanitizePersonName(parsed.fullName);
+  parsed.nickname = sanitizeNickname(parsed.nickname);
+  parsed.employerName = parsed.employerName ? normalizeWhitespace(parsed.employerName) : undefined;
+  parsed.rank = parsed.rank ? normalizeWhitespace(parsed.rank) : undefined;
+
+  parsed.iban = parsed.iban ? normalizeForCompare(parsed.iban).replace(/\s+/g, '') : undefined;
+
+  if (!hasAnyCvSignals(parsed) && !parsed.idImageUrl) {
+    parsed.notes.push('Mesaj fara date CV utile');
+    return parsed;
+  }
+
   if (!parsed.iban) {
     parsed.notes.push('IBAN lipsa');
   }
@@ -173,14 +296,5 @@ export const parseCvMessage = (content: string, attachments: AttachmentInput[]):
     parsed.notes.push('Poza buletin lipsa');
   }
 
-  parsed.fullName = parsed.fullName ? normalizeWhitespace(parsed.fullName) : undefined;
-  parsed.nickname = parsed.nickname ? normalizeWhitespace(parsed.nickname) : undefined;
-  parsed.employerName = parsed.employerName ? normalizeWhitespace(parsed.employerName) : undefined;
-  parsed.rank = parsed.rank ? normalizeWhitespace(parsed.rank) : undefined;
-
-  // For comparisons and dedup logic, it is useful to keep clean values.
-  parsed.iban = parsed.iban ? normalizeForCompare(parsed.iban).replace(/\s+/g, '') : undefined;
-
   return parsed;
 };
-
