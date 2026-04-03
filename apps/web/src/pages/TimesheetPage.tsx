@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { apiBaseUrl, apiGet } from '../api/client';
+import { apiBaseUrl, apiGet, apiPost } from '../api/client';
 import { TimeEventHistoryResponse, TimesheetSummaryResponse, WeekCycle } from '../types';
 import { formatCurrency, formatDateTime, formatMinutes } from '../utils/format';
 
@@ -7,6 +7,7 @@ export const TimesheetPage = () => {
   const [cycles, setCycles] = useState<WeekCycle[]>([]);
   const [selectedCycleId, setSelectedCycleId] = useState<number | null>(null);
   const [summary, setSummary] = useState<TimesheetSummaryResponse | null>(null);
+  const [payrollBusyByEmployee, setPayrollBusyByEmployee] = useState<Record<number, boolean>>({});
 
   const [historyTitle, setHistoryTitle] = useState<string | null>(null);
   const [historyRows, setHistoryRows] = useState<TimeEventHistoryResponse['history']>([]);
@@ -47,6 +48,62 @@ export const TimesheetPage = () => {
     setHistoryRows(response.history);
   };
 
+  const togglePayrollStatus = async (employeeId: number | null, isPaid: boolean) => {
+    if (!employeeId || !selectedCycleId || !summary) {
+      return;
+    }
+
+    setPayrollBusyByEmployee((current) => ({ ...current, [employeeId]: true }));
+
+    const previous = summary;
+    const optimistic: TimesheetSummaryResponse = {
+      ...previous,
+      totals: previous.totals.map((row) =>
+        row.employeeId === employeeId
+          ? {
+              ...row,
+              payroll: {
+                ...row.payroll,
+                isPaid
+              }
+            }
+          : row
+      )
+    };
+    setSummary(optimistic);
+
+    try {
+      const response = await apiPost<{
+        ok: boolean;
+        payroll: { isPaid: boolean; paidAt: string | null; paidBy: string | null; note: string | null };
+      }>('/timesheet/payroll-status', {
+        cycleId: selectedCycleId,
+        employeeId,
+        isPaid
+      });
+
+      setSummary((current) =>
+        current
+          ? {
+              ...current,
+              totals: current.totals.map((row) =>
+                row.employeeId === employeeId
+                  ? {
+                      ...row,
+                      payroll: response.payroll
+                    }
+                  : row
+              )
+            }
+          : current
+      );
+    } catch {
+      setSummary(previous);
+    } finally {
+      setPayrollBusyByEmployee((current) => ({ ...current, [employeeId]: false }));
+    }
+  };
+
   return (
     <section>
       <h2>Pontaj saptamanal</h2>
@@ -81,6 +138,7 @@ export const TimesheetPage = () => {
               <th>- Ajustari (min)</th>
               <th>Nr ajustari</th>
               <th>Salariu</th>
+              <th>Plătit</th>
               <th>Istoric</th>
             </tr>
           </thead>
@@ -100,6 +158,17 @@ export const TimesheetPage = () => {
                   {formatCurrency(row.salaryTotal)}
                 </td>
                 <td>
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={row.payroll.isPaid}
+                      disabled={!row.employeeId || Boolean(row.employeeId && payrollBusyByEmployee[row.employeeId])}
+                      onChange={(event) => void togglePayrollStatus(row.employeeId, event.target.checked)}
+                    />{' '}
+                    {row.payroll.isPaid ? 'DA' : 'NU'}
+                  </label>
+                </td>
+                <td>
                   <button
                     className="btn-history"
                     onClick={() => void openHistory(row.employeeId, row.displayName)}
@@ -112,7 +181,7 @@ export const TimesheetPage = () => {
             ))}
             {!summary?.totals.length ? (
               <tr>
-                <td colSpan={11}>Nu exista pontaje in ciclul selectat.</td>
+                <td colSpan={12}>Nu exista pontaje in ciclul selectat.</td>
               </tr>
             ) : null}
           </tbody>

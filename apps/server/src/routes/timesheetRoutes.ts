@@ -55,6 +55,21 @@ timesheetRouter.get('/summary', async (req, res) => {
   }
 
   const totals = await getCycleTotals(cycleId);
+  const employeeIds = totals
+    .map((row) => row.employeeId)
+    .filter((value): value is number => typeof value === 'number');
+  const payrollStatuses =
+    employeeIds.length > 0
+      ? await prisma.timesheetPayrollStatus.findMany({
+          where: {
+            weekCycleId: cycleId,
+            employeeId: {
+              in: employeeIds
+            }
+          }
+        })
+      : [];
+  const payrollByEmployee = new Map(payrollStatuses.map((item) => [item.employeeId, item]));
 
   res.json({
     cycleId,
@@ -62,8 +77,78 @@ timesheetRouter.get('/summary', async (req, res) => {
       ...row,
       totalLabel: secondsToHm(row.totalSeconds),
       normalLabel: secondsToHm(row.normalSeconds),
-      manualLabel: secondsToHm(row.manualAdjustmentSeconds)
+      manualLabel: secondsToHm(row.manualAdjustmentSeconds),
+      payroll: row.employeeId
+        ? {
+            isPaid: payrollByEmployee.get(row.employeeId)?.isPaid ?? false,
+            paidAt: payrollByEmployee.get(row.employeeId)?.paidAt ?? null,
+            paidBy: payrollByEmployee.get(row.employeeId)?.paidBy ?? null,
+            note: payrollByEmployee.get(row.employeeId)?.note ?? null
+          }
+        : {
+            isPaid: false,
+            paidAt: null,
+            paidBy: null,
+            note: null
+          }
     }))
+  });
+});
+
+timesheetRouter.post('/payroll-status', async (req, res) => {
+  const cycleId = Number.parseInt(String(req.body?.cycleId ?? ''), 10);
+  const employeeId = Number.parseInt(String(req.body?.employeeId ?? ''), 10);
+  const isPaid = Boolean(req.body?.isPaid);
+  const noteInput = typeof req.body?.note === 'string' ? req.body.note.trim() : null;
+  const note = noteInput ? noteInput.slice(0, 1000) : null;
+  const username = String(res.locals.authUser?.username ?? 'system');
+
+  if (Number.isNaN(cycleId) || Number.isNaN(employeeId)) {
+    res.status(400).json({ error: 'cycleId si employeeId sunt obligatorii.' });
+    return;
+  }
+
+  const totals = await getCycleTotals(cycleId);
+  const employeeRow = totals.find((row) => row.employeeId === employeeId);
+
+  if (!employeeRow) {
+    res.status(404).json({ error: 'Angajatul nu are pontaj in ciclul selectat.' });
+    return;
+  }
+
+  const saved = await prisma.timesheetPayrollStatus.upsert({
+    where: {
+      weekCycleId_employeeId: {
+        weekCycleId: cycleId,
+        employeeId
+      }
+    },
+    create: {
+      weekCycleId: cycleId,
+      employeeId,
+      salaryTotal: employeeRow.salaryTotal,
+      isPaid,
+      paidAt: isPaid ? new Date() : null,
+      paidBy: isPaid ? username : null,
+      note
+    },
+    update: {
+      salaryTotal: employeeRow.salaryTotal,
+      isPaid,
+      paidAt: isPaid ? new Date() : null,
+      paidBy: isPaid ? username : null,
+      note
+    }
+  });
+
+  res.json({
+    ok: true,
+    payroll: {
+      isPaid: saved.isPaid,
+      paidAt: saved.paidAt,
+      paidBy: saved.paidBy,
+      note: saved.note
+    }
   });
 });
 

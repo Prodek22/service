@@ -70,6 +70,12 @@ export type TimesheetSummaryResponse = {
     totalLabel: string;
     normalLabel: string;
     manualLabel: string;
+    payroll: {
+      isPaid: boolean;
+      paidAt: string | null;
+      paidBy: string | null;
+      note: string | null;
+    };
   }>;
 };
 

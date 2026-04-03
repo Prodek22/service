@@ -51,6 +51,7 @@ model Employee {
   cvRawEntries     EmployeeCvRaw[]
   aliases          EmployeeAlias[]
   timeEvents       TimeEvent[]
+  payrollStatuses  TimesheetPayrollStatus[]
 
   @@index([discordUserId])
   @@index([fullName])
@@ -108,10 +109,32 @@ model WeekCycle {
   createdAt      DateTime  @default(now()) @map("created_at")
 
   timeEvents TimeEvent[]
+  payrollStatuses TimesheetPayrollStatus[]
 
   @@index([serviceCode])
   @@index([startedAt])
   @@map("week_cycles")
+}
+
+model TimesheetPayrollStatus {
+  id          Int      @id @default(autoincrement())
+  weekCycleId Int      @map("week_cycle_id")
+  employeeId  Int      @map("employee_id")
+  salaryTotal Int      @default(0) @map("salary_total")
+  isPaid      Boolean  @default(false) @map("is_paid")
+  paidAt      DateTime? @map("paid_at")
+  paidBy      String?  @map("paid_by")
+  note        String?  @db.Text
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  weekCycle WeekCycle @relation(fields: [weekCycleId], references: [id], onDelete: Cascade)
+  employee  Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([weekCycleId, employeeId])
+  @@index([weekCycleId])
+  @@index([employeeId])
+  @@map("timesheet_payroll_status")
 }
 
 model TimeEvent {
