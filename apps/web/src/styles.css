@@ -22,7 +22,7 @@ body {
   font-variant-caps: all-small-caps;
   font-feature-settings: 'smcp' 1, 'c2sc' 1;
   letter-spacing: 0.03em;
-  font-size: 18px;
+  font-size: 24px;
   font-weight: 700;
   line-height: 1.45;
   color: var(--ink);
