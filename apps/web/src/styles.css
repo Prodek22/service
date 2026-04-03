@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Alegreya+Sans+SC:wght@400;500;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap');
 
 :root {
   --bg: #f2ece5;
@@ -18,12 +18,10 @@
 
 body {
   margin: 0;
-  font-family: 'Alegreya Sans SC', 'Trebuchet MS', sans-serif;
-  font-variant-caps: all-small-caps;
-  font-feature-settings: 'smcp' 1, 'c2sc' 1;
-  letter-spacing: 0.03em;
+  font-family: 'Outfit', 'Trebuchet MS', sans-serif;
+  letter-spacing: 0.01em;
   font-size: 24px;
-  font-weight: 700;
+  font-weight: 500;
   line-height: 1.45;
   color: var(--ink);
   background: radial-gradient(circle at top left, #fff8f0, #f3e4d6 45%, #e4ccb5 100%);
@@ -32,7 +30,7 @@ body {
 h1,
 h2,
 h3 {
-  font-family: 'Alegreya Sans SC', 'Trebuchet MS', sans-serif;
+  font-family: 'Outfit', 'Trebuchet MS', sans-serif;
   letter-spacing: 0.02em;
   font-weight: 800;
 }
@@ -153,7 +151,7 @@ a {
 }
 
 .brand-word {
-  font-family: 'Alegreya Sans SC', 'Trebuchet MS', sans-serif;
+  font-family: 'Outfit', 'Trebuchet MS', sans-serif;
   font-weight: 700;
   letter-spacing: 0.02em;
 }
