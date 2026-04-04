@@ -197,6 +197,27 @@ a {
   color: var(--muted);
 }
 
+.public-header-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.header-dashboard-link {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 8px 12px;
+  background: var(--card);
+  color: var(--ink);
+  text-decoration: none;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.header-dashboard-link:hover {
+  filter: brightness(0.97);
+}
+
 html[data-theme='dark'] .public-header {
   background: rgba(23, 33, 49, 0.88);
 }

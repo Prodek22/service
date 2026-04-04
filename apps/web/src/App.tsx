@@ -87,9 +87,16 @@ const PublicLayout = ({ isAuthenticated, username, theme, onToggleTheme, onLogou
           <h1>Pontaj Service</h1>
           <p>Vizualizare publica read-only</p>
         </div>
-        <button type="button" className="theme-toggle" onClick={onToggleTheme}>
-          {theme === 'dark' ? 'Tema light' : 'Tema dark'}
-        </button>
+        <div className="public-header-actions">
+          {isAuthenticated ? (
+            <Link to="/admin" className="header-dashboard-link">
+              Dashboard
+            </Link>
+          ) : null}
+          <button type="button" className="theme-toggle" onClick={onToggleTheme}>
+            {theme === 'dark' ? 'Tema light' : 'Tema dark'}
+          </button>
+        </div>
       </header>
       <main className="content">
         <TimesheetPage readOnly />
