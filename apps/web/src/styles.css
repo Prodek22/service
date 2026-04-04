@@ -401,12 +401,12 @@ th {
 }
 
 .timesheet-table tbody tr.is-paid td {
-  background: #dff3e7 !important;
-  border-bottom-color: #c6e6d4;
+  background: #cde8d8 !important;
+  border-bottom-color: #afd4bf;
 }
 
 .timesheet-table tbody tr.is-paid:hover td {
-  background: #d4ecdE !important;
+  background: #bedfcb !important;
 }
 
 .timesheet-table .btn-history {

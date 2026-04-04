@@ -1,6 +1,6 @@
-import { Router } from 'express';
+﻿import { Router } from 'express';
 import { TimeEventType } from '@prisma/client';
-import { requireAuth } from '../auth/middleware';
+import { requireAdmin } from '../auth/middleware';
 import { prisma } from '../db/prisma';
 import { resolveDiscordAvatarMap } from '../services/discordAvatarService';
 import { buildCsv, secondsToHm } from '../utils/time';
@@ -101,7 +101,7 @@ timesheetRouter.get('/summary', async (req, res) => {
   });
 });
 
-timesheetRouter.post('/payroll-status', requireAuth, async (req, res) => {
+timesheetRouter.post('/payroll-status', requireAdmin, async (req, res) => {
   const cycleId = Number.parseInt(String(req.body?.cycleId ?? ''), 10);
   const employeeId = Number.parseInt(String(req.body?.employeeId ?? ''), 10);
   const isPaid = Boolean(req.body?.isPaid);

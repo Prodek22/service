@@ -1,12 +1,12 @@
 ﻿import { useEffect, useRef, useState } from 'react';
 import { apiGet, apiPost } from '../api/client';
-import {
-  DashboardResponse,
-  MaintenanceJobStatus,
-  MaintenanceStartResponse
-} from '../types';
+import { DashboardResponse, MaintenanceJobStatus, MaintenanceStartResponse } from '../types';
 
-export const DashboardPage = () => {
+type DashboardPageProps = {
+  canManage?: boolean;
+};
+
+export const DashboardPage = ({ canManage = false }: DashboardPageProps) => {
   const [data, setData] = useState<DashboardResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [maintenanceMessage, setMaintenanceMessage] = useState<string | null>(null);
@@ -59,7 +59,7 @@ export const DashboardPage = () => {
       }
 
       if (status.state === 'failed') {
-        setMaintenanceMessage(`Job eșuat: ${status.error ?? 'eroare necunoscută'}`);
+        setMaintenanceMessage(`Job esuat: ${status.error ?? 'eroare necunoscuta'}`);
       }
     } catch (pollError) {
       setMaintenanceBusy(false);
@@ -86,12 +86,15 @@ export const DashboardPage = () => {
 
   useEffect(() => {
     void loadDashboard();
-    void pollJobStatus();
+
+    if (canManage) {
+      void pollJobStatus();
+    }
 
     return () => {
       stopPolling();
     };
-  }, []);
+  }, [canManage]);
 
   useEffect(() => {
     if (!jobStatus || jobStatus.state !== 'running') {
@@ -127,11 +130,7 @@ export const DashboardPage = () => {
   };
 
   const syncCurrentWeekTimesheets = async () => {
-    await startBackgroundJob(
-      '/maintenance/sync-timesheet-window',
-      { days: 14 },
-      'Sync pontaje saptamana in curs pornit.'
-    );
+    await startBackgroundJob('/maintenance/sync-timesheet-window', { days: 14 }, 'Sync pontaje saptamana in curs pornit.');
   };
 
   const rebuildAllData = async () => {
@@ -169,49 +168,61 @@ export const DashboardPage = () => {
         </article>
       </div>
 
-      <div className="card">
-        <h3>Actiuni rapide</h3>
-        <div className="filters">
-          <button
-            type="button"
-            className="btn-danger-action"
-            onClick={() => void syncEmployeesIncremental()}
-            disabled={maintenanceBusy}
-          >
-            <span>Sync incremental angajati</span>
-            <span className="warning-triangle" aria-hidden="true">
-              <span>!</span>
-            </span>
-          </button>
-          <button
-            type="button"
-            className="btn-danger-action"
-            onClick={() => void syncCurrentWeekTimesheets()}
-            disabled={maintenanceBusy}
-          >
-            <span>Sincronizeaza pontaj saptamana in curs</span>
-            <span className="warning-triangle" aria-hidden="true">
-              <span>!</span>
-            </span>
-          </button>
-          <button type="button" className="btn-danger-action" onClick={() => void rebuildAllData()} disabled={maintenanceBusy}>
-            <span>Reset complet + reimport</span>
-            <span className="warning-triangle" aria-hidden="true">
-              <span>!</span>
-            </span>
-          </button>
-        </div>
-        {jobStatus?.state === 'running' ? <p>Job in desfasurare: {jobStatus.type} (ID: {jobStatus.id})</p> : null}
-        {jobStatus?.state === 'running' ? (
-          <div>
-            <p>
-              Progres: {Math.round(displayedProgress)}% {jobStatus.progressMessage ? `- ${jobStatus.progressMessage}` : ''}
-            </p>
-            <progress value={displayedProgress} max={100} style={{ width: '100%' }} />
+      {canManage ? (
+        <div className="card">
+          <h3>Actiuni rapide</h3>
+          <div className="filters">
+            <button
+              type="button"
+              className="btn-danger-action"
+              onClick={() => void syncEmployeesIncremental()}
+              disabled={maintenanceBusy}
+            >
+              <span>Sync incremental angajati</span>
+              <span className="warning-triangle" aria-hidden="true">
+                <span>!</span>
+              </span>
+            </button>
+            <button
+              type="button"
+              className="btn-danger-action"
+              onClick={() => void syncCurrentWeekTimesheets()}
+              disabled={maintenanceBusy}
+            >
+              <span>Sincronizeaza pontaj saptamana in curs</span>
+              <span className="warning-triangle" aria-hidden="true">
+                <span>!</span>
+              </span>
+            </button>
+            <button
+              type="button"
+              className="btn-danger-action"
+              onClick={() => void rebuildAllData()}
+              disabled={maintenanceBusy}
+            >
+              <span>Reset complet + reimport</span>
+              <span className="warning-triangle" aria-hidden="true">
+                <span>!</span>
+              </span>
+            </button>
           </div>
-        ) : null}
-        {maintenanceMessage ? <p>{maintenanceMessage}</p> : null}
-      </div>
+          {jobStatus?.state === 'running' ? <p>Job in desfasurare: {jobStatus.type} (ID: {jobStatus.id})</p> : null}
+          {jobStatus?.state === 'running' ? (
+            <div>
+              <p>
+                Progres: {Math.round(displayedProgress)}% {jobStatus.progressMessage ? `- ${jobStatus.progressMessage}` : ''}
+              </p>
+              <progress value={displayedProgress} max={100} style={{ width: '100%' }} />
+            </div>
+          ) : null}
+          {maintenanceMessage ? <p>{maintenanceMessage}</p> : null}
+        </div>
+      ) : (
+        <div className="card">
+          <h3>Acces viewer</h3>
+          <p>Acest cont este read-only: poate vedea dashboard-ul, fara actiuni de modificare.</p>
+        </div>
+      )}
 
       <div className="card">
         <h3>Top angajati dupa timp lucrat</h3>

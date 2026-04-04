@@ -17,3 +17,15 @@ export const requireAuth = (req: Request, res: Response, next: NextFunction): vo
   res.locals.authUser = session;
   next();
 };
+
+export const requireAdmin = (req: Request, res: Response, next: NextFunction): void => {
+  requireAuth(req, res, () => {
+    const role = String(res.locals.authUser?.role ?? '').toUpperCase();
+    if (role !== 'ADMIN') {
+      res.status(403).json({ error: 'Forbidden' });
+      return;
+    }
+
+    next();
+  });
+};

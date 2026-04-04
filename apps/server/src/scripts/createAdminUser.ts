@@ -1,13 +1,15 @@
 ﻿import bcrypt from 'bcryptjs';
+import { normalizeAdminRole } from '../auth/roles';
 import { prisma } from '../db/prisma';
 
 const usage = () => {
-  console.log('Usage: npm run admin:create -w @gta-service/server -- <username> <password>');
+  console.log('Usage: npm run admin:create -w @gta-service/server -- <username> <password> [ADMIN|VIEWER]');
 };
 
 const run = async () => {
   const username = process.argv[2]?.trim();
   const password = process.argv[3] ?? '';
+  const role = normalizeAdminRole(process.argv[4] ?? 'ADMIN');
 
   if (!username || !password) {
     usage();
@@ -27,16 +29,18 @@ const run = async () => {
     },
     update: {
       passwordHash,
+      role,
       isActive: true
     },
     create: {
       username,
       passwordHash,
+      role,
       isActive: true
     }
   });
 
-  console.log(`Admin user ready: ${user.username} (id=${user.id})`);
+  console.log(`Admin user ready: ${user.username} (id=${user.id}, role=${user.role})`);
 };
 
 run()

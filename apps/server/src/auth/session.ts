@@ -1,10 +1,12 @@
 ﻿import jwt from 'jsonwebtoken';
 import { env } from '../config/env';
+import { AdminRole, normalizeAdminRole } from './roles';
 
 export const AUTH_COOKIE_NAME = 'service_admin_session';
 
 export type SessionPayload = {
   username: string;
+  role: AdminRole;
 };
 
 export const signSessionToken = (payload: SessionPayload): string =>
@@ -21,7 +23,8 @@ export const verifySessionToken = (token: string): SessionPayload | null => {
     }
 
     return {
-      username: decoded.username
+      username: decoded.username,
+      role: normalizeAdminRole(decoded.role)
     };
   } catch {
     return null;

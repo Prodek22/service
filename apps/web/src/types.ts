@@ -1,3 +1,5 @@
+﻿export type AdminRole = 'ADMIN' | 'VIEWER';
+
 export type Employee = {
   id: number;
   iban: string | null;
@@ -104,6 +106,7 @@ export type EmployeeCvRawEntry = {
 export type AuthMeResponse = {
   authenticated: boolean;
   username?: string;
+  role?: AdminRole;
 };
 
 export type DeleteOldResponse = {

@@ -1,7 +1,8 @@
 ﻿import bcrypt from 'bcryptjs';
 import { Router } from 'express';
-import { prisma } from '../db/prisma';
+import { normalizeAdminRole } from '../auth/roles';
 import { AUTH_COOKIE_NAME, buildCookieOptions, signSessionToken, verifySessionToken } from '../auth/session';
+import { prisma } from '../db/prisma';
 
 const DUMMY_HASH = bcrypt.hashSync('dummy-password-for-timing', 10);
 
@@ -31,9 +32,10 @@ authRouter.post('/login', async (req, res) => {
     return;
   }
 
-  const token = signSessionToken({ username: user.username });
+  const role = normalizeAdminRole(user.role);
+  const token = signSessionToken({ username: user.username, role });
   res.cookie(AUTH_COOKIE_NAME, token, buildCookieOptions());
-  res.json({ ok: true, username: user.username });
+  res.json({ ok: true, username: user.username, role });
 });
 
 authRouter.post('/logout', (_req, res) => {
@@ -60,6 +62,7 @@ authRouter.get('/me', (req, res) => {
 
   res.status(200).json({
     authenticated: true,
-    username: session.username
+    username: session.username,
+    role: session.role
   });
 });

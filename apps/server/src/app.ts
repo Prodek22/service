@@ -1,7 +1,7 @@
-import cookieParser from 'cookie-parser';
+﻿import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import express from 'express';
-import { requireAuth } from './auth/middleware';
+import { requireAdmin, requireAuth } from './auth/middleware';
 import { env } from './config/env';
 import { authRouter } from './routes/authRoutes';
 import { dashboardRouter } from './routes/dashboardRoutes';
@@ -26,8 +26,8 @@ export const createApp = () => {
   app.use('/api/auth', authRouter);
   app.use('/api/timesheet', timesheetRouter);
   app.use('/api/dashboard', requireAuth, dashboardRouter);
-  app.use('/api/employees', requireAuth, employeesRouter);
-  app.use('/api/maintenance', requireAuth, maintenanceRouter);
+  app.use('/api/employees', requireAdmin, employeesRouter);
+  app.use('/api/maintenance', requireAdmin, maintenanceRouter);
 
   app.use((_req, res) => {
     res.status(404).json({ error: 'Not found' });
