@@ -10,6 +10,52 @@
   --danger: #b23a48;
   --warning: #8a5d10;
   --line: #dccab8;
+  --body-grad-1: #fff8f0;
+  --body-grad-2: #f3e4d6;
+  --body-grad-3: #e4ccb5;
+  --paid-row: #b2d6c0;
+  --paid-row-hover: #9fc7af;
+  --paid-row-border: #86b194;
+  --table-row-odd: #f4f6fb;
+  --table-row-even: #e9edf4;
+  --table-row-hover: #dde4f1;
+  --table-text: #253041;
+  --table-border: #d2dae8;
+  --timesheet-wrap-start: #ede3d8;
+  --timesheet-wrap-end: #e5d4c3;
+  --cycle-bg-start: #313056;
+  --cycle-bg-end: #272448;
+  --cycle-border: #2d2a49;
+  --cycle-text: #f1f4ff;
+}
+
+html[data-theme='dark'] {
+  --bg: #121722;
+  --card: #1b2331;
+  --ink: #e5edf8;
+  --muted: #a6b5c8;
+  --accent: #d8a173;
+  --accent-soft: #334155;
+  --danger: #f26b78;
+  --warning: #f4c261;
+  --line: #2f3d52;
+  --body-grad-1: #111823;
+  --body-grad-2: #162435;
+  --body-grad-3: #1e2e45;
+  --paid-row: #2e5c49;
+  --paid-row-hover: #376956;
+  --paid-row-border: #4a7e67;
+  --table-row-odd: #1f2938;
+  --table-row-even: #243043;
+  --table-row-hover: #2f3b50;
+  --table-text: #e3edf9;
+  --table-border: #36465f;
+  --timesheet-wrap-start: #1f2a3a;
+  --timesheet-wrap-end: #223248;
+  --cycle-bg-start: #334d6f;
+  --cycle-bg-end: #283d59;
+  --cycle-border: #486181;
+  --cycle-text: #e5eefb;
 }
 
 * {
@@ -24,7 +70,7 @@ body {
   font-weight: 500;
   line-height: 1.45;
   color: var(--ink);
-  background: radial-gradient(circle at top left, #fff8f0, #f3e4d6 45%, #e4ccb5 100%);
+  background: radial-gradient(circle at top left, var(--body-grad-1), var(--body-grad-2) 45%, var(--body-grad-3) 100%);
 }
 
 h1,
@@ -91,6 +137,22 @@ a {
   cursor: pointer;
 }
 
+.theme-toggle {
+  margin-bottom: 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 8px 12px;
+  background: var(--card);
+  color: var(--ink);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.85rem;
+}
+
+.theme-toggle:hover {
+  filter: brightness(0.97);
+}
+
 .sidebar a {
   color: #ffe7d2;
   text-decoration: none;
@@ -135,6 +197,10 @@ a {
   color: var(--muted);
 }
 
+html[data-theme='dark'] .public-header {
+  background: rgba(23, 33, 49, 0.88);
+}
+
 .public-footer {
   border-top: 1px solid var(--line);
   padding: 12px 24px;
@@ -144,6 +210,10 @@ a {
   text-align: center;
   color: var(--muted);
   background: rgba(255, 249, 241, 0.72);
+}
+
+html[data-theme='dark'] .public-footer {
+  background: rgba(23, 33, 49, 0.72);
 }
 
 .public-footer-copy {
@@ -184,6 +254,13 @@ a {
   color: var(--ink);
   text-decoration: none;
   font: inherit;
+}
+
+html[data-theme='dark'] .public-footer-admin a,
+html[data-theme='dark'] .public-footer-admin button {
+  background: #1f2b3f;
+  border-color: #455973;
+  color: var(--ink);
 }
 
 .public-footer-admin button {
@@ -240,6 +317,11 @@ a {
   font-weight: 600;
 }
 
+html[data-theme='dark'] .rank-tabs button {
+  background: #243043;
+  border-color: #42556e;
+}
+
 .rank-tabs button.active {
   background: #8a5a36;
   border-color: #73492b;
@@ -259,6 +341,18 @@ a {
   background: #fffdf9;
   color: var(--ink);
   font: inherit;
+}
+
+html[data-theme='dark'] .filters input,
+html[data-theme='dark'] .filters select,
+html[data-theme='dark'] .filters button,
+html[data-theme='dark'] .filters a,
+html[data-theme='dark'] .modal input,
+html[data-theme='dark'] .modal select,
+html[data-theme='dark'] .modal button {
+  background: #1f2b3f;
+  border-color: #465c79;
+  color: var(--ink);
 }
 
 .filters button,
@@ -358,7 +452,7 @@ th {
 
 .timesheet-table-wrap {
   padding: 12px;
-  background: linear-gradient(160deg, #ede3d8 0%, #e5d4c3 100%);
+  background: linear-gradient(160deg, var(--timesheet-wrap-start) 0%, var(--timesheet-wrap-end) 100%);
 }
 
 .timesheet-table {
@@ -380,20 +474,20 @@ th {
 }
 
 .timesheet-table tbody tr:nth-child(odd) {
-  background: #f4f6fb;
+  background: var(--table-row-odd);
 }
 
 .timesheet-table tbody tr:nth-child(even) {
-  background: #e9edf4;
+  background: var(--table-row-even);
 }
 
 .timesheet-table tbody tr:hover {
-  background: #dde4f1;
+  background: var(--table-row-hover);
 }
 
 .timesheet-table td {
-  border-bottom: 1px solid #d2dae8;
-  color: #253041;
+  border-bottom: 1px solid var(--table-border);
+  color: var(--table-text);
 }
 
 .timesheet-table tbody tr:last-child td {
@@ -401,12 +495,12 @@ th {
 }
 
 .timesheet-table tbody tr.is-paid td {
-  background: #cde8d8 !important;
-  border-bottom-color: #afd4bf;
+  background: var(--paid-row) !important;
+  border-bottom-color: var(--paid-row-border);
 }
 
 .timesheet-table tbody tr.is-paid:hover td {
-  background: #bedfcb !important;
+  background: var(--paid-row-hover) !important;
 }
 
 .timesheet-table .btn-history {
@@ -415,9 +509,9 @@ th {
 
 .cycle-select {
   min-width: min(100%, 480px);
-  border: 1px solid #2d2a49 !important;
-  background: linear-gradient(180deg, #313056 0%, #272448 100%) !important;
-  color: #f1f4ff !important;
+  border: 1px solid var(--cycle-border) !important;
+  background: linear-gradient(180deg, var(--cycle-bg-start) 0%, var(--cycle-bg-end) 100%) !important;
+  color: var(--cycle-text) !important;
   font-weight: 600;
   letter-spacing: 0.01em;
   box-shadow: 0 6px 14px rgba(36, 33, 63, 0.22);
@@ -454,6 +548,11 @@ th {
 .badge.ok {
   background: #def5ea;
   color: #1f6f45;
+}
+
+html[data-theme='dark'] .badge.ok {
+  background: #295845;
+  color: #d2ffeb;
 }
 
 .badge.warning {
@@ -508,7 +607,7 @@ th {
 
 .modal {
   width: min(520px, 100%);
-  background: #fff;
+  background: var(--card);
   border-radius: 12px;
   border: 1px solid var(--line);
   padding: 16px;
@@ -537,7 +636,7 @@ th {
   border: 1px solid var(--line);
   border-radius: 10px;
   padding: 10px;
-  background: #fff7ef;
+  background: var(--card);
 }
 
 .raw-item header {
@@ -562,12 +661,12 @@ th {
   min-height: 100vh;
   display: grid;
   place-items: center;
-  background: radial-gradient(circle at top right, #fff8f0, #f1dbc6 48%, #dcb896 100%);
+  background: radial-gradient(circle at top right, var(--body-grad-1), var(--body-grad-2) 48%, var(--body-grad-3) 100%);
 }
 
 .auth-card {
   width: min(420px, 92vw);
-  background: white;
+  background: var(--card);
   border: 1px solid var(--line);
   border-radius: 14px;
   padding: 20px;

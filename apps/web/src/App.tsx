@@ -7,6 +7,8 @@ import { LoginPage } from './pages/LoginPage';
 import { TimesheetPage } from './pages/TimesheetPage';
 import { AdminRole, AuthMeResponse } from './types';
 
+type ThemeMode = 'light' | 'dark';
+
 type AuthState = {
   checked: boolean;
   authenticated: boolean;
@@ -25,17 +27,22 @@ const LoadingCard = () => (
 type AdminLayoutProps = {
   username: string;
   role: AdminRole;
+  theme: ThemeMode;
+  onToggleTheme: () => void;
   onLogout: () => Promise<void>;
   children: ReactNode;
 };
 
-const AdminLayout = ({ username, role, onLogout, children }: AdminLayoutProps) => {
+const AdminLayout = ({ username, role, theme, onToggleTheme, onLogout, children }: AdminLayoutProps) => {
   const canManage = role === 'ADMIN';
 
   return (
     <div className="layout">
       <aside className="sidebar">
         <h1>Service Admin</h1>
+        <button type="button" className="theme-toggle" onClick={onToggleTheme}>
+          {theme === 'dark' ? 'Tema light' : 'Tema dark'}
+        </button>
         <nav>
           <NavLink to="/admin" end className={({ isActive }) => (isActive ? 'active' : '')}>
             Dashboard
@@ -71,10 +78,12 @@ const AdminLayout = ({ username, role, onLogout, children }: AdminLayoutProps) =
 type PublicLayoutProps = {
   isAuthenticated: boolean;
   username: string | null;
+  theme: ThemeMode;
+  onToggleTheme: () => void;
   onLogout: () => Promise<void>;
 };
 
-const PublicLayout = ({ isAuthenticated, username, onLogout }: PublicLayoutProps) => {
+const PublicLayout = ({ isAuthenticated, username, theme, onToggleTheme, onLogout }: PublicLayoutProps) => {
   const [showAdminAccess, setShowAdminAccess] = useState(false);
 
   return (
@@ -84,6 +93,9 @@ const PublicLayout = ({ isAuthenticated, username, onLogout }: PublicLayoutProps
           <h1>Pontaj Service</h1>
           <p>Vizualizare publica read-only</p>
         </div>
+        <button type="button" className="theme-toggle" onClick={onToggleTheme}>
+          {theme === 'dark' ? 'Tema light' : 'Tema dark'}
+        </button>
       </header>
       <main className="content">
         <TimesheetPage readOnly />
@@ -123,6 +135,19 @@ const PublicLayout = ({ isAuthenticated, username, onLogout }: PublicLayoutProps
 };
 
 export const App = () => {
+  const [theme, setTheme] = useState<ThemeMode>(() => {
+    if (typeof window === 'undefined') {
+      return 'light';
+    }
+
+    const savedTheme = window.localStorage.getItem('service-theme');
+    if (savedTheme === 'dark' || savedTheme === 'light') {
+      return savedTheme;
+    }
+
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  });
+
   const [auth, setAuth] = useState<AuthState>({
     checked: false,
     authenticated: false,
@@ -154,6 +179,11 @@ export const App = () => {
     void refreshAuth();
   }, []);
 
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    window.localStorage.setItem('service-theme', theme);
+  }, [theme]);
+
   const handleLogin = async (username: string, password: string) => {
     setLoginLoading(true);
     try {
@@ -176,6 +206,7 @@ export const App = () => {
   };
 
   const headerUser = useMemo(() => auth.username ?? 'admin', [auth.username]);
+  const toggleTheme = () => setTheme((current) => (current === 'dark' ? 'light' : 'dark'));
 
   const renderAdminPage = (content: ReactNode, options?: { adminOnly?: boolean }) => {
     if (!auth.checked) {
@@ -191,7 +222,13 @@ export const App = () => {
     }
 
     return (
-      <AdminLayout username={headerUser} role={auth.role} onLogout={handleLogout}>
+      <AdminLayout
+        username={headerUser}
+        role={auth.role}
+        theme={theme}
+        onToggleTheme={toggleTheme}
+        onLogout={handleLogout}
+      >
         {content}
       </AdminLayout>
     );
@@ -201,7 +238,15 @@ export const App = () => {
     <Routes>
       <Route
         path="/"
-        element={<PublicLayout isAuthenticated={auth.authenticated} username={auth.username} onLogout={handleLogout} />}
+        element={
+          <PublicLayout
+            isAuthenticated={auth.authenticated}
+            username={auth.username}
+            theme={theme}
+            onToggleTheme={toggleTheme}
+            onLogout={handleLogout}
+          />
+        }
       />
       <Route
         path="/login"
@@ -217,4 +262,3 @@ export const App = () => {
     </Routes>
   );
 };
-
