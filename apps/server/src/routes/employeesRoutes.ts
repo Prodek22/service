@@ -1,5 +1,6 @@
 import { EmployeeStatus } from '@prisma/client';
 import { Router } from 'express';
+import { requireAdmin } from '../auth/middleware';
 import { prisma } from '../db/prisma';
 import { normalizeForCompare } from '../utils/normalize';
 
@@ -228,7 +229,7 @@ employeesRouter.get('/:id/raw', async (req, res) => {
   res.json(entries);
 });
 
-employeesRouter.patch('/:id', async (req, res) => {
+employeesRouter.patch('/:id', requireAdmin, async (req, res) => {
   const id = Number.parseInt(req.params.id, 10);
 
   if (Number.isNaN(id)) {
@@ -273,7 +274,7 @@ employeesRouter.get('/:id/aliases', async (req, res) => {
   res.json(aliases);
 });
 
-employeesRouter.post('/:id/aliases', async (req, res) => {
+employeesRouter.post('/:id/aliases', requireAdmin, async (req, res) => {
   const id = Number.parseInt(req.params.id, 10);
   if (Number.isNaN(id)) {
     res.status(400).json({ error: 'ID invalid' });

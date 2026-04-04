@@ -34,8 +34,6 @@ type AdminLayoutProps = {
 };
 
 const AdminLayout = ({ username, role, theme, onToggleTheme, onLogout, children }: AdminLayoutProps) => {
-  const canManage = role === 'ADMIN';
-
   return (
     <div className="layout">
       <aside className="sidebar">
@@ -47,16 +45,12 @@ const AdminLayout = ({ username, role, theme, onToggleTheme, onLogout, children 
           <NavLink to="/admin" end className={({ isActive }) => (isActive ? 'active' : '')}>
             Dashboard
           </NavLink>
-          {canManage ? (
-            <>
-              <NavLink to="/admin/employees" className={({ isActive }) => (isActive ? 'active' : '')}>
-                Angajati & CV-uri
-              </NavLink>
-              <NavLink to="/admin/timesheet" className={({ isActive }) => (isActive ? 'active' : '')}>
-                Pontaj saptamanal
-              </NavLink>
-            </>
-          ) : null}
+          <NavLink to="/admin/employees" className={({ isActive }) => (isActive ? 'active' : '')}>
+            Angajati & CV-uri
+          </NavLink>
+          <NavLink to="/admin/timesheet" className={({ isActive }) => (isActive ? 'active' : '')}>
+            Pontaj saptamanal
+          </NavLink>
           <NavLink to="/" className={({ isActive }) => (isActive ? 'active' : '')}>
             Pagina publica
           </NavLink>
@@ -208,17 +202,13 @@ export const App = () => {
   const headerUser = useMemo(() => auth.username ?? 'admin', [auth.username]);
   const toggleTheme = () => setTheme((current) => (current === 'dark' ? 'light' : 'dark'));
 
-  const renderAdminPage = (content: ReactNode, options?: { adminOnly?: boolean }) => {
+  const renderAdminPage = (content: ReactNode) => {
     if (!auth.checked) {
       return <LoadingCard />;
     }
 
     if (!auth.authenticated || !auth.role) {
       return <Navigate to="/login" replace />;
-    }
-
-    if (options?.adminOnly && auth.role !== 'ADMIN') {
-      return <Navigate to="/admin" replace />;
     }
 
     return (
@@ -253,8 +243,8 @@ export const App = () => {
         element={auth.authenticated ? <Navigate to="/admin" replace /> : <LoginPage loading={loginLoading} onLogin={handleLogin} />}
       />
       <Route path="/admin" element={renderAdminPage(<DashboardPage canManage={auth.role === 'ADMIN'} />)} />
-      <Route path="/admin/employees" element={renderAdminPage(<EmployeesPage />, { adminOnly: true })} />
-      <Route path="/admin/timesheet" element={renderAdminPage(<TimesheetPage />, { adminOnly: true })} />
+      <Route path="/admin/employees" element={renderAdminPage(<EmployeesPage readOnly={auth.role !== 'ADMIN'} />)} />
+      <Route path="/admin/timesheet" element={renderAdminPage(<TimesheetPage readOnly={auth.role !== 'ADMIN'} />)} />
       <Route path="/dashboard" element={<Navigate to="/admin" replace />} />
       <Route path="/employees" element={<Navigate to="/admin/employees" replace />} />
       <Route path="/timesheet" element={<Navigate to="/admin/timesheet" replace />} />

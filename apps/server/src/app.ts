@@ -26,7 +26,7 @@ export const createApp = () => {
   app.use('/api/auth', authRouter);
   app.use('/api/timesheet', timesheetRouter);
   app.use('/api/dashboard', requireAuth, dashboardRouter);
-  app.use('/api/employees', requireAdmin, employeesRouter);
+  app.use('/api/employees', requireAuth, employeesRouter);
   app.use('/api/maintenance', requireAdmin, maintenanceRouter);
 
   app.use((_req, res) => {

@@ -7,7 +7,11 @@ type EmployeeEdit = Partial<Pick<Employee, 'iban' | 'monthsInCity' | 'nickname' 
   status?: Employee['status'];
 };
 
-export const EmployeesPage = () => {
+type EmployeesPageProps = {
+  readOnly?: boolean;
+};
+
+export const EmployeesPage = ({ readOnly = false }: EmployeesPageProps) => {
   const [data, setData] = useState<EmployeesResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -91,7 +95,7 @@ export const EmployeesPage = () => {
   const submitEdit = async (event: FormEvent) => {
     event.preventDefault();
 
-    if (!editingEmployee) {
+    if (!editingEmployee || readOnly) {
       return;
     }
 
@@ -238,7 +242,7 @@ export const EmployeesPage = () => {
               <th>INTRARE</th>
               <th>BULETIN</th>
               <th>STATUS</th>
-              <th>ACTIUNI</th>
+              <th>{readOnly ? 'DETALII' : 'ACTIUNI'}</th>
             </tr>
           </thead>
           <tbody>
@@ -266,7 +270,7 @@ export const EmployeesPage = () => {
                   {employee.status === 'DELETED' ? <span className="badge muted">Sters</span> : null}
                 </td>
                 <td>
-                  <button onClick={() => openEdit(employee)}>Editeaza</button>
+                  {!readOnly ? <button onClick={() => openEdit(employee)}>Editeaza</button> : null}
                   <button onClick={() => void openRaw(employee.id)}>Raw</button>
                 </td>
               </tr>
