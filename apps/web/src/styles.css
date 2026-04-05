@@ -848,20 +848,91 @@ html[data-theme='dark'] .auth-shell {
   transform: translateY(-1px);
 }
 
-.auth-card button {
+.auth-submit-wrap {
   margin-top: 8px;
-  border: 1px solid rgba(229, 183, 146, 0.7);
-  background: linear-gradient(180deg, #c98f62 0%, #aa7145 100%);
-  color: #fff7f0;
-  border-radius: 8px;
-  padding: 13px 12px;
-  font-size: 1.06rem;
-  font-weight: 700;
-  cursor: pointer;
+  display: flex;
+  justify-content: center;
 }
 
-.auth-card button:hover {
+.login-3d-btn {
+  position: relative;
+  width: min(240px, 100%);
+  height: 60px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+  transform: rotate(-8deg) skew(14deg);
+}
+
+.login-3d-btn span {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9px;
+  color: #fff8f1;
+  font-size: 1.08rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  transition: transform 0.35s ease, opacity 0.35s ease, filter 0.35s ease;
+}
+
+.login-3d-btn span:nth-child(1) {
+  background: #5d3a24;
+}
+
+.login-3d-btn span:nth-child(2) {
+  background: #74462a;
+}
+
+.login-3d-btn span:nth-child(3) {
+  background: #925533;
+}
+
+.login-3d-btn span:nth-child(4) {
+  background: #b26b3f;
+}
+
+.login-3d-btn .login-3d-btn-label {
+  background: linear-gradient(180deg, #cc8e61 0%, #ad6f45 100%);
+  box-shadow: 0 8px 18px rgba(39, 18, 9, 0.32);
+}
+
+.login-3d-btn:hover:not(:disabled) span:nth-child(5) {
+  transform: translate(24px, -24px);
   filter: brightness(1.05);
+}
+
+.login-3d-btn:hover:not(:disabled) span:nth-child(4) {
+  transform: translate(18px, -18px);
+  opacity: 0.85;
+}
+
+.login-3d-btn:hover:not(:disabled) span:nth-child(3) {
+  transform: translate(12px, -12px);
+  opacity: 0.7;
+}
+
+.login-3d-btn:hover:not(:disabled) span:nth-child(2) {
+  transform: translate(6px, -6px);
+  opacity: 0.5;
+}
+
+.login-3d-btn:hover:not(:disabled) span:nth-child(1) {
+  opacity: 0.3;
+}
+
+.login-3d-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.82;
+  filter: grayscale(0.15);
+}
+
+.login-3d-btn:focus-visible {
+  outline: 2px solid rgba(240, 196, 157, 0.85);
+  outline-offset: 6px;
 }
 
 html[data-theme='dark'] .login-spotlight-title {
@@ -874,6 +945,10 @@ html[data-theme='dark'] .login-spotlight-title {
     white-space: normal;
     padding: 0 10px;
     letter-spacing: 0.06em;
+  }
+
+  .login-3d-btn {
+    transform: rotate(-5deg) skew(10deg);
   }
 }
 

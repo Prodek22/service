@@ -54,9 +54,15 @@ export const LoginPage = ({ loading = false, onLogin }: LoginPageProps) => {
 
           {error ? <p className="error">{error}</p> : null}
 
-          <button type="submit" disabled={loading}>
-            {loading ? 'Se autentifică...' : 'Login'}
-          </button>
+          <div className="auth-submit-wrap">
+            <button type="submit" className="login-3d-btn" disabled={loading}>
+              <span aria-hidden="true" />
+              <span aria-hidden="true" />
+              <span aria-hidden="true" />
+              <span aria-hidden="true" />
+              <span className="login-3d-btn-label">{loading ? 'Se autentifică...' : 'Login'}</span>
+            </button>
+          </div>
         </form>
       </div>
     </div>
