@@ -706,32 +706,44 @@ html[data-theme='dark'] .auth-shell {
 
 .auth-card {
   width: min(420px, 92vw);
-  background: var(--card);
-  border: 1px solid var(--line);
+  background: linear-gradient(180deg, rgba(92, 56, 34, 0.94), rgba(61, 35, 21, 0.95));
+  border: 1px solid rgba(214, 161, 119, 0.46);
   border-radius: 14px;
   padding: 20px;
   display: grid;
   gap: 10px;
+  color: #f7eadc;
+  box-shadow:
+    0 0 0 1px rgba(214, 161, 119, 0.24),
+    0 0 34px rgba(148, 90, 52, 0.5),
+    0 22px 40px rgba(6, 3, 2, 0.45);
 }
 
 .auth-card p {
   margin-top: 0;
-  color: var(--muted);
+  color: #efd9c5;
 }
 
 .auth-card input {
-  border: 1px solid #c9ad95;
+  border: 1px solid rgba(218, 170, 130, 0.52);
   border-radius: 8px;
   padding: 8px 10px;
+  background: rgba(33, 19, 12, 0.55);
+  color: #fff1e3;
 }
 
 .auth-card button {
   margin-top: 8px;
-  border: 1px solid #cca685;
-  background: var(--accent-soft);
+  border: 1px solid rgba(229, 183, 146, 0.7);
+  background: linear-gradient(180deg, #c98f62 0%, #aa7145 100%);
+  color: #fff7f0;
   border-radius: 8px;
   padding: 10px 12px;
   cursor: pointer;
+}
+
+.auth-card button:hover {
+  filter: brightness(1.05);
 }
 
 @media (max-width: 1024px) {
