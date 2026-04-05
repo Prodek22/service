@@ -1,4 +1,3 @@
-import { TimeEventType } from '@prisma/client';
 import { Client, GatewayIntentBits, Partials } from 'discord.js';
 import { env } from '../config/env';
 import { prisma } from '../db/prisma';
@@ -216,55 +215,9 @@ const runIncrementalEmployeeSync = async (lookbackDaysInput?: number) => {
       }
     });
 
-    const staleIds = staleUsers.map((employee) => employee.id);
-    const staleDiscordUserIds = staleUsers
-      .map((employee) => employee.discordUserId)
-      .filter((value): value is string => Boolean(value));
-
-    let deletedTimeEvents = 0;
-    if (staleIds.length || staleDiscordUserIds.length) {
-      const result = await prisma.timeEvent.deleteMany({
-        where: {
-          eventType: {
-            in: [TimeEventType.CLOCK_IN, TimeEventType.CLOCK_OUT, TimeEventType.MANUAL_ADJUSTMENT]
-          },
-          OR: [
-            ...(staleIds.length
-              ? [
-                  {
-                    targetEmployeeId: {
-                      in: staleIds
-                    }
-                  }
-                ]
-              : []),
-            ...(staleDiscordUserIds.length
-              ? [
-                  {
-                    discordUserId: {
-                      in: staleDiscordUserIds
-                    }
-                  }
-                ]
-              : [])
-          ]
-        }
-      });
-
-      deletedTimeEvents = result.count;
-    }
-
-    let deletedEmployees = 0;
-    if (staleIds.length) {
-      const result = await prisma.employee.deleteMany({
-        where: {
-          id: {
-            in: staleIds
-          }
-        }
-      });
-      deletedEmployees = result.count;
-    }
+    // Safety rule: incremental sync should never hard-delete employees/CVs/time-events.
+    // We only report stale members; cleanup can be handled by dedicated maintenance actions.
+    const staleUsersCount = staleUsers.length;
 
     let updatedProfiles = 0;
     for (const member of roster) {
@@ -300,23 +253,19 @@ const runIncrementalEmployeeSync = async (lookbackDaysInput?: number) => {
       updatedProfiles += updated.count;
     }
 
-    const latestCv = await prisma.employee.findFirst({
-      where: {
-        cvPostedAt: {
-          not: null
-        }
-      },
+    const latestCvRaw = await prisma.employeeCvRaw.findFirst({
       orderBy: {
-        cvPostedAt: 'desc'
+        createdAt: 'desc'
       },
       select: {
-        cvPostedAt: true
+        createdAt: true
       }
     });
 
-    const sinceDate = latestCv?.cvPostedAt
-      ? new Date(latestCv.cvPostedAt.getTime() - 6 * 60 * 60 * 1000)
-      : new Date(Date.now() - lookbackDays * 24 * 60 * 60 * 1000);
+    const fallbackSinceDate = new Date(Date.now() - lookbackDays * 24 * 60 * 60 * 1000);
+    const sinceDate = latestCvRaw?.createdAt
+      ? new Date(Math.min(latestCvRaw.createdAt.getTime() - 24 * 60 * 60 * 1000, fallbackSinceDate.getTime()))
+      : fallbackSinceDate;
 
     sendProgress(55, `Reimport CV incremental din ${sinceDate.toLocaleString('ro-RO')}...`);
 
@@ -334,8 +283,9 @@ const runIncrementalEmployeeSync = async (lookbackDaysInput?: number) => {
       lookbackDays,
       sinceDate: sinceDate.toISOString(),
       rosterCount: roster.length,
-      deletedTimeEvents,
-      deletedEmployees,
+      staleUsersCount,
+      deletedTimeEvents: 0,
+      deletedEmployees: 0,
       deletedGhostCycles,
       updatedProfiles,
       processed: backfillResult

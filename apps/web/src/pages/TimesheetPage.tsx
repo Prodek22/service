@@ -11,6 +11,7 @@ export const TimesheetPage = ({ readOnly = false }: TimesheetPageProps) => {
   const [cycles, setCycles] = useState<WeekCycle[]>([]);
   const [selectedCycleId, setSelectedCycleId] = useState<number | null>(null);
   const [summary, setSummary] = useState<TimesheetSummaryResponse | null>(null);
+  const [inactiveOnly, setInactiveOnly] = useState(false);
   const [payrollBusyByEmployee, setPayrollBusyByEmployee] = useState<Record<number, boolean>>({});
 
   const [historyTitle, setHistoryTitle] = useState<string | null>(null);
@@ -38,6 +39,15 @@ export const TimesheetPage = ({ readOnly = false }: TimesheetPageProps) => {
 
     return `${apiBaseUrl}/timesheet/export.csv?cycleId=${selectedCycleId}`;
   }, [selectedCycleId]);
+
+  const visibleRows = useMemo(() => {
+    const rows = summary?.totals ?? [];
+    if (!inactiveOnly) {
+      return rows;
+    }
+
+    return rows.filter((row) => row.inactiveLast3Weeks);
+  }, [summary, inactiveOnly]);
 
   const openHistory = async (employeeId: number | null, label: string) => {
     if (!employeeId || !selectedCycleId) {
@@ -145,6 +155,14 @@ export const TimesheetPage = ({ readOnly = false }: TimesheetPageProps) => {
           {!cycles.length && <option value="">Nu exista cicluri</option>}
         </select>
         {!readOnly ? <a href={exportLink}>Export CSV</a> : null}
+        <label>
+          <input
+            type="checkbox"
+            checked={inactiveOnly}
+            onChange={(event) => setInactiveOnly(event.target.checked)}
+          />
+          Doar inactivi (0 in ultimele 3)
+        </label>
       </div>
 
       <div className="card table-wrapper timesheet-table-wrap">
@@ -162,7 +180,7 @@ export const TimesheetPage = ({ readOnly = false }: TimesheetPageProps) => {
             </tr>
           </thead>
           <tbody>
-            {summary?.totals.map((row) => (
+            {visibleRows.map((row) => (
               <tr
                 key={row.key}
                 className={[
@@ -248,9 +266,13 @@ export const TimesheetPage = ({ readOnly = false }: TimesheetPageProps) => {
                 </td>
               </tr>
             ))}
-            {!summary?.totals.length ? (
+            {!visibleRows.length ? (
               <tr>
-                <td colSpan={8}>Nu exista pontaje in ciclul selectat.</td>
+                <td colSpan={8}>
+                  {inactiveOnly
+                    ? 'Nu exista angajati marcati ca inactivi pentru acest ciclu.'
+                    : 'Nu exista pontaje in ciclul selectat.'}
+                </td>
               </tr>
             ) : null}
           </tbody>
