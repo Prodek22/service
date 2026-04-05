@@ -751,10 +751,11 @@ html[data-theme='dark'] .auth-shell {
   text-transform: uppercase;
   line-height: 1;
   font: 900 clamp(1.5rem, 5.4vw, 4.4rem) 'Outfit', 'Trebuchet MS', sans-serif;
-  letter-spacing: clamp(0.04em, 0.6vw, 0.14em);
+  letter-spacing: clamp(0.02em, 0.35vw, 0.08em);
   color: rgba(19, 10, 6, 0.92);
   text-shadow: 0 8px 26px rgba(10, 6, 3, 0.45);
   user-select: none;
+  white-space: nowrap;
 }
 
 .login-spotlight-title::before {
@@ -849,7 +850,7 @@ html[data-theme='dark'] .auth-shell {
 }
 
 .auth-submit-wrap {
-  margin-top: 8px;
+  margin-top: 30px;
   display: flex;
   justify-content: center;
 }
@@ -942,9 +943,9 @@ html[data-theme='dark'] .login-spotlight-title {
 @media (max-width: 768px) {
   .login-spotlight-title {
     min-height: clamp(76px, 26vw, 120px);
-    white-space: normal;
+    font-size: clamp(1.05rem, 4.2vw, 1.7rem);
     padding: 0 10px;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.02em;
   }
 
   .login-3d-btn {
