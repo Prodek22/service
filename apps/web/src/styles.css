@@ -808,10 +808,47 @@ html[data-theme='dark'] .auth-shell {
   display: grid;
   gap: 10px;
   color: #f7eadc;
+  position: relative;
+  overflow: hidden;
   box-shadow:
     0 0 0 1px rgba(214, 161, 119, 0.24),
     0 0 34px rgba(148, 90, 52, 0.5),
     0 22px 40px rgba(6, 3, 2, 0.45);
+  animation: authCardPulse 4.8s ease-in-out infinite;
+}
+
+.auth-card::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  background: conic-gradient(
+    from 0deg,
+    rgba(235, 174, 128, 0.1),
+    rgba(197, 118, 71, 0.35),
+    rgba(111, 72, 47, 0.12),
+    rgba(235, 174, 128, 0.1)
+  );
+  animation: authBorderSpin 9s linear infinite;
+  pointer-events: none;
+}
+
+.auth-card::after {
+  content: '';
+  position: absolute;
+  top: -40%;
+  left: -70%;
+  width: 46%;
+  height: 180%;
+  transform: rotate(20deg);
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 227, 198, 0.16) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  animation: authSheen 5.8s ease-in-out infinite;
+  pointer-events: none;
 }
 
 .auth-card p {
@@ -950,6 +987,46 @@ html[data-theme='dark'] .login-spotlight-title {
 
   .login-3d-btn {
     transform: rotate(-5deg) skew(10deg);
+  }
+}
+
+@keyframes authBorderSpin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes authSheen {
+  0%,
+  100% {
+    left: -70%;
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  40% {
+    left: 130%;
+    opacity: 0;
+  }
+}
+
+@keyframes authCardPulse {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 1px rgba(214, 161, 119, 0.24),
+      0 0 34px rgba(148, 90, 52, 0.5),
+      0 22px 40px rgba(6, 3, 2, 0.45);
+  }
+  50% {
+    box-shadow:
+      0 0 0 1px rgba(231, 184, 146, 0.34),
+      0 0 42px rgba(173, 111, 69, 0.62),
+      0 24px 42px rgba(6, 3, 2, 0.5);
   }
 }
 
