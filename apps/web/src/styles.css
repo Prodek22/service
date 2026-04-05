@@ -724,6 +724,12 @@ html[data-theme='dark'] .auth-shell {
   color: #efd9c5;
 }
 
+.auth-card .auth-help {
+  margin: 2px 0 4px;
+  font-size: 0.8rem;
+  color: #f3d4b8;
+}
+
 .auth-card input {
   border: 1px solid rgba(218, 170, 130, 0.52);
   border-radius: 8px;
