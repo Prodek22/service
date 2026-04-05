@@ -818,10 +818,25 @@ html[data-theme='dark'] .auth-shell {
       0 0 16px rgba(211, 133, 78, 0.7),
       0 0 34px rgba(171, 96, 51, 0.5);
   }
-  50% {
+  20% {
     text-shadow:
       0 0 20px rgba(250, 191, 129, 0.8),
       0 0 38px rgba(199, 119, 66, 0.65);
+  }
+  40% {
+    text-shadow:
+      0 0 18px rgba(166, 104, 60, 0.75),
+      0 0 36px rgba(119, 67, 34, 0.62);
+  }
+  60% {
+    text-shadow:
+      0 0 20px rgba(84, 145, 213, 0.78),
+      0 0 38px rgba(40, 95, 162, 0.6);
+  }
+  80% {
+    text-shadow:
+      0 0 20px rgba(215, 88, 79, 0.78),
+      0 0 38px rgba(164, 44, 34, 0.62);
   }
 }
 
