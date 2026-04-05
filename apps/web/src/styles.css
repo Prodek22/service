@@ -524,6 +524,24 @@ th {
   background: var(--paid-row-hover) !important;
 }
 
+.timesheet-table tbody tr.is-inactive td {
+  background: #f2c7cd !important;
+  border-bottom-color: #dd9ca7;
+}
+
+.timesheet-table tbody tr.is-inactive:hover td {
+  background: #eab7bf !important;
+}
+
+html[data-theme='dark'] .timesheet-table tbody tr.is-inactive td {
+  background: #5a2f39 !important;
+  border-bottom-color: #71444f;
+}
+
+html[data-theme='dark'] .timesheet-table tbody tr.is-inactive:hover td {
+  background: #6a3641 !important;
+}
+
 .timesheet-table .btn-history {
   box-shadow: none;
 }
@@ -579,6 +597,16 @@ html[data-theme='dark'] .badge.ok {
 .badge.warning {
   background: #ffefc7;
   color: var(--warning);
+}
+
+.badge.danger {
+  background: #f7d2d8;
+  color: #8e1d30;
+}
+
+html[data-theme='dark'] .badge.danger {
+  background: #7d2f3d;
+  color: #ffe3e8;
 }
 
 .badge.muted {

@@ -163,7 +163,15 @@ export const TimesheetPage = ({ readOnly = false }: TimesheetPageProps) => {
           </thead>
           <tbody>
             {summary?.totals.map((row) => (
-              <tr key={row.key} className={row.payroll.isPaid ? 'is-paid' : undefined}>
+              <tr
+                key={row.key}
+                className={[
+                  row.payroll.isPaid ? 'is-paid' : '',
+                  row.inactiveLast3Weeks ? 'is-inactive' : ''
+                ]
+                  .filter(Boolean)
+                  .join(' ')}
+              >
                 <td>{row.employeeCode ?? '-'}</td>
                 <td>
                   {readOnly ? (
@@ -185,9 +193,21 @@ export const TimesheetPage = ({ readOnly = false }: TimesheetPageProps) => {
                         }}
                       />
                       <span>{row.displayName}</span>
+                      {row.inactiveLast3Weeks ? (
+                        <span className="badge danger" title="Pontaj 0 in ultimele 3 saptamani complete">
+                          0 in ultimele 3
+                        </span>
+                      ) : null}
                     </div>
                   ) : (
-                    row.displayName
+                    <>
+                      {row.displayName}
+                      {row.inactiveLast3Weeks ? (
+                        <span className="badge danger" title="Pontaj 0 in ultimele 3 saptamani complete">
+                          0 in ultimele 3
+                        </span>
+                      ) : null}
+                    </>
                   )}
                 </td>
                 <td>{row.rank ?? '-'}</td>

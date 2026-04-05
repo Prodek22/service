@@ -70,6 +70,7 @@ export type TimesheetSummaryResponse = {
     baseSalary: number;
     topBonus: number;
     salaryTotal: number;
+    inactiveLast3Weeks: boolean;
     totalLabel: string;
     normalLabel: string;
     manualLabel: string;

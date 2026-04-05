@@ -1,4 +1,4 @@
-import { TimeEventType, WeekCycle } from '@prisma/client';
+import { EmployeeStatus, TimeEventType, WeekCycle } from '@prisma/client';
 import { prisma } from '../db/prisma';
 import { parseTimesheetMessage } from '../parsers/timesheetParser';
 import { MessageInput } from '../types';
@@ -23,6 +23,7 @@ type EmployeeTotal = {
   baseSalary: number;
   topBonus: number;
   salaryTotal: number;
+  inactiveLast3Weeks: boolean;
 };
 
 const PAYROLL_REFERENCE_SECONDS = 7 * 60 * 60;
@@ -65,6 +66,27 @@ const resolveCanonicalRank = (rank: string | null): keyof typeof RANK_PAY_PER_7H
   }
 
   return null;
+};
+
+const getEmployeePresenceStart = (employee: { cvPostedAt: Date | null; createdAt: Date }): Date =>
+  employee.cvPostedAt ?? employee.createdAt;
+
+const isEmployeeEligibleForCycle = (
+  employee: { cvPostedAt: Date | null; createdAt: Date; deletedAt: Date | null },
+  cycle: { startedAt: Date; endedAt: Date | null }
+): boolean => {
+  const cycleEnd = cycle.endedAt ?? new Date();
+  const joinedAt = getEmployeePresenceStart(employee);
+
+  if (joinedAt.getTime() > cycleEnd.getTime()) {
+    return false;
+  }
+
+  if (employee.deletedAt && employee.deletedAt.getTime() <= cycle.startedAt.getTime()) {
+    return false;
+  }
+
+  return true;
 };
 
 const ensureCurrentCycle = async (serviceCode: string, at: Date): Promise<WeekCycle> => {
@@ -361,65 +383,98 @@ export const getWeekCycles = async (serviceCode?: string, limit = 6) =>
   });
 
 export const getCycleTotals = async (cycleId: number) => {
-  const events = await prisma.timeEvent.findMany({
+  const cycle = await prisma.weekCycle.findUnique({
     where: {
-      weekCycleId: cycleId,
-      isDeleted: false,
-      eventType: {
-        in: [TimeEventType.CLOCK_OUT, TimeEventType.MANUAL_ADJUSTMENT, TimeEventType.CLOCK_IN]
-      }
-    },
-    include: {
-      employee: true
-    },
-    orderBy: {
-      eventAt: 'asc'
+      id: cycleId
     }
   });
 
+  if (!cycle) {
+    return [];
+  }
+
+  const [events, employees] = await Promise.all([
+    prisma.timeEvent.findMany({
+      where: {
+        weekCycleId: cycleId,
+        isDeleted: false,
+        eventType: {
+          in: [TimeEventType.CLOCK_OUT, TimeEventType.MANUAL_ADJUSTMENT, TimeEventType.CLOCK_IN]
+        }
+      },
+      include: {
+        employee: true
+      },
+      orderBy: {
+        eventAt: 'asc'
+      }
+    }),
+    prisma.employee.findMany({
+      where: {
+        status: {
+          not: EmployeeStatus.DELETED
+        }
+      },
+      select: {
+        id: true,
+        iban: true,
+        rank: true,
+        nickname: true,
+        fullName: true,
+        discordUserId: true,
+        cvPostedAt: true,
+        createdAt: true,
+        deletedAt: true
+      }
+    })
+  ]);
+
+  const eligibleEmployees = employees.filter((employee) => isEmployeeEligibleForCycle(employee, cycle));
+  const eligibleEmployeeById = new Map(eligibleEmployees.map((employee) => [employee.id, employee]));
   const totals = new Map<string, EmployeeTotal>();
 
-  for (const event of events) {
-    const key =
-      event.targetEmployeeId != null
-        ? `employee:${event.targetEmployeeId}`
-        : event.discordUserId
-          ? `discord:${event.discordUserId}`
-          : event.targetEmployeeName
-            ? `name:${event.targetEmployeeName}`
-            : `unknown:${event.id}`;
+  for (const employee of eligibleEmployees) {
+    const key = `employee:${employee.id}`;
+    totals.set(key, {
+      key,
+      employeeId: employee.id,
+      employeeCode: employee.iban ?? null,
+      rank: employee.rank ?? null,
+      displayName: employee.nickname ?? employee.fullName ?? employee.iban ?? `Employee #${employee.id}`,
+      discordUserId: employee.discordUserId ?? null,
+      totalSeconds: 0,
+      normalSeconds: 0,
+      manualAdjustmentSeconds: 0,
+      positiveAdjustmentSeconds: 0,
+      negativeAdjustmentSeconds: 0,
+      manualAdjustmentsCount: 0,
+      eventsCount: 0,
+      payableSeconds: 0,
+      baseSalary: 0,
+      topBonus: 0,
+      salaryTotal: 0,
+      inactiveLast3Weeks: false
+    });
+  }
 
-    if (!totals.has(key)) {
-      totals.set(key, {
-        key,
-        employeeId: event.targetEmployeeId,
-        employeeCode: event.employee?.iban ?? null,
-        rank: event.targetEmployeeRank ?? event.employee?.rank ?? null,
-        displayName:
-          event.employee?.nickname ??
-          event.employee?.fullName ??
-          event.targetEmployeeName ??
-          event.discordUserId ??
-          'Necunoscut',
-        discordUserId: event.discordUserId,
-        totalSeconds: 0,
-        normalSeconds: 0,
-        manualAdjustmentSeconds: 0,
-        positiveAdjustmentSeconds: 0,
-        negativeAdjustmentSeconds: 0,
-        manualAdjustmentsCount: 0,
-        eventsCount: 0,
-        payableSeconds: 0,
-        baseSalary: 0,
-        topBonus: 0,
-        salaryTotal: 0
-      });
+  for (const event of events) {
+    if (event.targetEmployeeId == null || !eligibleEmployeeById.has(event.targetEmployeeId)) {
+      continue;
     }
 
-    const current = totals.get(key)!;
+    const key = `employee:${event.targetEmployeeId}`;
+    const current = totals.get(key);
+    if (!current) {
+      continue;
+    }
+
     const delta = event.deltaSeconds ?? 0;
     if (!current.rank) {
       current.rank = event.targetEmployeeRank ?? event.employee?.rank ?? null;
+    }
+
+    if (!current.discordUserId && event.discordUserId) {
+      current.discordUserId = event.discordUserId;
     }
 
     if (event.eventType === TimeEventType.CLOCK_OUT) {
@@ -442,9 +497,95 @@ export const getCycleTotals = async (cycleId: number) => {
     current.eventsCount += 1;
   }
 
-  const sorted = [...totals.values()]
-    .filter((row) => row.employeeId != null)
-    .sort((a, b) => b.totalSeconds - a.totalSeconds);
+  const recentCycles = await prisma.weekCycle.findMany({
+    where: {
+      serviceCode: cycle.serviceCode,
+      resetMessageId: {
+        not: null
+      }
+    },
+    orderBy: [{ startedAt: 'desc' }, { id: 'desc' }],
+    take: 12
+  });
+
+  const currentCycle =
+    recentCycles.find((item) => item.endedAt === null) ??
+    recentCycles.slice().sort((a, b) => b.startedAt.getTime() - a.startedAt.getTime())[0] ??
+    null;
+
+  const referenceCompletedCycles = recentCycles
+    .filter((item) => item.endedAt !== null && (!currentCycle || item.id !== currentCycle.id))
+    .slice(0, 3);
+
+  const referenceCycleIds = referenceCompletedCycles.map((item) => item.id);
+  const groupedPastTotals =
+    referenceCycleIds.length > 0
+      ? await prisma.timeEvent.groupBy({
+          by: ['weekCycleId', 'targetEmployeeId'],
+          where: {
+            weekCycleId: {
+              in: referenceCycleIds
+            },
+            targetEmployeeId: {
+              not: null
+            },
+            isDeleted: false,
+            eventType: {
+              in: [TimeEventType.CLOCK_OUT, TimeEventType.MANUAL_ADJUSTMENT]
+            }
+          },
+          _sum: {
+            deltaSeconds: true
+          }
+        })
+      : [];
+
+  const totalsByCycleAndEmployee = new Map<string, number>();
+  for (const grouped of groupedPastTotals) {
+    if (grouped.targetEmployeeId == null) {
+      continue;
+    }
+
+    totalsByCycleAndEmployee.set(
+      `${grouped.weekCycleId}:${grouped.targetEmployeeId}`,
+      grouped._sum.deltaSeconds ?? 0
+    );
+  }
+
+  for (const row of totals.values()) {
+    if (!row.employeeId || referenceCompletedCycles.length < 3) {
+      row.inactiveLast3Weeks = false;
+      continue;
+    }
+
+    const employee = eligibleEmployeeById.get(row.employeeId);
+    if (!employee) {
+      row.inactiveLast3Weeks = false;
+      continue;
+    }
+
+    const eligibleAllThree = referenceCompletedCycles.every((refCycle) =>
+      isEmployeeEligibleForCycle(employee, refCycle)
+    );
+
+    if (!eligibleAllThree) {
+      row.inactiveLast3Weeks = false;
+      continue;
+    }
+
+    row.inactiveLast3Weeks = referenceCompletedCycles.every((refCycle) => {
+      const total = totalsByCycleAndEmployee.get(`${refCycle.id}:${row.employeeId}`) ?? 0;
+      return total <= 0;
+    });
+  }
+
+  const sorted = [...totals.values()].sort((a, b) => {
+    if (b.totalSeconds !== a.totalSeconds) {
+      return b.totalSeconds - a.totalSeconds;
+    }
+
+    return a.displayName.localeCompare(b.displayName, 'ro');
+  });
 
   for (const row of sorted) {
     const rank = resolveCanonicalRank(row.rank);
