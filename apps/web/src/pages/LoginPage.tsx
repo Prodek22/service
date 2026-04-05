@@ -45,7 +45,7 @@ export const LoginPage = ({ loading = false, onLogin }: LoginPageProps) => {
           autoComplete="current-password"
           required
         />
-        <p className="auth-help">Pentru inregistrare contactati administratorul service-ului.</p>
+        <p className="auth-help">Pentru înregistrare contactați administratorul service-ului.</p>
 
         {error ? <p className="error">{error}</p> : null}
 
