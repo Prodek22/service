@@ -854,7 +854,9 @@ html[data-theme='dark'] .auth-shell {
   background: linear-gradient(180deg, #c98f62 0%, #aa7145 100%);
   color: #fff7f0;
   border-radius: 8px;
-  padding: 10px 12px;
+  padding: 13px 12px;
+  font-size: 1.06rem;
+  font-weight: 700;
   cursor: pointer;
 }
 
