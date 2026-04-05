@@ -49,6 +49,11 @@ export const TimesheetPage = ({ readOnly = false }: TimesheetPageProps) => {
     return rows.filter((row) => row.inactiveLast3Weeks);
   }, [summary, inactiveOnly]);
 
+  const cycleSalaryTotal = useMemo(
+    () => (summary?.totals ?? []).reduce((sum, row) => sum + row.salaryTotal, 0),
+    [summary]
+  );
+
   const openHistory = async (employeeId: number | null, label: string) => {
     if (!employeeId || !selectedCycleId) {
       return;
@@ -155,6 +160,11 @@ export const TimesheetPage = ({ readOnly = false }: TimesheetPageProps) => {
           {!cycles.length && <option value="">Nu exista cicluri</option>}
         </select>
         {!readOnly ? <a href={exportLink}>Export CSV</a> : null}
+        {!readOnly ? (
+          <div className="timesheet-week-salary-total">
+            Total salarii ciclu: <strong>{formatCurrency(cycleSalaryTotal)}</strong>
+          </div>
+        ) : null}
         <label>
           <input
             type="checkbox"
