@@ -739,104 +739,62 @@ html[data-theme='dark'] .auth-shell {
   gap: 14px;
 }
 
-.login-title-figure {
+.login-spotlight-title {
   margin: 0;
   width: min(960px, 96vw);
-  height: clamp(88px, 20vw, 190px);
+  min-height: clamp(88px, 20vw, 190px);
   position: relative;
-  transform-style: preserve-3d;
-  transform-origin: center center;
-  animation: loginWobble 7s ease-in-out infinite;
-}
-
-.login-title-layer {
-  margin: 0;
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   text-align: center;
-  line-height: 1.05;
   text-transform: uppercase;
+  line-height: 1;
   font: 900 clamp(1.5rem, 5.4vw, 4.4rem) 'Outfit', 'Trebuchet MS', sans-serif;
   letter-spacing: clamp(0.04em, 0.6vw, 0.14em);
-  color: #1a0d07;
-  text-shadow: 0 0 26px rgba(214, 145, 97, 0.58);
-  white-space: nowrap;
-  animation: loginGlow 9s ease-in-out infinite;
+  color: rgba(19, 10, 6, 0.92);
+  text-shadow: 0 8px 26px rgba(10, 6, 3, 0.45);
   user-select: none;
 }
 
-.login-title-layer:nth-child(2) {
-  transform: translateZ(4px);
+.login-spotlight-title::before {
+  content: attr(data-text);
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(90deg, #8f552f, #c18457, #7f4b2b, #5f8fc7, #b74e43, #8f552f);
+  background-size: 220% 100%;
+  -webkit-background-clip: text;
+  color: transparent;
+  clip-path: ellipse(120px 120px at -8% 40%);
+  animation:
+    loginSpotlightSweep 5.2s infinite alternate ease-in-out,
+    loginSpotlightHue 9s infinite linear;
 }
 
-.login-title-layer:nth-child(3) {
-  transform: translateZ(8px);
-}
-
-.login-title-layer:nth-child(4) {
-  transform: translateZ(12px);
-}
-
-.login-title-layer:nth-child(5) {
-  transform: translateZ(16px);
-}
-
-.login-title-layer:nth-child(6) {
-  transform: translateZ(20px);
-}
-
-.login-title-layer:nth-child(7) {
-  transform: translateZ(24px);
-}
-
-.login-title-layer:nth-child(8) {
-  transform: translateZ(28px);
-}
-
-@keyframes loginWobble {
-  0%,
-  100% {
-    transform: rotate3d(1, 1, 0, 20deg);
-  }
-  25% {
-    transform: rotate3d(-1, 1, 0, 18deg);
+@keyframes loginSpotlightSweep {
+  0% {
+    clip-path: ellipse(120px 120px at -8% 32%);
   }
   50% {
-    transform: rotate3d(-1, -1, 0, 20deg);
+    clip-path: ellipse(120px 120px at 50% 66%);
   }
-  75% {
-    transform: rotate3d(1, -1, 0, 18deg);
+  100% {
+    clip-path: ellipse(120px 120px at 108% 34%);
   }
 }
 
-@keyframes loginGlow {
-  0%,
+@keyframes loginSpotlightHue {
+  0% {
+    filter: hue-rotate(0deg) saturate(1.1);
+  }
+  50% {
+    filter: hue-rotate(26deg) saturate(1.2);
+  }
   100% {
-    text-shadow:
-      0 0 16px rgba(211, 133, 78, 0.7),
-      0 0 34px rgba(171, 96, 51, 0.5);
-  }
-  20% {
-    text-shadow:
-      0 0 20px rgba(250, 191, 129, 0.8),
-      0 0 38px rgba(199, 119, 66, 0.65);
-  }
-  40% {
-    text-shadow:
-      0 0 18px rgba(166, 104, 60, 0.75),
-      0 0 36px rgba(119, 67, 34, 0.62);
-  }
-  60% {
-    text-shadow:
-      0 0 20px rgba(84, 145, 213, 0.78),
-      0 0 38px rgba(40, 95, 162, 0.6);
-  }
-  80% {
-    text-shadow:
-      0 0 20px rgba(215, 88, 79, 0.78),
-      0 0 38px rgba(164, 44, 34, 0.62);
+    filter: hue-rotate(0deg) saturate(1.1);
   }
 }
 
@@ -904,16 +862,13 @@ html[data-theme='dark'] .auth-shell {
   filter: brightness(1.05);
 }
 
-html[data-theme='dark'] .login-title-layer {
-  color: #130b08;
+html[data-theme='dark'] .login-spotlight-title {
+  color: rgba(11, 6, 4, 0.95);
 }
 
 @media (max-width: 768px) {
-  .login-title-figure {
-    height: clamp(76px, 26vw, 120px);
-  }
-
-  .login-title-layer {
+  .login-spotlight-title {
+    min-height: clamp(76px, 26vw, 120px);
     white-space: normal;
     padding: 0 10px;
     letter-spacing: 0.06em;

@@ -9,7 +9,6 @@ export const LoginPage = ({ loading = false, onLogin }: LoginPageProps) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const titleLayers = Array.from({ length: 8 });
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
@@ -25,13 +24,9 @@ export const LoginPage = ({ loading = false, onLogin }: LoginPageProps) => {
   return (
     <div className="auth-shell">
       <div className="auth-stage">
-        <figure className="login-title-figure" aria-label="Paradise Auto Repair">
-          {titleLayers.map((_, index) => (
-            <h2 key={index} className="login-title-layer">
-              Paradise Auto Repair
-            </h2>
-          ))}
-        </figure>
+        <h2 className="login-spotlight-title" data-text="Paradise Auto Repair">
+          Paradise Auto Repair
+        </h2>
 
         <form className="auth-card" onSubmit={submit}>
           <h1>Service Admin Login</h1>
