@@ -505,17 +505,26 @@ export const getCycleTotals = async (cycleId: number) => {
       }
     },
     orderBy: [{ startedAt: 'desc' }, { id: 'desc' }],
-    take: 12
+    take: 52
   });
 
-  const currentCycle =
-    recentCycles.find((item) => item.endedAt === null) ??
-    recentCycles.slice().sort((a, b) => b.startedAt.getTime() - a.startedAt.getTime())[0] ??
-    null;
+  const selectedCycle =
+    recentCycles.find((item) => item.id === cycle.id) ?? cycle;
+  const isSelectedCurrentCycle = selectedCycle.endedAt === null;
+  const completedCyclesDesc = recentCycles.filter((item) => item.endedAt !== null);
 
-  const referenceCompletedCycles = recentCycles
-    .filter((item) => item.endedAt !== null && (!currentCycle || item.id !== currentCycle.id))
-    .slice(0, 3);
+  // Window is relative to selected cycle:
+  // - current/open cycle => last 3 completed before now
+  // - historical completed cycle => selected cycle + previous 2 completed
+  const referenceCompletedCycles = isSelectedCurrentCycle
+    ? completedCyclesDesc.slice(0, 3)
+    : completedCyclesDesc
+        .filter(
+          (item) =>
+            item.startedAt.getTime() < selectedCycle.startedAt.getTime() ||
+            (item.startedAt.getTime() === selectedCycle.startedAt.getTime() && item.id <= selectedCycle.id)
+        )
+        .slice(0, 3);
 
   const referenceCycleIds = referenceCompletedCycles.map((item) => item.id);
   const groupedPastTotals =
