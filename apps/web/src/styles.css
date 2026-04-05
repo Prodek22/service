@@ -732,6 +732,99 @@ html[data-theme='dark'] .auth-shell {
     url('/bgservice.png');
 }
 
+.auth-stage {
+  width: min(960px, 96vw);
+  display: grid;
+  justify-items: center;
+  gap: 14px;
+}
+
+.login-title-figure {
+  margin: 0;
+  width: min(960px, 96vw);
+  height: clamp(88px, 20vw, 190px);
+  position: relative;
+  transform-style: preserve-3d;
+  transform-origin: center center;
+  animation: loginWobble 7s ease-in-out infinite;
+}
+
+.login-title-layer {
+  margin: 0;
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  line-height: 1.05;
+  text-transform: uppercase;
+  font: 900 clamp(1.5rem, 5.4vw, 4.4rem) 'Outfit', 'Trebuchet MS', sans-serif;
+  letter-spacing: clamp(0.04em, 0.6vw, 0.14em);
+  color: #1a0d07;
+  text-shadow: 0 0 26px rgba(214, 145, 97, 0.58);
+  white-space: nowrap;
+  animation: loginGlow 9s ease-in-out infinite;
+  user-select: none;
+}
+
+.login-title-layer:nth-child(2) {
+  transform: translateZ(4px);
+}
+
+.login-title-layer:nth-child(3) {
+  transform: translateZ(8px);
+}
+
+.login-title-layer:nth-child(4) {
+  transform: translateZ(12px);
+}
+
+.login-title-layer:nth-child(5) {
+  transform: translateZ(16px);
+}
+
+.login-title-layer:nth-child(6) {
+  transform: translateZ(20px);
+}
+
+.login-title-layer:nth-child(7) {
+  transform: translateZ(24px);
+}
+
+.login-title-layer:nth-child(8) {
+  transform: translateZ(28px);
+}
+
+@keyframes loginWobble {
+  0%,
+  100% {
+    transform: rotate3d(1, 1, 0, 20deg);
+  }
+  25% {
+    transform: rotate3d(-1, 1, 0, 18deg);
+  }
+  50% {
+    transform: rotate3d(-1, -1, 0, 20deg);
+  }
+  75% {
+    transform: rotate3d(1, -1, 0, 18deg);
+  }
+}
+
+@keyframes loginGlow {
+  0%,
+  100% {
+    text-shadow:
+      0 0 16px rgba(211, 133, 78, 0.7),
+      0 0 34px rgba(171, 96, 51, 0.5);
+  }
+  50% {
+    text-shadow:
+      0 0 20px rgba(250, 191, 129, 0.8),
+      0 0 38px rgba(199, 119, 66, 0.65);
+  }
+}
+
 .auth-card {
   width: min(420px, 92vw);
   background: linear-gradient(180deg, rgba(92, 56, 34, 0.94), rgba(61, 35, 21, 0.95));
@@ -794,6 +887,22 @@ html[data-theme='dark'] .auth-shell {
 
 .auth-card button:hover {
   filter: brightness(1.05);
+}
+
+html[data-theme='dark'] .login-title-layer {
+  color: #130b08;
+}
+
+@media (max-width: 768px) {
+  .login-title-figure {
+    height: clamp(76px, 26vw, 120px);
+  }
+
+  .login-title-layer {
+    white-space: normal;
+    padding: 0 10px;
+    letter-spacing: 0.06em;
+  }
 }
 
 @media (max-width: 1024px) {
