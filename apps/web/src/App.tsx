@@ -87,16 +87,9 @@ const PublicLayout = ({ isAuthenticated, username, theme, onToggleTheme, onLogou
           <h1>Pontaj Service</h1>
           <p>Vizualizare publica read-only</p>
         </div>
-        <div className="public-header-actions">
-          {isAuthenticated ? (
-            <Link to="/admin" className="header-dashboard-link">
-              Dashboard
-            </Link>
-          ) : null}
-          <button type="button" className="theme-toggle" onClick={onToggleTheme}>
-            {theme === 'dark' ? 'Tema light' : 'Tema dark'}
-          </button>
-        </div>
+        <button type="button" className="theme-toggle" onClick={onToggleTheme}>
+          {theme === 'dark' ? 'Tema light' : 'Tema dark'}
+        </button>
       </header>
       <main className="content">
         <TimesheetPage readOnly />
@@ -231,20 +224,37 @@ export const App = () => {
     );
   };
 
+  const renderPublicPage = () => {
+    const publicPage = (
+      <PublicLayout
+        isAuthenticated={auth.authenticated}
+        username={auth.username}
+        theme={theme}
+        onToggleTheme={toggleTheme}
+        onLogout={handleLogout}
+      />
+    );
+
+    if (!auth.checked || !auth.authenticated || !auth.role) {
+      return publicPage;
+    }
+
+    return (
+      <AdminLayout
+        username={headerUser}
+        role={auth.role}
+        theme={theme}
+        onToggleTheme={toggleTheme}
+        onLogout={handleLogout}
+      >
+        {publicPage}
+      </AdminLayout>
+    );
+  };
+
   return (
     <Routes>
-      <Route
-        path="/"
-        element={
-          <PublicLayout
-            isAuthenticated={auth.authenticated}
-            username={auth.username}
-            theme={theme}
-            onToggleTheme={toggleTheme}
-            onLogout={handleLogout}
-          />
-        }
-      />
+      <Route path="/" element={renderPublicPage()} />
       <Route
         path="/login"
         element={auth.authenticated ? <Navigate to="/admin" replace /> : <LoginPage loading={loginLoading} onLogin={handleLogin} />}
