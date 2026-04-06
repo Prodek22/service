@@ -18,6 +18,7 @@ export const TimesheetPage = ({ readOnly = false }: TimesheetPageProps) => {
   const [sortBy, setSortBy] = useState<SortBy>('total');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
   const [payrollBusyByEmployee, setPayrollBusyByEmployee] = useState<Record<number, boolean>>({});
+  const [upBusyByEmployee, setUpBusyByEmployee] = useState<Record<number, boolean>>({});
 
   const [historyTitle, setHistoryTitle] = useState<string | null>(null);
   const [historyRows, setHistoryRows] = useState<TimeEventHistoryResponse['history']>([]);
@@ -152,7 +153,7 @@ export const TimesheetPage = ({ readOnly = false }: TimesheetPageProps) => {
     try {
       const response = await apiPost<{
         ok: boolean;
-        payroll: { isPaid: boolean; paidAt: string | null; paidBy: string | null; note: string | null };
+        payroll: { isPaid: boolean; isUp: boolean; paidAt: string | null; paidBy: string | null; note: string | null };
       }>('/timesheet/payroll-status', {
         cycleId: selectedCycleId,
         employeeId,
@@ -178,6 +179,62 @@ export const TimesheetPage = ({ readOnly = false }: TimesheetPageProps) => {
       setSummary(previous);
     } finally {
       setPayrollBusyByEmployee((current) => ({ ...current, [employeeId]: false }));
+    }
+  };
+
+  const toggleUpStatus = async (employeeId: number | null, isUp: boolean) => {
+    if (readOnly || !employeeId || !selectedCycleId || !summary) {
+      return;
+    }
+
+    setUpBusyByEmployee((current) => ({ ...current, [employeeId]: true }));
+
+    const previous = summary;
+    const optimistic: TimesheetSummaryResponse = {
+      ...previous,
+      totals: previous.totals.map((row) =>
+        row.employeeId === employeeId
+          ? {
+              ...row,
+              payroll: {
+                ...row.payroll,
+                isUp
+              }
+            }
+          : row
+      )
+    };
+    setSummary(optimistic);
+
+    try {
+      const response = await apiPost<{
+        ok: boolean;
+        payroll: { isPaid: boolean; isUp: boolean; paidAt: string | null; paidBy: string | null; note: string | null };
+      }>('/timesheet/up-status', {
+        cycleId: selectedCycleId,
+        employeeId,
+        isUp
+      });
+
+      setSummary((current) =>
+        current
+          ? {
+              ...current,
+              totals: current.totals.map((row) =>
+                row.employeeId === employeeId
+                  ? {
+                      ...row,
+                      payroll: response.payroll
+                    }
+                  : row
+              )
+            }
+          : current
+      );
+    } catch {
+      setSummary(previous);
+    } finally {
+      setUpBusyByEmployee((current) => ({ ...current, [employeeId]: false }));
     }
   };
 
@@ -234,6 +291,7 @@ export const TimesheetPage = ({ readOnly = false }: TimesheetPageProps) => {
               <th>Total ajustari (min)</th>
               <th>Salariu</th>
               <th>Platit</th>
+              <th>Up</th>
               <th>Istoric</th>
             </tr>
           </thead>
@@ -315,6 +373,21 @@ export const TimesheetPage = ({ readOnly = false }: TimesheetPageProps) => {
                   )}
                 </td>
                 <td>
+                  {readOnly ? (
+                    <span className={`badge ${row.payroll.isUp ? 'ok' : 'muted'}`}>{row.payroll.isUp ? 'DA' : 'NU'}</span>
+                  ) : (
+                    <label>
+                      <input
+                        type="checkbox"
+                        checked={row.payroll.isUp}
+                        disabled={!row.employeeId || Boolean(row.employeeId && upBusyByEmployee[row.employeeId])}
+                        onChange={(event) => void toggleUpStatus(row.employeeId, event.target.checked)}
+                      />{' '}
+                      {row.payroll.isUp ? 'DA' : 'NU'}
+                    </label>
+                  )}
+                </td>
+                <td>
                   <button
                     className="btn-history"
                     onClick={() => void openHistory(row.employeeId, row.displayName)}
@@ -327,7 +400,7 @@ export const TimesheetPage = ({ readOnly = false }: TimesheetPageProps) => {
             ))}
             {!visibleRows.length ? (
               <tr>
-                <td colSpan={9}>
+                <td colSpan={10}>
                   {inactiveOnly
                     ? 'Nu exista angajati marcati ca inactivi pentru acest ciclu.'
                     : 'Nu exista pontaje in ciclul selectat.'}

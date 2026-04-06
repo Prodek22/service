@@ -123,6 +123,7 @@ model TimesheetPayrollStatus {
   employeeId  Int      @map("employee_id")
   salaryTotal Int      @default(0) @map("salary_total")
   isPaid      Boolean  @default(false) @map("is_paid")
+  isUp        Boolean  @default(false) @map("is_up")
   paidAt      DateTime? @map("paid_at")
   paidBy      String?  @map("paid_by")
   note        String?  @db.Text

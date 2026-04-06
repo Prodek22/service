@@ -88,12 +88,14 @@ timesheetRouter.get('/summary', async (req, res) => {
       payroll: row.employeeId
         ? {
             isPaid: payrollByEmployee.get(row.employeeId)?.isPaid ?? false,
+            isUp: payrollByEmployee.get(row.employeeId)?.isUp ?? false,
             paidAt: payrollByEmployee.get(row.employeeId)?.paidAt ?? null,
             paidBy: payrollByEmployee.get(row.employeeId)?.paidBy ?? null,
             note: payrollByEmployee.get(row.employeeId)?.note ?? null
           }
         : {
             isPaid: false,
+            isUp: false,
             paidAt: null,
             paidBy: null,
             note: null
@@ -168,6 +170,70 @@ timesheetRouter.post('/payroll-status', requireAdmin, async (req, res) => {
     ok: true,
     payroll: {
       isPaid: saved.isPaid,
+      isUp: saved.isUp,
+      paidAt: saved.paidAt,
+      paidBy: saved.paidBy,
+      note: saved.note
+    }
+  });
+});
+
+timesheetRouter.post('/up-status', requireAdmin, async (req, res) => {
+  const cycleId = Number.parseInt(String(req.body?.cycleId ?? ''), 10);
+  const employeeId = Number.parseInt(String(req.body?.employeeId ?? ''), 10);
+  const isUp = Boolean(req.body?.isUp);
+
+  if (Number.isNaN(cycleId) || Number.isNaN(employeeId)) {
+    res.status(400).json({ error: 'cycleId si employeeId sunt obligatorii.' });
+    return;
+  }
+
+  const totals = await getCycleTotals(cycleId);
+  const employeeRow = totals.find((row) => row.employeeId === employeeId);
+
+  if (!employeeRow) {
+    res.status(404).json({ error: 'Angajatul nu are pontaj in ciclul selectat.' });
+    return;
+  }
+
+  const saved = await prisma.timesheetPayrollStatus.upsert({
+    where: {
+      weekCycleId_employeeId: {
+        weekCycleId: cycleId,
+        employeeId
+      }
+    },
+    create: {
+      weekCycleId: cycleId,
+      employeeId,
+      salaryTotal: employeeRow.salaryTotal,
+      isPaid: false,
+      isUp
+    },
+    update: {
+      salaryTotal: employeeRow.salaryTotal,
+      isUp
+    }
+  });
+
+  await recordAuditLog({
+    req,
+    res,
+    action: 'UP_STATUS_UPDATED',
+    entityType: 'timesheet_payroll_status',
+    entityId: `${cycleId}:${employeeId}`,
+    metadata: {
+      cycleId,
+      employeeId,
+      isUp
+    }
+  });
+
+  res.json({
+    ok: true,
+    payroll: {
+      isPaid: saved.isPaid,
+      isUp: saved.isUp,
       paidAt: saved.paidAt,
       paidBy: saved.paidBy,
       note: saved.note

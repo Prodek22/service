@@ -77,6 +77,7 @@ export type TimesheetSummaryResponse = {
     manualLabel: string;
     payroll: {
       isPaid: boolean;
+      isUp: boolean;
       paidAt: string | null;
       paidBy: string | null;
       note: string | null;
