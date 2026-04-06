@@ -1,17 +1,22 @@
 import { useEffect, useMemo, useState } from 'react';
 import { apiBaseUrl, apiGet, apiPost } from '../api/client';
 import { TimeEventHistoryResponse, TimesheetSummaryResponse, WeekCycle } from '../types';
-import { formatCurrency, formatDateTime, formatMinutes } from '../utils/format';
+import { formatCurrency, formatDate, formatDateTime, formatMinutes } from '../utils/format';
 
 type TimesheetPageProps = {
   readOnly?: boolean;
 };
 
 export const TimesheetPage = ({ readOnly = false }: TimesheetPageProps) => {
+  type SortBy = 'total' | 'rank' | 'entryDate';
+  type SortDir = 'asc' | 'desc';
+
   const [cycles, setCycles] = useState<WeekCycle[]>([]);
   const [selectedCycleId, setSelectedCycleId] = useState<number | null>(null);
   const [summary, setSummary] = useState<TimesheetSummaryResponse | null>(null);
   const [inactiveOnly, setInactiveOnly] = useState(false);
+  const [sortBy, setSortBy] = useState<SortBy>('total');
+  const [sortDir, setSortDir] = useState<SortDir>('desc');
   const [payrollBusyByEmployee, setPayrollBusyByEmployee] = useState<Record<number, boolean>>({});
 
   const [historyTitle, setHistoryTitle] = useState<string | null>(null);
@@ -42,12 +47,46 @@ export const TimesheetPage = ({ readOnly = false }: TimesheetPageProps) => {
 
   const visibleRows = useMemo(() => {
     const rows = summary?.totals ?? [];
-    if (!inactiveOnly) {
-      return rows;
-    }
+    const filtered = inactiveOnly ? rows.filter((row) => row.inactiveLast3Weeks) : rows;
 
-    return rows.filter((row) => row.inactiveLast3Weeks);
-  }, [summary, inactiveOnly]);
+    const rankValue = (rank: string | null): number => {
+      const normalized = (rank ?? '').trim().toLowerCase();
+      if (normalized === 'mecanic-senior' || normalized === 'mecanic senior') return 4;
+      if (normalized === 'mecanic') return 3;
+      if (
+        normalized === 'mecani-junior' ||
+        normalized === 'mecani junior' ||
+        normalized === 'mecanic-junior' ||
+        normalized === 'mecanic junior'
+      ) {
+        return 2;
+      }
+      if (normalized === 'ucenic') return 1;
+      return 0;
+    };
+
+    const sorted = [...filtered].sort((a, b) => {
+      let delta = 0;
+
+      if (sortBy === 'rank') {
+        delta = rankValue(a.rank) - rankValue(b.rank);
+      } else if (sortBy === 'entryDate') {
+        const aTime = a.entryDate ? new Date(a.entryDate).getTime() : 0;
+        const bTime = b.entryDate ? new Date(b.entryDate).getTime() : 0;
+        delta = aTime - bTime;
+      } else {
+        delta = a.totalSeconds - b.totalSeconds;
+      }
+
+      if (delta === 0) {
+        delta = a.displayName.localeCompare(b.displayName, 'ro');
+      }
+
+      return sortDir === 'asc' ? delta : -delta;
+    });
+
+    return sorted;
+  }, [summary, inactiveOnly, sortBy, sortDir]);
 
   const cycleSalaryTotal = useMemo(
     () => (summary?.totals ?? []).reduce((sum, row) => sum + row.salaryTotal, 0),
@@ -165,6 +204,14 @@ export const TimesheetPage = ({ readOnly = false }: TimesheetPageProps) => {
             Total salarii ciclu: <strong>{formatCurrency(cycleSalaryTotal)}</strong>
           </div>
         ) : null}
+        <select value={sortBy} onChange={(event) => setSortBy(event.target.value as SortBy)}>
+          <option value="total">Sortare: Total timp</option>
+          <option value="rank">Sortare: Rank</option>
+          <option value="entryDate">Sortare: Data intrare</option>
+        </select>
+        <button type="button" onClick={() => setSortDir((current) => (current === 'asc' ? 'desc' : 'asc'))}>
+          Directie: {sortDir === 'asc' ? 'Asc' : 'Desc'}
+        </button>
         <label>
           <input
             type="checkbox"
@@ -182,6 +229,7 @@ export const TimesheetPage = ({ readOnly = false }: TimesheetPageProps) => {
               <th>ID</th>
               <th>Nickname</th>
               <th>Rank</th>
+              <th>Data intrare</th>
               <th>Total timp (min)</th>
               <th>Total ajustari (min)</th>
               <th>Salariu</th>
@@ -239,6 +287,7 @@ export const TimesheetPage = ({ readOnly = false }: TimesheetPageProps) => {
                   )}
                 </td>
                 <td>{row.rank ?? '-'}</td>
+                <td>{formatDate(row.entryDate)}</td>
                 <td>{formatMinutes(row.totalSeconds)}</td>
                 <td
                   title={`+ Ajustari: ${formatMinutes(row.positiveAdjustmentSeconds)} | - Ajustari: ${formatMinutes(
@@ -278,7 +327,7 @@ export const TimesheetPage = ({ readOnly = false }: TimesheetPageProps) => {
             ))}
             {!visibleRows.length ? (
               <tr>
-                <td colSpan={8}>
+                <td colSpan={9}>
                   {inactiveOnly
                     ? 'Nu exista angajati marcati ca inactivi pentru acest ciclu.'
                     : 'Nu exista pontaje in ciclul selectat.'}

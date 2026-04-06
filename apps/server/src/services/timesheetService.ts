@@ -10,6 +10,7 @@ type EmployeeTotal = {
   employeeId: number | null;
   employeeCode: string | null;
   rank: string | null;
+  entryDate: Date | null;
   displayName: string;
   discordUserId: string | null;
   totalSeconds: number;
@@ -467,6 +468,7 @@ export const getCycleTotals = async (cycleId: number) => {
       employeeId: employee.id,
       employeeCode: employee.iban ?? null,
       rank: employee.rank ?? null,
+      entryDate: getEmployeePresenceStart(employee),
       displayName: employee.nickname ?? employee.fullName ?? employee.iban ?? `Employee #${employee.id}`,
       discordUserId: employee.discordUserId ?? null,
       totalSeconds: 0,
