@@ -635,7 +635,7 @@ html[data-theme='dark'] .badge.danger {
 }
 
 .stat-card {
-  background: #fffaf4;
+  background: var(--card);
   border: 1px solid var(--line);
   border-radius: 14px;
   padding: 14px;
@@ -645,10 +645,27 @@ html[data-theme='dark'] .badge.danger {
   display: block;
   color: var(--muted);
   margin-bottom: 4px;
+  font-weight: 600;
 }
 
 .stat-card strong {
   font-size: 1.4rem;
+  color: var(--ink);
+}
+
+html[data-theme='dark'] .stat-card {
+  background: linear-gradient(180deg, #24354b 0%, #1d2a3d 100%);
+  border-color: #4d6484;
+  box-shadow: 0 8px 18px rgba(5, 10, 18, 0.35);
+}
+
+html[data-theme='dark'] .stat-card span {
+  color: #c8d8ed;
+}
+
+html[data-theme='dark'] .stat-card strong {
+  color: #f2f8ff;
+  text-shadow: 0 1px 0 rgba(6, 11, 20, 0.45);
 }
 
 .pagination {
