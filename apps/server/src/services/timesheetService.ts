@@ -177,7 +177,23 @@ const findAnyCycleForEventAt = async (serviceCode: string, at: Date): Promise<We
     }
   });
 
-const ensureCycleForEventAt = async (serviceCode: string, at: Date): Promise<WeekCycle> => {
+const findEarliestResetCycleAfterAt = async (serviceCode: string, at: Date): Promise<WeekCycle | null> =>
+  prisma.weekCycle.findFirst({
+    where: {
+      serviceCode,
+      resetMessageId: {
+        not: null
+      },
+      startedAt: {
+        gt: at
+      }
+    },
+    orderBy: {
+      startedAt: 'asc'
+    }
+  });
+
+const ensureCycleForEventAt = async (serviceCode: string, at: Date): Promise<WeekCycle | null> => {
   const existing = await findCycleForEventAt(serviceCode, at);
   if (existing) {
     return existing;
@@ -193,6 +209,13 @@ const ensureCycleForEventAt = async (serviceCode: string, at: Date): Promise<Wee
     return fallbackCycle;
   }
 
+  const firstResetAfterEvent = await findEarliestResetCycleAfterAt(serviceCode, at);
+  if (firstResetAfterEvent) {
+    // Event is older than the first known reset cycle; keep it outside weekly cycles.
+    return null;
+  }
+
+  // No reset cycles exist yet for this service, so we keep using a single open cycle.
   return ensureCurrentCycle(serviceCode, at);
 };
 
@@ -306,7 +329,7 @@ export const processTimesheetMessage = async (message: MessageInput) => {
   } else if (serviceCode) {
     // Always recompute cycle by event timestamp so reprocessing can fix wrong historical assignments.
     const cycle = await ensureCycleForEventAt(serviceCode, message.createdAt);
-    weekCycleId = cycle.id;
+    weekCycleId = cycle?.id ?? null;
   }
 
   const employee = await findEmployeeBestMatch({
@@ -397,6 +420,10 @@ export const getCycleTotals = async (cycleId: number) => {
     prisma.timeEvent.findMany({
       where: {
         weekCycleId: cycleId,
+        eventAt: {
+          gte: cycle.startedAt,
+          ...(cycle.endedAt ? { lt: cycle.endedAt } : {})
+        },
         isDeleted: false,
         eventType: {
           in: [TimeEventType.CLOCK_OUT, TimeEventType.MANUAL_ADJUSTMENT, TimeEventType.CLOCK_IN]
@@ -615,14 +642,32 @@ export const getCycleTotals = async (cycleId: number) => {
 };
 
 export const getEmployeeCycleHistory = async (cycleId: number, employeeId: number) =>
-  prisma.timeEvent.findMany({
-    where: {
-      weekCycleId: cycleId,
-      targetEmployeeId: employeeId,
-      isDeleted: false
-    },
-    orderBy: {
-      eventAt: 'desc'
+  prisma.$transaction(async (tx) => {
+    const cycle = await tx.weekCycle.findUnique({
+      where: { id: cycleId },
+      select: {
+        startedAt: true,
+        endedAt: true
+      }
+    });
+
+    if (!cycle) {
+      return [];
     }
+
+    return tx.timeEvent.findMany({
+      where: {
+        weekCycleId: cycleId,
+        targetEmployeeId: employeeId,
+        isDeleted: false,
+        eventAt: {
+          gte: cycle.startedAt,
+          ...(cycle.endedAt ? { lt: cycle.endedAt } : {})
+        }
+      },
+      orderBy: {
+        eventAt: 'desc'
+      }
+    });
   });
 

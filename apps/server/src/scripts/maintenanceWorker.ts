@@ -125,8 +125,10 @@ const normalizeTimesheetCycleAssignments = async (): Promise<number> => {
         AND e.event_type IN ('CLOCK_IN', 'CLOCK_OUT', 'MANUAL_ADJUSTMENT')
     ) resolved ON resolved.event_id = te.id
     SET te.week_cycle_id = resolved.resolved_cycle_id
-    WHERE resolved.resolved_cycle_id IS NOT NULL
-      AND (te.week_cycle_id IS NULL OR te.week_cycle_id <> resolved.resolved_cycle_id)
+    WHERE
+      (resolved.resolved_cycle_id IS NOT NULL AND (te.week_cycle_id IS NULL OR te.week_cycle_id <> resolved.resolved_cycle_id))
+      OR
+      (resolved.resolved_cycle_id IS NULL AND te.week_cycle_id IS NOT NULL)
   `);
 
   return Number(updated) || 0;
