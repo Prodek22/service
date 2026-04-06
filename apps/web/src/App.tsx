@@ -28,13 +28,14 @@ const LoadingCard = () => (
 type AdminLayoutProps = {
   username: string;
   role: AdminRole;
+  canViewAudit: boolean;
   theme: ThemeMode;
   onToggleTheme: () => void;
   onLogout: () => Promise<void>;
   children: ReactNode;
 };
 
-const AdminLayout = ({ username, role, theme, onToggleTheme, onLogout, children }: AdminLayoutProps) => {
+const AdminLayout = ({ username, role, canViewAudit, theme, onToggleTheme, onLogout, children }: AdminLayoutProps) => {
   return (
     <div className="layout">
       <aside className="sidebar">
@@ -52,7 +53,7 @@ const AdminLayout = ({ username, role, theme, onToggleTheme, onLogout, children 
           <NavLink to="/admin/timesheet" className={({ isActive }) => (isActive ? 'active' : '')}>
             Pontaj saptamanal
           </NavLink>
-          {role === 'ADMIN' ? (
+          {canViewAudit ? (
             <NavLink to="/admin/audit" className={({ isActive }) => (isActive ? 'active' : '')}>
               Loguri actiuni
             </NavLink>
@@ -206,6 +207,10 @@ export const App = () => {
   };
 
   const headerUser = useMemo(() => auth.username ?? 'admin', [auth.username]);
+  const canViewAudit = useMemo(
+    () => auth.role === 'ADMIN' && String(auth.username ?? '').trim().toLowerCase() === 'pdk',
+    [auth.role, auth.username]
+  );
   const toggleTheme = () => setTheme((current) => (current === 'dark' ? 'light' : 'dark'));
 
   const renderAdminPage = (content: ReactNode) => {
@@ -221,6 +226,7 @@ export const App = () => {
       <AdminLayout
         username={headerUser}
         role={auth.role}
+        canViewAudit={canViewAudit}
         theme={theme}
         onToggleTheme={toggleTheme}
         onLogout={handleLogout}
@@ -249,6 +255,7 @@ export const App = () => {
       <AdminLayout
         username={headerUser}
         role={auth.role}
+        canViewAudit={canViewAudit}
         theme={theme}
         onToggleTheme={toggleTheme}
         onLogout={handleLogout}
@@ -270,7 +277,7 @@ export const App = () => {
       <Route path="/admin/timesheet" element={renderAdminPage(<TimesheetPage readOnly={auth.role !== 'ADMIN'} />)} />
       <Route
         path="/admin/audit"
-        element={renderAdminPage(auth.role === 'ADMIN' ? <AuditLogsPage /> : <Navigate to="/admin" replace />)}
+        element={renderAdminPage(canViewAudit ? <AuditLogsPage /> : <Navigate to="/admin" replace />)}
       />
       <Route path="/dashboard" element={<Navigate to="/admin" replace />} />
       <Route path="/employees" element={<Navigate to="/admin/employees" replace />} />

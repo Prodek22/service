@@ -29,3 +29,15 @@ export const requireAdmin = (req: Request, res: Response, next: NextFunction): v
     next();
   });
 };
+
+export const requirePdkAuditAccess = (req: Request, res: Response, next: NextFunction): void => {
+  requireAdmin(req, res, () => {
+    const username = String(res.locals.authUser?.username ?? '').trim().toLowerCase();
+    if (username !== 'pdk') {
+      res.status(403).json({ error: 'Forbidden' });
+      return;
+    }
+
+    next();
+  });
+};
