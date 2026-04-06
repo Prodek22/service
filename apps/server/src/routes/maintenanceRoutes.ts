@@ -1,5 +1,6 @@
 ﻿import { Router } from 'express';
 import { prisma } from '../db/prisma';
+import { recordAuditLog } from '../services/auditLogService';
 import { getMaintenanceStatus, startMaintenanceJob } from '../services/maintenanceJobService';
 
 export const maintenanceRouter = Router();
@@ -40,6 +41,21 @@ maintenanceRouter.post('/delete-old', async (req, res) => {
     })
   ]);
 
+  await recordAuditLog({
+    req,
+    res,
+    action: 'MAINTENANCE_DELETE_OLD',
+    entityType: 'maintenance',
+    metadata: {
+      olderThanDays,
+      deleted: {
+        timeEvents: timeEventsResult.count,
+        weekCycles: weekCyclesResult.count,
+        employees: employeesResult.count
+      }
+    }
+  });
+
   res.json({
     ok: true,
     olderThanDays,
@@ -58,6 +74,18 @@ maintenanceRouter.post('/sync-new', (req, res) => {
 
     const status = startMaintenanceJob('sync-new', { latestLimitPerChannel });
 
+    void recordAuditLog({
+      req,
+      res,
+      action: 'MAINTENANCE_SYNC_NEW',
+      entityType: 'maintenance_job',
+      entityId: status.id,
+      metadata: {
+        latestLimitPerChannel,
+        type: 'sync-new'
+      }
+    });
+
     res.status(202).json({
       ok: true,
       message: 'Sync new started',
@@ -74,6 +102,18 @@ maintenanceRouter.post('/sync-employees-incremental', (req, res) => {
     const lookbackDays = Number.isNaN(input) ? 14 : Math.max(1, Math.min(input, 60));
 
     const status = startMaintenanceJob('sync-employees-incremental', { lookbackDays });
+
+    void recordAuditLog({
+      req,
+      res,
+      action: 'MAINTENANCE_SYNC_EMPLOYEES_INCREMENTAL',
+      entityType: 'maintenance_job',
+      entityId: status.id,
+      metadata: {
+        lookbackDays,
+        type: 'sync-employees-incremental'
+      }
+    });
 
     res.status(202).json({
       ok: true,
@@ -94,6 +134,18 @@ maintenanceRouter.post('/sync-timesheet-window', (req, res) => {
 
     const status = startMaintenanceJob('sync-timesheet-window', { days });
 
+    void recordAuditLog({
+      req,
+      res,
+      action: 'MAINTENANCE_SYNC_TIMESHEET_WINDOW',
+      entityType: 'maintenance_job',
+      entityId: status.id,
+      metadata: {
+        days,
+        type: 'sync-timesheet-window'
+      }
+    });
+
     res.status(202).json({
       ok: true,
       message: 'Timesheet window sync started',
@@ -104,9 +156,20 @@ maintenanceRouter.post('/sync-timesheet-window', (req, res) => {
   }
 });
 
-maintenanceRouter.post('/rebuild-all', (_req, res) => {
+maintenanceRouter.post('/rebuild-all', (req, res) => {
   try {
     const status = startMaintenanceJob('rebuild-all');
+
+    void recordAuditLog({
+      req,
+      res,
+      action: 'MAINTENANCE_REBUILD_ALL',
+      entityType: 'maintenance_job',
+      entityId: status.id,
+      metadata: {
+        type: 'rebuild-all'
+      }
+    });
 
     res.status(202).json({
       ok: true,
@@ -117,3 +180,4 @@ maintenanceRouter.post('/rebuild-all', (_req, res) => {
     res.status(409).json({ error: error instanceof Error ? error.message : 'Could not start rebuild job' });
   }
 });
+

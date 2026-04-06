@@ -3,6 +3,7 @@ import { Router } from 'express';
 import { normalizeAdminRole } from '../auth/roles';
 import { AUTH_COOKIE_NAME, buildCookieOptions, signSessionToken, verifySessionToken } from '../auth/session';
 import { prisma } from '../db/prisma';
+import { recordAuditLog } from '../services/auditLogService';
 
 const DUMMY_HASH = bcrypt.hashSync('dummy-password-for-timing', 10);
 
@@ -34,11 +35,42 @@ authRouter.post('/login', async (req, res) => {
 
   const role = normalizeAdminRole(user.role);
   const token = signSessionToken({ username: user.username, role });
+  res.locals.authUser = { username: user.username, role };
+
+  await recordAuditLog({
+    req,
+    res,
+    action: 'AUTH_LOGIN_SUCCESS',
+    entityType: 'admin_user',
+    entityId: user.id,
+    metadata: {
+      username: user.username,
+      role
+    }
+  });
+
   res.cookie(AUTH_COOKIE_NAME, token, buildCookieOptions());
   res.json({ ok: true, username: user.username, role });
 });
 
-authRouter.post('/logout', (_req, res) => {
+authRouter.post('/logout', async (req, res) => {
+  const token = req.cookies?.[AUTH_COOKIE_NAME];
+  const session = typeof token === 'string' ? verifySessionToken(token) : null;
+  if (session) {
+    res.locals.authUser = session;
+    await recordAuditLog({
+      req,
+      res,
+      action: 'AUTH_LOGOUT',
+      entityType: 'session',
+      entityId: session.username,
+      metadata: {
+        username: session.username,
+        role: session.role
+      }
+    });
+  }
+
   res.clearCookie(AUTH_COOKIE_NAME, {
     ...buildCookieOptions(),
     maxAge: 0

@@ -110,6 +110,30 @@ export type AuthMeResponse = {
   role?: AdminRole;
 };
 
+export type AuditLog = {
+  id: number;
+  actorUsername: string | null;
+  actorRole: string | null;
+  action: string;
+  entityType: string | null;
+  entityId: string | null;
+  metadataJson: string | null;
+  metadata: unknown;
+  ipAddress: string | null;
+  userAgent: string | null;
+  createdAt: string;
+};
+
+export type AuditLogsResponse = {
+  items: AuditLog[];
+  pagination: {
+    page: number;
+    pageSize: number;
+    total: number;
+    totalPages: number;
+  };
+};
+
 export type DeleteOldResponse = {
   ok: boolean;
   olderThanDays: number;

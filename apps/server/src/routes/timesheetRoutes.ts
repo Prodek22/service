@@ -2,6 +2,7 @@
 import { TimeEventType } from '@prisma/client';
 import { requireAdmin } from '../auth/middleware';
 import { prisma } from '../db/prisma';
+import { recordAuditLog } from '../services/auditLogService';
 import { resolveDiscordAvatarMap } from '../services/discordAvatarService';
 import { buildCsv, secondsToHm } from '../utils/time';
 import { getCycleTotals, getEmployeeCycleHistory, getWeekCycles } from '../services/timesheetService';
@@ -144,6 +145,22 @@ timesheetRouter.post('/payroll-status', requireAdmin, async (req, res) => {
       paidAt: isPaid ? new Date() : null,
       paidBy: isPaid ? username : null,
       note
+    }
+  });
+
+  await recordAuditLog({
+    req,
+    res,
+    action: 'PAYROLL_STATUS_UPDATED',
+    entityType: 'timesheet_payroll_status',
+    entityId: `${cycleId}:${employeeId}`,
+    metadata: {
+      cycleId,
+      employeeId,
+      isPaid,
+      salaryTotal: employeeRow.salaryTotal,
+      paidAt: saved.paidAt?.toISOString() ?? null,
+      paidBy: saved.paidBy ?? null
     }
   });
 

@@ -1,6 +1,7 @@
 ﻿import { ReactNode, useEffect, useMemo, useState } from 'react';
 import { Link, NavLink, Navigate, Route, Routes } from 'react-router-dom';
 import { ApiError, apiGet, apiPost } from './api/client';
+import { AuditLogsPage } from './pages/AuditLogsPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { EmployeesPage } from './pages/EmployeesPage';
 import { LoginPage } from './pages/LoginPage';
@@ -51,6 +52,11 @@ const AdminLayout = ({ username, role, theme, onToggleTheme, onLogout, children 
           <NavLink to="/admin/timesheet" className={({ isActive }) => (isActive ? 'active' : '')}>
             Pontaj saptamanal
           </NavLink>
+          {role === 'ADMIN' ? (
+            <NavLink to="/admin/audit" className={({ isActive }) => (isActive ? 'active' : '')}>
+              Loguri actiuni
+            </NavLink>
+          ) : null}
           <NavLink to="/" className={({ isActive }) => (isActive ? 'active' : '')}>
             Pagina publica
           </NavLink>
@@ -262,6 +268,10 @@ export const App = () => {
       <Route path="/admin" element={renderAdminPage(<DashboardPage canManage={auth.role === 'ADMIN'} />)} />
       <Route path="/admin/employees" element={renderAdminPage(<EmployeesPage readOnly={auth.role !== 'ADMIN'} />)} />
       <Route path="/admin/timesheet" element={renderAdminPage(<TimesheetPage readOnly={auth.role !== 'ADMIN'} />)} />
+      <Route
+        path="/admin/audit"
+        element={renderAdminPage(auth.role === 'ADMIN' ? <AuditLogsPage /> : <Navigate to="/admin" replace />)}
+      />
       <Route path="/dashboard" element={<Navigate to="/admin" replace />} />
       <Route path="/employees" element={<Navigate to="/admin/employees" replace />} />
       <Route path="/timesheet" element={<Navigate to="/admin/timesheet" replace />} />

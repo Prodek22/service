@@ -565,6 +565,30 @@ html[data-theme='dark'] .timesheet-table tbody tr.is-inactive:hover td {
   color: var(--ink);
 }
 
+.audit-table code {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.audit-table details > summary {
+  cursor: pointer;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.audit-table details pre {
+  margin-top: 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px;
+  background: color-mix(in srgb, var(--card) 84%, #18202d 16%);
+  color: var(--ink);
+  font-size: 0.74rem;
+  max-width: 420px;
+  overflow: auto;
+}
+
 .badge {
   display: inline-block;
   padding: 3px 7px;

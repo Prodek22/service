@@ -3,6 +3,7 @@ import cors from 'cors';
 import express from 'express';
 import { requireAdmin, requireAuth } from './auth/middleware';
 import { env } from './config/env';
+import { auditRouter } from './routes/auditRoutes';
 import { authRouter } from './routes/authRoutes';
 import { dashboardRouter } from './routes/dashboardRoutes';
 import { employeesRouter } from './routes/employeesRoutes';
@@ -24,6 +25,7 @@ export const createApp = () => {
 
   app.use('/api/health', healthRouter);
   app.use('/api/auth', authRouter);
+  app.use('/api/audit', requireAdmin, auditRouter);
   app.use('/api/timesheet', timesheetRouter);
   app.use('/api/dashboard', requireAuth, dashboardRouter);
   app.use('/api/employees', requireAuth, employeesRouter);

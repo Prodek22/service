@@ -167,3 +167,21 @@ model TimeEvent {
   @@map("time_events")
 }
 
+model AuditLog {
+  id           Int      @id @default(autoincrement())
+  actorUsername String? @map("actor_username")
+  actorRole    String?  @map("actor_role")
+  action       String
+  entityType   String?  @map("entity_type")
+  entityId     String?  @map("entity_id")
+  metadataJson String?  @map("metadata_json") @db.LongText
+  ipAddress    String?  @map("ip_address")
+  userAgent    String?  @map("user_agent") @db.Text
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@index([createdAt])
+  @@index([action])
+  @@index([actorUsername])
+  @@map("audit_logs")
+}
+

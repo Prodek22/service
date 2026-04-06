@@ -2,6 +2,7 @@ import { EmployeeStatus } from '@prisma/client';
 import { Router } from 'express';
 import { requireAdmin } from '../auth/middleware';
 import { prisma } from '../db/prisma';
+import { recordAuditLog } from '../services/auditLogService';
 import { normalizeForCompare } from '../utils/normalize';
 
 const toBoolean = (value: unknown): boolean => String(value).toLowerCase() === 'true';
@@ -238,6 +239,14 @@ employeesRouter.patch('/:id', requireAdmin, async (req, res) => {
   }
 
   const payload = req.body as Record<string, unknown>;
+  const existing = await prisma.employee.findUnique({
+    where: { id }
+  });
+
+  if (!existing) {
+    res.status(404).json({ error: 'Angajat inexistent' });
+    return;
+  }
 
   const employee = await prisma.employee.update({
     where: { id },
@@ -253,6 +262,34 @@ employeesRouter.patch('/:id', requireAdmin, async (req, res) => {
       rank: typeof payload.rank === 'string' ? payload.rank : undefined,
       idImageUrl: typeof payload.idImageUrl === 'string' ? payload.idImageUrl : undefined,
       status: typeof payload.status === 'string' ? (payload.status as EmployeeStatus) : undefined
+    }
+  });
+
+  await recordAuditLog({
+    req,
+    res,
+    action: 'EMPLOYEE_UPDATED',
+    entityType: 'employee',
+    entityId: id,
+    metadata: {
+      before: {
+        iban: existing.iban,
+        monthsInCity: existing.monthsInCity,
+        nickname: existing.nickname,
+        fullName: existing.fullName,
+        phone: existing.phone,
+        rank: existing.rank,
+        status: existing.status
+      },
+      after: {
+        iban: employee.iban,
+        monthsInCity: employee.monthsInCity,
+        nickname: employee.nickname,
+        fullName: employee.fullName,
+        phone: employee.phone,
+        rank: employee.rank,
+        status: employee.status
+      }
     }
   });
 
@@ -307,6 +344,20 @@ employeesRouter.post('/:id/aliases', requireAdmin, async (req, res) => {
       aliasType,
       aliasValue,
       normalized
+    }
+  });
+
+  await recordAuditLog({
+    req,
+    res,
+    action: 'EMPLOYEE_ALIAS_UPSERTED',
+    entityType: 'employee',
+    entityId: id,
+    metadata: {
+      aliasId: alias.id,
+      aliasType: alias.aliasType,
+      aliasValue: alias.aliasValue,
+      normalized: alias.normalized
     }
   });
 
