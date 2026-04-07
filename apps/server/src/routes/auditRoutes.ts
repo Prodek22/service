@@ -3,6 +3,18 @@ import { prisma } from '../db/prisma';
 
 export const auditRouter = Router();
 
+const parseMetadata = (raw: string | null): unknown => {
+  if (!raw) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+};
+
 auditRouter.get('/', async (req, res) => {
   const page = Number.parseInt(String(req.query.page ?? '1'), 10);
   const pageSize = Number.parseInt(String(req.query.pageSize ?? '50'), 10);
@@ -28,17 +40,81 @@ auditRouter.get('/', async (req, res) => {
     prisma.auditLog.count({ where })
   ]);
 
+  const parsedItems = items.map((item) => ({
+    ...item,
+    metadata: parseMetadata(item.metadataJson)
+  }));
+
+  const employeeIds = new Set<number>();
+  for (const item of parsedItems) {
+    const metadata = item.metadata;
+    if (!metadata || typeof metadata !== 'object') {
+      continue;
+    }
+
+    const rawEmployeeId = (metadata as Record<string, unknown>).employeeId;
+    const parsedEmployeeId =
+      typeof rawEmployeeId === 'number'
+        ? rawEmployeeId
+        : typeof rawEmployeeId === 'string'
+          ? Number.parseInt(rawEmployeeId, 10)
+          : Number.NaN;
+
+    if (!Number.isNaN(parsedEmployeeId)) {
+      employeeIds.add(parsedEmployeeId);
+    }
+  }
+
+  const employees =
+    employeeIds.size > 0
+      ? await prisma.employee.findMany({
+          where: {
+            id: {
+              in: [...employeeIds]
+            }
+          },
+          select: {
+            id: true,
+            nickname: true,
+            fullName: true,
+            iban: true
+          }
+        })
+      : [];
+  const employeeById = new Map(
+    employees.map((employee) => [employee.id, employee.nickname ?? employee.fullName ?? employee.iban ?? null])
+  );
+
   res.json({
-    items: items.map((item) => ({
-      ...item,
-      metadata: item.metadataJson ? (() => {
-        try {
-          return JSON.parse(item.metadataJson);
-        } catch {
-          return null;
+    items: parsedItems.map((item) => {
+      const metadata = item.metadata;
+      if (!metadata || typeof metadata !== 'object') {
+        return item;
+      }
+
+      const metaObject = metadata as Record<string, unknown>;
+      const rawEmployeeId = metaObject.employeeId;
+      const parsedEmployeeId =
+        typeof rawEmployeeId === 'number'
+          ? rawEmployeeId
+          : typeof rawEmployeeId === 'string'
+            ? Number.parseInt(rawEmployeeId, 10)
+            : Number.NaN;
+
+      if (Number.isNaN(parsedEmployeeId)) {
+        return item;
+      }
+
+      const employeeNickname = employeeById.get(parsedEmployeeId) ?? null;
+
+      return {
+        ...item,
+        metadata: {
+          ...metaObject,
+          employeeNickname
         }
-      })() : null
-    })),
+      };
+    }),
     pagination: {
       page: safePage,
       pageSize: safePageSize,

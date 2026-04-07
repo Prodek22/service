@@ -252,6 +252,7 @@ timesheetRouter.post('/payroll-status', requireAdmin, async (req, res) => {
     metadata: {
       cycleId,
       employeeId,
+      employeeName: employeeRow.displayName,
       isPaid,
       salaryTotal: employeeRow.salaryTotal,
       paidAt: saved.paidAt?.toISOString() ?? null,
@@ -319,6 +320,7 @@ timesheetRouter.post('/up-status', requireAdmin, async (req, res) => {
     metadata: {
       cycleId,
       employeeId,
+      employeeName: employeeRow.displayName,
       isUp
     }
   });
@@ -388,6 +390,7 @@ timesheetRouter.post('/months-status', requireAdmin, async (req, res) => {
     metadata: {
       cycleId,
       employeeId,
+      employeeName: employeeRow.displayName,
       monthsInCity
     }
   });
