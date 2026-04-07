@@ -1,10 +1,18 @@
 import { EmployeeStatus } from '@prisma/client';
 import { constants as fsConstants, promises as fs } from 'fs';
+import { ChannelType } from 'discord.js';
 import { Router } from 'express';
 import { requireAdmin } from '../auth/middleware';
+import { getDiscordClient } from '../bot/clientStore';
+import { env } from '../config/env';
 import { prisma } from '../db/prisma';
 import { recordAuditLog } from '../services/auditLogService';
-import { deleteLocalIdImage, isLocalIdImageUrl, resolveLocalIdImageAbsolutePath } from '../services/idImageStorage';
+import {
+  deleteLocalIdImage,
+  isLocalIdImageUrl,
+  resolveLocalIdImageAbsolutePath,
+  saveIdImageLocally
+} from '../services/idImageStorage';
 import { normalizeForCompare } from '../utils/normalize';
 
 const toBoolean = (value: unknown): boolean => String(value).toLowerCase() === 'true';
@@ -32,6 +40,122 @@ type ImageCheckResult = {
 };
 
 const DISCORD_UNAVAILABLE_PATTERN = /this content is no longer available/i;
+const HTTP_URL_RE = /^https?:\/\//i;
+
+const isImageAttachment = (name?: string | null, contentType?: string | null): boolean => {
+  if (contentType?.startsWith('image/')) {
+    return true;
+  }
+
+  if (!name) {
+    return false;
+  }
+
+  return /(png|jpg|jpeg|webp|gif|heic|heif)$/i.test(name);
+};
+
+const urlRespondsOk = async (url: string): Promise<boolean> => {
+  if (!HTTP_URL_RE.test(url)) {
+    return false;
+  }
+
+  try {
+    const response = await fetch(url, {
+      method: 'GET',
+      redirect: 'follow',
+      signal: AbortSignal.timeout(8_000),
+      headers: {
+        Range: 'bytes=0-512'
+      }
+    });
+
+    return response.ok;
+  } catch {
+    return false;
+  }
+};
+
+const resolveEmployeeImageUrl = async (
+  employee: {
+    id: number;
+    idImageUrl: string | null;
+    cvMessageId: string | null;
+    cvChannelId: string | null;
+  }
+): Promise<string | null> => {
+  const current = employee.idImageUrl;
+
+  if (current && isLocalIdImageUrl(current)) {
+    const localPath = resolveLocalIdImageAbsolutePath(current);
+    if (localPath) {
+      try {
+        await fs.access(localPath, fsConstants.F_OK);
+        return current;
+      } catch {
+        // continue with recovery from Discord source message
+      }
+    }
+  }
+
+  if (current && HTTP_URL_RE.test(current) && (await urlRespondsOk(current))) {
+    return current;
+  }
+
+  const discordClient = getDiscordClient();
+  if (!discordClient) {
+    return current ?? null;
+  }
+
+  const channelId = employee.cvChannelId ?? env.CV_CHANNEL_ID;
+  if (!channelId || !employee.cvMessageId) {
+    return current ?? null;
+  }
+
+  try {
+    const channel = await discordClient.channels.fetch(channelId);
+    if (!channel || channel.type !== ChannelType.GuildText) {
+      return current ?? null;
+    }
+
+    const message = await channel.messages.fetch(employee.cvMessageId);
+    if (!message) {
+      return current ?? null;
+    }
+
+    const image = [...message.attachments.values()].find((attachment) =>
+      isImageAttachment(attachment.name, attachment.contentType)
+    );
+
+    if (!image) {
+      return current ?? null;
+    }
+
+    const localized = await saveIdImageLocally({
+      url: image.url,
+      name: image.name,
+      contentType: image.contentType
+    });
+
+    if (localized && localized !== current) {
+      await prisma.employee.update({
+        where: { id: employee.id },
+        data: {
+          idImageUrl: localized
+        }
+      });
+
+      if (current) {
+        await deleteLocalIdImage(current);
+      }
+
+      return localized;
+    }
+
+    return current ?? localized ?? null;
+  } catch {
+    return current ?? null;
+  }
+};
 
 const checkImageUrl = async (
   employee: { id: number; iban: string | null; nickname: string | null; fullName: string | null; idImageUrl: string }
@@ -404,6 +528,48 @@ employeesRouter.post('/verify-id-images', requireAdmin, async (req, res) => {
     invalid: invalid.length,
     invalidItems: invalid
   });
+});
+
+employeesRouter.get('/:id/id-image', async (req, res) => {
+  const id = Number.parseInt(req.params.id, 10);
+
+  if (Number.isNaN(id)) {
+    res.status(400).json({ error: 'ID invalid' });
+    return;
+  }
+
+  const employee = await prisma.employee.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      idImageUrl: true,
+      cvMessageId: true,
+      cvChannelId: true
+    }
+  });
+
+  if (!employee) {
+    res.status(404).json({ error: 'Angajat inexistent' });
+    return;
+  }
+
+  const resolvedUrl = await resolveEmployeeImageUrl(employee);
+  if (!resolvedUrl) {
+    res.status(404).json({ error: 'Poza buletin indisponibila' });
+    return;
+  }
+
+  if (resolvedUrl.startsWith('/')) {
+    res.redirect(302, resolvedUrl);
+    return;
+  }
+
+  if (!HTTP_URL_RE.test(resolvedUrl)) {
+    res.redirect(302, `/${resolvedUrl}`);
+    return;
+  }
+
+  res.redirect(302, resolvedUrl);
 });
 
 employeesRouter.get('/:id', async (req, res) => {

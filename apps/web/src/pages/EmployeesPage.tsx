@@ -310,7 +310,7 @@ export const EmployeesPage = ({ readOnly = false }: EmployeesPageProps) => {
                 <td>{formatDate(employee.cvPostedAt)}</td>
                 <td>
                   {employee.idImageUrl ? (
-                    <a href={employee.idImageUrl} target="_blank" rel="noreferrer">
+                    <a href={`/api/employees/${employee.id}/id-image`} target="_blank" rel="noreferrer">
                       Deschide
                     </a>
                   ) : (
