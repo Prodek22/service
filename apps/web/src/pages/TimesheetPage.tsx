@@ -7,6 +7,13 @@ type TimesheetPageProps = {
   readOnly?: boolean;
 };
 
+const normalizeSearch = (value: string): string =>
+  value
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .trim();
+
 export const TimesheetPage = ({ readOnly = false }: TimesheetPageProps) => {
   type SortBy = 'total' | 'rank' | 'entryDate';
   type SortDir = 'asc' | 'desc';
@@ -20,6 +27,7 @@ export const TimesheetPage = ({ readOnly = false }: TimesheetPageProps) => {
   const [selectedCycleId, setSelectedCycleId] = useState<number | null>(null);
   const [summary, setSummary] = useState<TimesheetSummaryResponse | null>(null);
   const [inactiveOnly, setInactiveOnly] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<SortBy>('total');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
   const [payrollBusyByEmployee, setPayrollBusyByEmployee] = useState<Record<number, boolean>>({});
@@ -55,6 +63,39 @@ export const TimesheetPage = ({ readOnly = false }: TimesheetPageProps) => {
   const visibleRows = useMemo(() => {
     const rows = summary?.totals ?? [];
     const filtered = inactiveOnly ? rows.filter((row) => row.inactiveLast3Weeks) : rows;
+    const normalizedQuery = normalizeSearch(searchQuery);
+
+    const searchableRows = normalizedQuery
+      ? filtered.filter((row) => {
+          const rowText = [
+            row.employeeCode ?? '',
+            row.displayName ?? '',
+            row.rank ?? '',
+            row.monthsInCity != null ? String(row.monthsInCity) : '',
+            row.entryDate ?? '',
+            formatDate(row.entryDate),
+            row.discordUserId ?? '',
+            String(row.totalSeconds),
+            formatMinutes(row.totalSeconds),
+            String(row.normalSeconds),
+            String(row.manualAdjustmentSeconds),
+            String(row.positiveAdjustmentSeconds),
+            String(row.negativeAdjustmentSeconds),
+            String(row.manualAdjustmentsCount),
+            String(row.eventsCount),
+            String(row.baseSalary),
+            String(row.topBonus),
+            String(row.salaryTotal),
+            formatCurrency(row.salaryTotal),
+            row.payroll.isPaid ? 'platit da paid yes' : 'platit nu unpaid no',
+            row.payroll.isUp ? 'up da yes' : 'up nu no'
+          ]
+            .join(' ')
+            .replace(/\s+/g, ' ');
+
+          return normalizeSearch(rowText).includes(normalizedQuery);
+        })
+      : filtered;
 
     const rankValue = (rank: string | null): number => {
       const normalized = (rank ?? '').trim().toLowerCase();
@@ -72,7 +113,7 @@ export const TimesheetPage = ({ readOnly = false }: TimesheetPageProps) => {
       return 0;
     };
 
-    const sorted = [...filtered].sort((a, b) => {
+    const sorted = [...searchableRows].sort((a, b) => {
       let delta = 0;
 
       if (sortBy === 'rank') {
@@ -93,7 +134,7 @@ export const TimesheetPage = ({ readOnly = false }: TimesheetPageProps) => {
     });
 
     return sorted;
-  }, [summary, inactiveOnly, sortBy, sortDir]);
+  }, [summary, inactiveOnly, searchQuery, sortBy, sortDir]);
 
   const cycleSalaryTotal = useMemo(
     () => (summary?.totals ?? []).reduce((sum, row) => sum + row.salaryTotal, 0),
@@ -373,6 +414,11 @@ export const TimesheetPage = ({ readOnly = false }: TimesheetPageProps) => {
             Total salarii ciclu: <strong>{formatCurrency(cycleSalaryTotal)}</strong>
           </div>
         ) : null}
+        <input
+          value={searchQuery}
+          onChange={(event) => setSearchQuery(event.target.value)}
+          placeholder="Cautare globala: id, nume, rank, luni, data, minute, salariu, platit, up..."
+        />
         <select value={sortBy} onChange={(event) => setSortBy(event.target.value as SortBy)}>
           <option value="total">Sortare: Total timp</option>
           <option value="rank">Sortare: Rank</option>
