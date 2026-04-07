@@ -194,3 +194,21 @@ export type MaintenanceStartResponse = {
   message: string;
   job: MaintenanceJobStatus;
 };
+
+export type ActiveTimesheetsResponse = {
+  hoursWindow: number;
+  since: string;
+  items: Array<{
+    key: string;
+    employeeId: number | null;
+    employeeCode: string | null;
+    displayName: string;
+    rank: string | null;
+    discordUserId: string | null;
+    avatarUrl: string | null;
+    serviceCode: string;
+    startedAt: string;
+    elapsedSeconds: number;
+    rawText: string;
+  }>;
+};

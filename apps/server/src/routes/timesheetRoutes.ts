@@ -2,6 +2,7 @@
 import { TimeEventType } from '@prisma/client';
 import { requireAdmin } from '../auth/middleware';
 import { prisma } from '../db/prisma';
+import { normalizeForCompare } from '../utils/normalize';
 import { recordAuditLog } from '../services/auditLogService';
 import { resolveDiscordAvatarMap } from '../services/discordAvatarService';
 import { buildCsv, secondsToHm } from '../utils/time';
@@ -104,6 +105,97 @@ timesheetRouter.get('/summary', async (req, res) => {
   });
 });
 
+timesheetRouter.get('/active', requireAdmin, async (req, res) => {
+  const hoursInput = Number.parseInt(String(req.query.hours ?? '24'), 10);
+  const hours = Number.isNaN(hoursInput) ? 24 : Math.max(1, Math.min(hoursInput, 48));
+  const since = new Date(Date.now() - hours * 60 * 60 * 1000);
+  const serviceCodeFilter = typeof req.query.serviceCode === 'string' ? req.query.serviceCode.trim() : '';
+
+  const events = await prisma.timeEvent.findMany({
+    where: {
+      isDeleted: false,
+      eventType: {
+        in: [TimeEventType.CLOCK_IN, TimeEventType.CLOCK_OUT]
+      },
+      eventAt: {
+        gte: since
+      },
+      ...(serviceCodeFilter ? { serviceCode: serviceCodeFilter } : {})
+    },
+    include: {
+      employee: {
+        select: {
+          id: true,
+          iban: true,
+          nickname: true,
+          fullName: true,
+          rank: true,
+          discordUserId: true
+        }
+      }
+    },
+    orderBy: [{ eventAt: 'asc' }, { id: 'asc' }]
+  });
+
+  const latestByKey = new Map<string, (typeof events)[number]>();
+  for (const event of events) {
+    const serviceCode = event.serviceCode ?? 'service';
+
+    let key: string | null = null;
+    if (event.targetEmployeeId != null) {
+      key = `employee:${event.targetEmployeeId}:${serviceCode}`;
+    } else if (event.discordUserId) {
+      key = `discord:${event.discordUserId}:${serviceCode}`;
+    } else if (event.targetEmployeeName) {
+      key = `name:${normalizeForCompare(event.targetEmployeeName)}:${serviceCode}`;
+    }
+
+    if (!key) {
+      continue;
+    }
+
+    latestByKey.set(key, event);
+  }
+
+  const now = Date.now();
+  const items = [...latestByKey.values()]
+    .filter((event) => event.eventType === TimeEventType.CLOCK_IN)
+    .map((event) => {
+      const displayName =
+        event.employee?.nickname ??
+        event.employee?.fullName ??
+        event.targetEmployeeName ??
+        (event.discordUserId ? `@${event.discordUserId}` : 'Necunoscut');
+      const discordUserId = event.discordUserId ?? event.employee?.discordUserId ?? null;
+
+      return {
+        key: event.discordMessageId,
+        employeeId: event.targetEmployeeId ?? event.employee?.id ?? null,
+        employeeCode: event.employee?.iban ?? null,
+        displayName,
+        rank: event.targetEmployeeRank ?? event.employee?.rank ?? null,
+        discordUserId,
+        serviceCode: event.serviceCode ?? 'service',
+        startedAt: event.eventAt.toISOString(),
+        elapsedSeconds: Math.max(0, Math.floor((now - event.eventAt.getTime()) / 1000)),
+        rawText: event.rawText
+      };
+    })
+    .sort((a, b) => b.startedAt.localeCompare(a.startedAt));
+
+  const avatarByDiscordUserId = await resolveDiscordAvatarMap(
+    items.map((item) => item.discordUserId).filter((value): value is string => Boolean(value))
+  );
+
+  res.json({
+    hoursWindow: hours,
+    since: since.toISOString(),
+    items: items.map((item) => ({
+      ...item,
+      avatarUrl: item.discordUserId ? avatarByDiscordUserId[item.discordUserId] ?? null : null
+    }))
+  });
+});
 timesheetRouter.post('/payroll-status', requireAdmin, async (req, res) => {
   const cycleId = Number.parseInt(String(req.body?.cycleId ?? ''), 10);
   const employeeId = Number.parseInt(String(req.body?.employeeId ?? ''), 10);
@@ -390,4 +482,5 @@ timesheetRouter.get('/export.csv', async (req, res) => {
   res.setHeader('Content-Disposition', `attachment; filename="timesheet-cycle-${cycleId}.csv"`);
   res.send(csv);
 });
+
 

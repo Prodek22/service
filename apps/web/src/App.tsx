@@ -1,6 +1,7 @@
 ﻿import { ReactNode, useEffect, useMemo, useState } from 'react';
 import { Link, NavLink, Navigate, Route, Routes } from 'react-router-dom';
 import { ApiError, apiGet, apiPost } from './api/client';
+import { ActiveTimesheetsPage } from './pages/ActiveTimesheetsPage';
 import { AuditLogsPage } from './pages/AuditLogsPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { EmployeesPage } from './pages/EmployeesPage';
@@ -53,6 +54,11 @@ const AdminLayout = ({ username, role, canViewAudit, theme, onToggleTheme, onLog
           <NavLink to="/admin/timesheet" className={({ isActive }) => (isActive ? 'active' : '')}>
             Pontaj saptamanal
           </NavLink>
+          {role === 'ADMIN' ? (
+            <NavLink to="/admin/timesheet-active" className={({ isActive }) => (isActive ? 'active' : '')}>
+              Pontaje Active
+            </NavLink>
+          ) : null}
           {canViewAudit ? (
             <NavLink to="/admin/audit" className={({ isActive }) => (isActive ? 'active' : '')}>
               Loguri actiuni
@@ -276,12 +282,17 @@ export const App = () => {
       <Route path="/admin/employees" element={renderAdminPage(<EmployeesPage readOnly={auth.role !== 'ADMIN'} />)} />
       <Route path="/admin/timesheet" element={renderAdminPage(<TimesheetPage readOnly={auth.role !== 'ADMIN'} />)} />
       <Route
+        path="/admin/timesheet-active"
+        element={renderAdminPage(auth.role === 'ADMIN' ? <ActiveTimesheetsPage /> : <Navigate to="/admin" replace />)}
+      />
+      <Route
         path="/admin/audit"
         element={renderAdminPage(canViewAudit ? <AuditLogsPage /> : <Navigate to="/admin" replace />)}
       />
       <Route path="/dashboard" element={<Navigate to="/admin" replace />} />
       <Route path="/employees" element={<Navigate to="/admin/employees" replace />} />
       <Route path="/timesheet" element={<Navigate to="/admin/timesheet" replace />} />
+      <Route path="/timesheet-active" element={<Navigate to="/admin/timesheet-active" replace />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
