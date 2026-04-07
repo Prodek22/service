@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
-import { apiGet, apiPatch } from '../api/client';
-import { Employee, EmployeeCvRawEntry, EmployeesResponse } from '../types';
+import { apiGet, apiPatch, apiPost } from '../api/client';
+import { Employee, EmployeeCvRawEntry, EmployeesResponse, VerifyIdImagesResponse } from '../types';
 import { formatDate, formatDateTime } from '../utils/format';
 
 type EmployeeEdit = Partial<Pick<Employee, 'iban' | 'monthsInCity' | 'nickname' | 'fullName' | 'phone' | 'rank' | 'idImageUrl'>> & {
@@ -30,6 +30,8 @@ export const EmployeesPage = ({ readOnly = false }: EmployeesPageProps) => {
 
   const [rawEmployeeId, setRawEmployeeId] = useState<number | null>(null);
   const [rawEntries, setRawEntries] = useState<EmployeeCvRawEntry[]>([]);
+  const [verifyBusy, setVerifyBusy] = useState(false);
+  const [verifyResult, setVerifyResult] = useState<VerifyIdImagesResponse | null>(null);
 
   const query = useMemo(() => {
     const params = new URLSearchParams({
@@ -112,6 +114,23 @@ export const EmployeesPage = ({ readOnly = false }: EmployeesPageProps) => {
     setRawEmployeeId(employeeId);
     const response = await apiGet<EmployeeCvRawEntry[]>(`/employees/${employeeId}/raw`);
     setRawEntries(response);
+  };
+
+  const verifyIdImages = async () => {
+    if (readOnly) {
+      return;
+    }
+
+    setVerifyBusy(true);
+    try {
+      const response = await apiPost<VerifyIdImagesResponse>('/employees/verify-id-images', {
+        limit: 500,
+        concurrency: 8
+      });
+      setVerifyResult(response);
+    } finally {
+      setVerifyBusy(false);
+    }
   };
 
   return (
@@ -224,7 +243,41 @@ export const EmployeesPage = ({ readOnly = false }: EmployeesPageProps) => {
         <button onClick={() => setSortDir((current) => (current === 'asc' ? 'desc' : 'asc'))}>
           Directie: {sortDir === 'asc' ? 'Asc' : 'Desc'}
         </button>
+        {!readOnly ? (
+          <button type="button" className="btn-danger-action" onClick={() => void verifyIdImages()} disabled={verifyBusy}>
+            {verifyBusy ? 'Verificare linkuri buletin...' : 'Verifica linkuri buletin'}
+          </button>
+        ) : null}
       </div>
+
+      {!readOnly && verifyResult ? (
+        <div className="card">
+          <strong>
+            Verificare finalizata: {verifyResult.checked} verificate, {verifyResult.valid} valide, {verifyResult.invalid}{' '}
+            invalide.
+          </strong>
+          {verifyResult.invalidItems.length ? (
+            <div className="verify-id-links-list">
+              {verifyResult.invalidItems.slice(0, 50).map((item) => (
+                <div key={`${item.employeeId}-${item.url}`} className="verify-id-links-item">
+                  <span>
+                    #{item.employeeCode ?? item.employeeId} - {item.nickname ?? item.fullName ?? 'Necunoscut'}
+                  </span>
+                  <span>{item.reason}</span>
+                  <a href={item.url} target="_blank" rel="noreferrer">
+                    Deschide
+                  </a>
+                </div>
+              ))}
+              {verifyResult.invalidItems.length > 50 ? (
+                <p>Se afiseaza primele 50 rezultate invalide.</p>
+              ) : null}
+            </div>
+          ) : (
+            <p>Toate linkurile verificate sunt valide.</p>
+          )}
+        </div>
+      ) : null}
 
       {loading && <p>Se incarca...</p>}
       {error && <p className="error">{error}</p>}

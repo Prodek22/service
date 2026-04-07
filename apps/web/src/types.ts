@@ -28,6 +28,21 @@ export type EmployeesResponse = {
   };
 };
 
+export type VerifyIdImagesResponse = {
+  checked: number;
+  valid: number;
+  invalid: number;
+  invalidItems: Array<{
+    employeeId: number;
+    employeeCode: string | null;
+    nickname: string | null;
+    fullName: string | null;
+    url: string;
+    ok: boolean;
+    reason: string;
+  }>;
+};
+
 export type DashboardResponse = {
   currentCycleId: number | null;
   totalActiveEmployees: number;

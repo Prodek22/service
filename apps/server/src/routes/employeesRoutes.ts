@@ -19,6 +19,115 @@ const allowedSort: Record<string, string> = {
 
 export const employeesRouter = Router();
 
+type ImageCheckResult = {
+  employeeId: number;
+  employeeCode: string | null;
+  nickname: string | null;
+  fullName: string | null;
+  url: string;
+  ok: boolean;
+  reason: string;
+};
+
+const DISCORD_UNAVAILABLE_PATTERN = /this content is no longer available/i;
+
+const checkImageUrl = async (
+  employee: { id: number; iban: string | null; nickname: string | null; fullName: string | null; idImageUrl: string }
+): Promise<ImageCheckResult> => {
+  const url = employee.idImageUrl;
+
+  try {
+    const response = await fetch(url, {
+      method: 'GET',
+      redirect: 'follow',
+      signal: AbortSignal.timeout(12000),
+      headers: {
+        Range: 'bytes=0-4096'
+      }
+    });
+
+    if (!response.ok) {
+      return {
+        employeeId: employee.id,
+        employeeCode: employee.iban,
+        nickname: employee.nickname,
+        fullName: employee.fullName,
+        url,
+        ok: false,
+        reason: `HTTP ${response.status}`
+      };
+    }
+
+    const contentType = String(response.headers.get('content-type') ?? '').toLowerCase();
+
+    if (contentType.startsWith('image/')) {
+      return {
+        employeeId: employee.id,
+        employeeCode: employee.iban,
+        nickname: employee.nickname,
+        fullName: employee.fullName,
+        url,
+        ok: true,
+        reason: 'ok'
+      };
+    }
+
+    const text = await response.text();
+    if (DISCORD_UNAVAILABLE_PATTERN.test(text)) {
+      return {
+        employeeId: employee.id,
+        employeeCode: employee.iban,
+        nickname: employee.nickname,
+        fullName: employee.fullName,
+        url,
+        ok: false,
+        reason: 'Discord attachment unavailable'
+      };
+    }
+
+    return {
+      employeeId: employee.id,
+      employeeCode: employee.iban,
+      nickname: employee.nickname,
+      fullName: employee.fullName,
+      url,
+      ok: false,
+      reason: contentType ? `Unexpected content-type: ${contentType}` : 'Unexpected non-image response'
+    };
+  } catch (error) {
+    return {
+      employeeId: employee.id,
+      employeeCode: employee.iban,
+      nickname: employee.nickname,
+      fullName: employee.fullName,
+      url,
+      ok: false,
+      reason: error instanceof Error ? error.message : 'Network error'
+    };
+  }
+};
+
+const mapLimit = async <T, R>(
+  input: T[],
+  concurrency: number,
+  mapper: (item: T) => Promise<R>
+): Promise<R[]> => {
+  const safeConcurrency = Math.max(1, Math.min(concurrency, 20));
+  const results: R[] = new Array(input.length);
+  let cursor = 0;
+
+  const worker = async () => {
+    while (cursor < input.length) {
+      const currentIndex = cursor;
+      cursor += 1;
+      results[currentIndex] = await mapper(input[currentIndex]);
+    }
+  };
+
+  await Promise.all(Array.from({ length: Math.min(safeConcurrency, input.length) }, () => worker()));
+  return results;
+};
+
 type RankTab = 'all' | 'mecanic_senior' | 'mecanic' | 'mecani_junior' | 'ucenic' | 'unknown';
 
 const resolveRankTab = (value: string): RankTab => {
@@ -191,6 +300,69 @@ employeesRouter.get('/', async (req, res) => {
       total,
       totalPages: Math.ceil(total / Math.max(pageSize, 1))
     }
+  });
+});
+
+employeesRouter.post('/verify-id-images', requireAdmin, async (req, res) => {
+  const limitInput = Number.parseInt(String(req.body?.limit ?? '300'), 10);
+  const concurrencyInput = Number.parseInt(String(req.body?.concurrency ?? '8'), 10);
+  const limit = Number.isNaN(limitInput) ? 300 : Math.max(1, Math.min(limitInput, 2000));
+  const concurrency = Number.isNaN(concurrencyInput) ? 8 : Math.max(1, Math.min(concurrencyInput, 20));
+
+  const employees = await prisma.employee.findMany({
+    where: {
+      status: {
+        not: EmployeeStatus.DELETED
+      },
+      idImageUrl: {
+        not: null
+      }
+    },
+    select: {
+      id: true,
+      iban: true,
+      nickname: true,
+      fullName: true,
+      idImageUrl: true
+    },
+    orderBy: {
+      updatedAt: 'desc'
+    },
+    take: limit
+  });
+
+  const results = await mapLimit(employees, concurrency, (employee) =>
+    checkImageUrl({
+      id: employee.id,
+      iban: employee.iban,
+      nickname: employee.nickname,
+      fullName: employee.fullName,
+      idImageUrl: String(employee.idImageUrl)
+    })
+  );
+
+  const invalid = results.filter((item) => !item.ok);
+  const valid = results.length - invalid.length;
+
+  await recordAuditLog({
+    req,
+    res,
+    action: 'ID_IMAGE_LINKS_VERIFIED',
+    entityType: 'employee',
+    metadata: {
+      checked: results.length,
+      valid,
+      invalid: invalid.length,
+      limit,
+      concurrency
+    }
+  });
+
+  res.json({
+    checked: results.length,
+    valid,
+    invalid: invalid.length,
+    invalidItems: invalid
   });
 });
 

@@ -454,6 +454,23 @@ html[data-theme='dark'] .modal button {
   gap: 6px;
 }
 
+.verify-id-links-list {
+  margin-top: 10px;
+  display: grid;
+  gap: 8px;
+}
+
+.verify-id-links-item {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) minmax(180px, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--card) 88%, #18202d 12%);
+}
+
 .table-wrapper {
   overflow-x: auto;
 }
