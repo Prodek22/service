@@ -20,6 +20,7 @@ export const ActiveTimesheetsPage = () => {
   const [data, setData] = useState<ActiveTimesheetsResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(true);
 
   const load = async () => {
     setLoading(true);
@@ -37,6 +38,12 @@ export const ActiveTimesheetsPage = () => {
 
   useEffect(() => {
     void load();
+  }, []);
+
+  useEffect(() => {
+    if (!autoRefreshEnabled) {
+      return;
+    }
 
     const timer = window.setInterval(() => {
       void load();
@@ -45,7 +52,7 @@ export const ActiveTimesheetsPage = () => {
     return () => {
       window.clearInterval(timer);
     };
-  }, []);
+  }, [autoRefreshEnabled]);
 
   const activeCount = useMemo(() => data?.items.length ?? 0, [data]);
 
@@ -60,6 +67,9 @@ export const ActiveTimesheetsPage = () => {
         <span>
           Fereastra: <strong>{data?.hoursWindow ?? 24}h</strong>
         </span>
+        <button type="button" onClick={() => setAutoRefreshEnabled((current) => !current)}>
+          Live: {autoRefreshEnabled ? 'ON (30s)' : 'OFF'}
+        </button>
         <button type="button" onClick={() => void load()} disabled={loading}>
           {loading ? 'Actualizare...' : 'Refresh'}
         </button>
