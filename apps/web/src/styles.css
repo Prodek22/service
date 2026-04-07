@@ -549,6 +549,38 @@ html[data-theme='dark'] .timesheet-table tbody tr.is-inactive:hover td {
   background: #6a3641 !important;
 }
 
+.timesheet-table td.up-cell {
+  font-weight: 700;
+}
+
+.timesheet-table tbody tr td.up-cell.up-next-junior {
+  background: #2f9a45 !important;
+  color: #f3fff5;
+}
+
+.timesheet-table tbody tr td.up-cell.up-next-mecanic {
+  background: #2f86d1 !important;
+  color: #f3fbff;
+}
+
+.timesheet-table tbody tr td.up-cell.up-next-senior {
+  background: #4f2f8f !important;
+  color: #f7f1ff;
+}
+
+.timesheet-table tbody tr td.up-cell.up-next-management {
+  background: #b86a2a !important;
+  color: #fff7ef;
+}
+
+.timesheet-table tbody tr td.up-cell label {
+  color: inherit;
+}
+
+.timesheet-table tbody tr td.up-cell input[type='checkbox'] {
+  accent-color: #ffffff;
+}
+
 .timesheet-table .btn-history {
   box-shadow: none;
 }
@@ -653,6 +685,26 @@ html[data-theme='dark'] .badge.danger {
 .badge.muted {
   background: #eff3f7;
   color: #667386;
+}
+
+.badge.up-next-junior {
+  background: #2f9a45;
+  color: #f3fff5;
+}
+
+.badge.up-next-mecanic {
+  background: #2f86d1;
+  color: #f3fbff;
+}
+
+.badge.up-next-senior {
+  background: #4f2f8f;
+  color: #f7f1ff;
+}
+
+.badge.up-next-management {
+  background: #b86a2a;
+  color: #fff7ef;
 }
 
 .stats-grid {

@@ -10,6 +10,11 @@ type TimesheetPageProps = {
 export const TimesheetPage = ({ readOnly = false }: TimesheetPageProps) => {
   type SortBy = 'total' | 'rank' | 'entryDate';
   type SortDir = 'asc' | 'desc';
+  type UpRequirement = {
+    requiredMonths: number;
+    nextLabel: string;
+    colorClass: 'up-next-junior' | 'up-next-mecanic' | 'up-next-senior' | 'up-next-management';
+  };
 
   const [cycles, setCycles] = useState<WeekCycle[]>([]);
   const [selectedCycleId, setSelectedCycleId] = useState<number | null>(null);
@@ -126,6 +131,58 @@ export const TimesheetPage = ({ readOnly = false }: TimesheetPageProps) => {
   };
 
   const getAvatarUrl = (row: TimesheetSummaryResponse['totals'][number]) => row.avatarUrl ?? getAvatarFallback(row.displayName);
+
+  const getUpRequirement = (rank: string | null): UpRequirement | null => {
+    const normalized = (rank ?? '').trim().toLowerCase();
+
+    if (normalized === 'ucenic') {
+      return { requiredMonths: 100, nextLabel: 'Mecanic-Junior', colorClass: 'up-next-junior' };
+    }
+
+    if (
+      normalized === 'mecani-junior' ||
+      normalized === 'mecani junior' ||
+      normalized === 'mecanic-junior' ||
+      normalized === 'mecanic junior'
+    ) {
+      return { requiredMonths: 150, nextLabel: 'Mecanic', colorClass: 'up-next-mecanic' };
+    }
+
+    if (normalized === 'mecanic') {
+      return { requiredMonths: 200, nextLabel: 'Mecanic-Senior', colorClass: 'up-next-senior' };
+    }
+
+    if (normalized === 'mecanic-senior' || normalized === 'mecanic senior') {
+      return { requiredMonths: 250, nextLabel: 'Conducere', colorClass: 'up-next-management' };
+    }
+
+    return null;
+  };
+
+  const getUpVisualState = (row: TimesheetSummaryResponse['totals'][number]) => {
+    const requirement = getUpRequirement(row.rank);
+    if (!requirement) {
+      return {
+        isEligible: false,
+        colorClass: '',
+        title: 'Rank fara regula de UP configurata.'
+      };
+    }
+
+    const hasMinutes = row.totalSeconds >= 420 * 60;
+    const months = row.monthsInCity ?? 0;
+    const hasMonths = months >= requirement.requiredMonths;
+    const isEligible = hasMinutes && hasMonths;
+    const title = isEligible
+      ? `Eligibil UP: ${requirement.nextLabel} (>= 420 min, >= ${requirement.requiredMonths} luni).`
+      : `Neeligibil UP: ${months}/${requirement.requiredMonths} luni, ${formatMinutes(row.totalSeconds)} / 420 min.`;
+
+    return {
+      isEligible,
+      colorClass: isEligible ? requirement.colorClass : '',
+      title
+    };
+  };
 
   const togglePayrollStatus = async (employeeId: number | null, isPaid: boolean) => {
     if (readOnly || !employeeId || !selectedCycleId || !summary) {
@@ -352,7 +409,9 @@ export const TimesheetPage = ({ readOnly = false }: TimesheetPageProps) => {
             </tr>
           </thead>
           <tbody>
-            {visibleRows.map((row) => (
+            {visibleRows.map((row) => {
+              const upState = getUpVisualState(row);
+              return (
               <tr
                 key={row.key}
                 className={[
@@ -445,9 +504,14 @@ export const TimesheetPage = ({ readOnly = false }: TimesheetPageProps) => {
                     </label>
                   )}
                 </td>
-                <td>
+                <td
+                  className={`up-cell ${upState.colorClass}`.trim()}
+                  title={upState.title}
+                >
                   {readOnly ? (
-                    <span className={`badge ${row.payroll.isUp ? 'ok' : 'muted'}`}>{row.payroll.isUp ? 'DA' : 'NU'}</span>
+                    <span className={`badge ${row.payroll.isUp ? 'ok' : 'muted'} ${upState.colorClass}`.trim()}>
+                      {row.payroll.isUp ? 'DA' : 'NU'}
+                    </span>
                   ) : (
                     <label>
                       <input
@@ -470,7 +534,8 @@ export const TimesheetPage = ({ readOnly = false }: TimesheetPageProps) => {
                   </button>
                 </td>
               </tr>
-            ))}
+              );
+            })}
             {!visibleRows.length ? (
               <tr>
                 <td colSpan={11}>
