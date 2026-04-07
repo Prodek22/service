@@ -1,4 +1,5 @@
 import { Client, GatewayIntentBits, Partials } from 'discord.js';
+import { EmployeeStatus } from '@prisma/client';
 import { env } from '../config/env';
 import { prisma } from '../db/prisma';
 import { BackfillProgress, runBackfill } from '../services/backfillRunner';
@@ -199,15 +200,19 @@ const runIncrementalEmployeeSync = async (lookbackDaysInput?: number) => {
     const roster = await memberFilter.listEmployeeMembers();
     sendProgress(20, `Lista angajati preluata (${roster.length} membri cu rol Angajat).`);
     const rosterIds = new Set(roster.map((member) => member.userId));
+    const rosterIdList = [...rosterIds];
 
     const staleUsers = await prisma.employee.findMany({
       where: {
         discordUserId: {
           not: null
         },
+        status: {
+          not: EmployeeStatus.DELETED
+        },
         NOT: {
           discordUserId: {
-            in: [...rosterIds]
+            in: rosterIdList
           }
         }
       },
@@ -217,9 +222,43 @@ const runIncrementalEmployeeSync = async (lookbackDaysInput?: number) => {
       }
     });
 
-    // Safety rule: incremental sync should never hard-delete employees/CVs/time-events.
-    // We only report stale members; cleanup can be handled by dedicated maintenance actions.
+    const staleEmployeeIds = staleUsers.map((user) => user.id);
     const staleUsersCount = staleUsers.length;
+    const staleMarkedDeleted =
+      staleEmployeeIds.length > 0
+        ? await prisma.employee.updateMany({
+            where: {
+              id: {
+                in: staleEmployeeIds
+              }
+            },
+            data: {
+              status: EmployeeStatus.DELETED,
+              deletedAt: new Date()
+            }
+          })
+        : { count: 0 };
+
+    const reactivatedEmployees =
+      rosterIdList.length > 0
+        ? await prisma.employee.updateMany({
+            where: {
+              discordUserId: {
+                in: rosterIdList
+              },
+              status: EmployeeStatus.DELETED
+            },
+            data: {
+              status: EmployeeStatus.ACTIVE,
+              deletedAt: null
+            }
+          })
+        : { count: 0 };
+
+    sendProgress(
+      30,
+      `Curatare roster: ${staleMarkedDeleted.count} marcati DELETED, ${reactivatedEmployees.count} reactivati.`
+    );
 
     let updatedProfiles = 0;
     for (const member of roster) {
@@ -227,6 +266,7 @@ const runIncrementalEmployeeSync = async (lookbackDaysInput?: number) => {
         nickname?: string;
         rank?: string;
         cvPostedAt?: Date;
+        deletedAt?: null;
       } = {};
 
       if (member.rpNickname) {
@@ -240,6 +280,7 @@ const runIncrementalEmployeeSync = async (lookbackDaysInput?: number) => {
       if (member.joinedAt) {
         profileUpdate.cvPostedAt = member.joinedAt;
       }
+      profileUpdate.deletedAt = null;
 
       if (!Object.keys(profileUpdate).length) {
         continue;
@@ -286,6 +327,8 @@ const runIncrementalEmployeeSync = async (lookbackDaysInput?: number) => {
       sinceDate: sinceDate.toISOString(),
       rosterCount: roster.length,
       staleUsersCount,
+      markedDeletedEmployees: staleMarkedDeleted.count,
+      reactivatedEmployees: reactivatedEmployees.count,
       deletedTimeEvents: 0,
       deletedEmployees: 0,
       deletedGhostCycles,

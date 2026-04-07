@@ -187,7 +187,7 @@ export const EmployeesPage = ({ readOnly = false }: EmployeesPageProps) => {
             setStatus(event.target.value);
           }}
         >
-          <option value="">Toate statusurile</option>
+          <option value="">Active + Incomplete</option>
           <option value="ACTIVE">Active</option>
           <option value="INCOMPLETE">Incomplete</option>
           <option value="DELETED">Sterse (soft)</option>

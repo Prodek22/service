@@ -128,7 +128,7 @@ employeesRouter.get('/', async (req, res) => {
   const sortDir = String(req.query.sortDir ?? 'desc').toLowerCase() === 'asc' ? 'asc' : 'desc';
 
   const where = {
-    ...(status ? { status: status as EmployeeStatus } : {}),
+    ...(status ? { status: status as EmployeeStatus } : { status: { not: EmployeeStatus.DELETED } }),
     ...(search
       ? {
           OR: [
