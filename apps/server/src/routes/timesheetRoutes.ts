@@ -137,6 +137,7 @@ timesheetRouter.post('/payroll-status', requireAdmin, async (req, res) => {
       employeeId,
       salaryTotal: employeeRow.salaryTotal,
       isPaid,
+      monthsSnapshot: employeeRow.monthsInCity ?? null,
       paidAt: isPaid ? new Date() : null,
       paidBy: isPaid ? username : null,
       note
@@ -208,7 +209,8 @@ timesheetRouter.post('/up-status', requireAdmin, async (req, res) => {
       employeeId,
       salaryTotal: employeeRow.salaryTotal,
       isPaid: false,
-      isUp
+      isUp,
+      monthsSnapshot: employeeRow.monthsInCity ?? null
     },
     update: {
       salaryTotal: employeeRow.salaryTotal,
@@ -234,6 +236,76 @@ timesheetRouter.post('/up-status', requireAdmin, async (req, res) => {
     payroll: {
       isPaid: saved.isPaid,
       isUp: saved.isUp,
+      paidAt: saved.paidAt,
+      paidBy: saved.paidBy,
+      note: saved.note
+    }
+  });
+});
+
+timesheetRouter.post('/months-status', requireAdmin, async (req, res) => {
+  const cycleId = Number.parseInt(String(req.body?.cycleId ?? ''), 10);
+  const employeeId = Number.parseInt(String(req.body?.employeeId ?? ''), 10);
+  const monthsInCity = Number.parseInt(String(req.body?.monthsInCity ?? ''), 10);
+
+  if (Number.isNaN(cycleId) || Number.isNaN(employeeId) || Number.isNaN(monthsInCity)) {
+    res.status(400).json({ error: 'cycleId, employeeId si monthsInCity sunt obligatorii.' });
+    return;
+  }
+
+  if (monthsInCity < 0 || monthsInCity > 10000) {
+    res.status(400).json({ error: 'monthsInCity trebuie sa fie intre 0 si 10000.' });
+    return;
+  }
+
+  const totals = await getCycleTotals(cycleId);
+  const employeeRow = totals.find((row) => row.employeeId === employeeId);
+
+  if (!employeeRow) {
+    res.status(404).json({ error: 'Angajatul nu are pontaj in ciclul selectat.' });
+    return;
+  }
+
+  const saved = await prisma.timesheetPayrollStatus.upsert({
+    where: {
+      weekCycleId_employeeId: {
+        weekCycleId: cycleId,
+        employeeId
+      }
+    },
+    create: {
+      weekCycleId: cycleId,
+      employeeId,
+      salaryTotal: employeeRow.salaryTotal,
+      isPaid: false,
+      isUp: false,
+      monthsSnapshot: monthsInCity
+    },
+    update: {
+      salaryTotal: employeeRow.salaryTotal,
+      monthsSnapshot: monthsInCity
+    }
+  });
+
+  await recordAuditLog({
+    req,
+    res,
+    action: 'MONTHS_SNAPSHOT_UPDATED',
+    entityType: 'timesheet_payroll_status',
+    entityId: `${cycleId}:${employeeId}`,
+    metadata: {
+      cycleId,
+      employeeId,
+      monthsInCity
+    }
+  });
+
+  res.json({
+    ok: true,
+    payroll: {
+      isPaid: saved.isPaid,
+      isUp: saved.isUp,
+      monthsInCity: saved.monthsSnapshot ?? monthsInCity,
       paidAt: saved.paidAt,
       paidBy: saved.paidBy,
       note: saved.note
@@ -276,6 +348,7 @@ timesheetRouter.get('/export.csv', async (req, res) => {
       'Employee',
       'Employee ID',
       'Rank',
+      'Months In City',
       'Entry Date',
       'Discord User ID',
       'Total Seconds',
@@ -294,6 +367,7 @@ timesheetRouter.get('/export.csv', async (req, res) => {
       item.displayName,
       item.employeeCode ?? '',
       item.rank ?? '',
+      String(item.monthsInCity ?? ''),
       item.entryDate?.toISOString() ?? '',
       item.discordUserId ?? '',
       String(item.totalSeconds),

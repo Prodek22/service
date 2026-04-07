@@ -270,8 +270,16 @@ export const EmployeesPage = ({ readOnly = false }: EmployeesPageProps) => {
                   {employee.status === 'DELETED' ? <span className="badge muted">Sters</span> : null}
                 </td>
                 <td>
-                  {!readOnly ? <button onClick={() => openEdit(employee)}>Editeaza</button> : null}
-                  <button onClick={() => void openRaw(employee.id)}>Raw</button>
+                  <div className="table-actions">
+                    {!readOnly ? (
+                      <button className="btn-table-action" onClick={() => openEdit(employee)}>
+                        Editeaza
+                      </button>
+                    ) : null}
+                    <button className="btn-table-action secondary" onClick={() => void openRaw(employee.id)}>
+                      Raw
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
@@ -285,13 +293,14 @@ export const EmployeesPage = ({ readOnly = false }: EmployeesPageProps) => {
       </div>
 
       <div className="pagination">
-        <button disabled={page <= 1} onClick={() => setPage((current) => Math.max(1, current - 1))}>
+        <button className="btn-pagination" disabled={page <= 1} onClick={() => setPage((current) => Math.max(1, current - 1))}>
           Pagina anterioara
         </button>
         <span>
           Pagina {data?.pagination.page ?? 1} din {data?.pagination.totalPages ?? 1}
         </span>
         <button
+          className="btn-pagination"
           disabled={Boolean(data && page >= data.pagination.totalPages)}
           onClick={() => setPage((current) => current + 1)}
         >

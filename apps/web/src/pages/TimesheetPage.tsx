@@ -19,6 +19,7 @@ export const TimesheetPage = ({ readOnly = false }: TimesheetPageProps) => {
   const [sortDir, setSortDir] = useState<SortDir>('desc');
   const [payrollBusyByEmployee, setPayrollBusyByEmployee] = useState<Record<number, boolean>>({});
   const [upBusyByEmployee, setUpBusyByEmployee] = useState<Record<number, boolean>>({});
+  const [monthsBusyByEmployee, setMonthsBusyByEmployee] = useState<Record<number, boolean>>({});
 
   const [historyTitle, setHistoryTitle] = useState<string | null>(null);
   const [historyRows, setHistoryRows] = useState<TimeEventHistoryResponse['history']>([]);
@@ -238,6 +239,60 @@ export const TimesheetPage = ({ readOnly = false }: TimesheetPageProps) => {
     }
   };
 
+  const updateMonthsSnapshot = async (employeeId: number | null, currentMonths: number | null) => {
+    if (readOnly || !employeeId || !selectedCycleId || !summary) {
+      return;
+    }
+
+    const answer = window.prompt('Seteaza luni pentru ciclul selectat:', String(currentMonths ?? 0));
+    if (answer == null) {
+      return;
+    }
+
+    const parsed = Number.parseInt(answer.trim(), 10);
+    if (Number.isNaN(parsed) || parsed < 0 || parsed > 10000) {
+      window.alert('Valoare invalida. Introdu un numar intre 0 si 10000.');
+      return;
+    }
+
+    setMonthsBusyByEmployee((current) => ({ ...current, [employeeId]: true }));
+    const previous = summary;
+    const optimistic: TimesheetSummaryResponse = {
+      ...previous,
+      totals: previous.totals.map((row) =>
+        row.employeeId === employeeId
+          ? {
+              ...row,
+              monthsInCity: parsed
+            }
+          : row
+      )
+    };
+    setSummary(optimistic);
+
+    try {
+      await apiPost<{
+        ok: boolean;
+        payroll: {
+          isPaid: boolean;
+          isUp: boolean;
+          monthsInCity: number;
+          paidAt: string | null;
+          paidBy: string | null;
+          note: string | null;
+        };
+      }>('/timesheet/months-status', {
+        cycleId: selectedCycleId,
+        employeeId,
+        monthsInCity: parsed
+      });
+    } catch {
+      setSummary(previous);
+    } finally {
+      setMonthsBusyByEmployee((current) => ({ ...current, [employeeId]: false }));
+    }
+  };
+
   return (
     <section>
       <h2>Pontaj saptamanal</h2>
@@ -286,6 +341,7 @@ export const TimesheetPage = ({ readOnly = false }: TimesheetPageProps) => {
               <th>ID</th>
               <th>Nickname</th>
               <th>Rank</th>
+              <th>Luni</th>
               <th>Data intrare</th>
               <th>Total timp (min)</th>
               <th>Total ajustari (min)</th>
@@ -345,6 +401,23 @@ export const TimesheetPage = ({ readOnly = false }: TimesheetPageProps) => {
                   )}
                 </td>
                 <td>{row.rank ?? '-'}</td>
+                <td>
+                  {readOnly ? (
+                    row.monthsInCity ?? '-'
+                  ) : (
+                    <div className="timesheet-months-cell">
+                      <span>{row.monthsInCity ?? '-'}</span>
+                      <button
+                        type="button"
+                        className="btn-inline-edit"
+                        disabled={!row.employeeId || Boolean(row.employeeId && monthsBusyByEmployee[row.employeeId])}
+                        onClick={() => void updateMonthsSnapshot(row.employeeId, row.monthsInCity)}
+                      >
+                        Editeaza
+                      </button>
+                    </div>
+                  )}
+                </td>
                 <td>{formatDate(row.entryDate)}</td>
                 <td>{formatMinutes(row.totalSeconds)}</td>
                 <td
@@ -400,7 +473,7 @@ export const TimesheetPage = ({ readOnly = false }: TimesheetPageProps) => {
             ))}
             {!visibleRows.length ? (
               <tr>
-                <td colSpan={10}>
+                <td colSpan={11}>
                   {inactiveOnly
                     ? 'Nu exista angajati marcati ca inactivi pentru acest ciclu.'
                     : 'Nu exista pontaje in ciclul selectat.'}

@@ -56,6 +56,7 @@ export type TimesheetSummaryResponse = {
     employeeId: number | null;
     employeeCode: string | null;
     rank: string | null;
+    monthsInCity: number | null;
     entryDate: string | null;
     displayName: string;
     discordUserId: string | null;

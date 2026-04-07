@@ -10,6 +10,7 @@ type EmployeeTotal = {
   employeeId: number | null;
   employeeCode: string | null;
   rank: string | null;
+  monthsInCity: number | null;
   entryDate: Date | null;
   displayName: string;
   discordUserId: string | null;
@@ -447,6 +448,7 @@ export const getCycleTotals = async (cycleId: number) => {
         id: true,
         iban: true,
         rank: true,
+        monthsInCity: true,
         nickname: true,
         fullName: true,
         discordUserId: true,
@@ -468,6 +470,7 @@ export const getCycleTotals = async (cycleId: number) => {
       employeeId: employee.id,
       employeeCode: employee.iban ?? null,
       rank: employee.rank ?? null,
+      monthsInCity: employee.monthsInCity ?? null,
       entryDate: getEmployeePresenceStart(employee),
       displayName: employee.nickname ?? employee.fullName ?? employee.iban ?? `Employee #${employee.id}`,
       discordUserId: employee.discordUserId ?? null,
@@ -484,6 +487,94 @@ export const getCycleTotals = async (cycleId: number) => {
       salaryTotal: 0,
       inactiveLast3Weeks: false
     });
+  }
+
+  const eligibleEmployeeIds = eligibleEmployees.map((employee) => employee.id);
+
+  const cycleMonthsSnapshots =
+    eligibleEmployeeIds.length > 0
+      ? await prisma.timesheetPayrollStatus.findMany({
+          where: {
+            weekCycleId: cycleId,
+            employeeId: {
+              in: eligibleEmployeeIds
+            },
+            monthsSnapshot: {
+              not: null
+            }
+          },
+          select: {
+            employeeId: true,
+            monthsSnapshot: true
+          }
+        })
+      : [];
+  const cycleMonthsByEmployee = new Map(
+    cycleMonthsSnapshots
+      .filter((item) => item.monthsSnapshot != null)
+      .map((item) => [item.employeeId, item.monthsSnapshot as number])
+  );
+
+  const previousMonthsSnapshots =
+    eligibleEmployeeIds.length > 0
+      ? await prisma.timesheetPayrollStatus.findMany({
+          where: {
+            employeeId: {
+              in: eligibleEmployeeIds
+            },
+            monthsSnapshot: {
+              not: null
+            },
+            weekCycle: {
+              serviceCode: cycle.serviceCode,
+              startedAt: {
+                lt: cycle.startedAt
+              }
+            }
+          },
+          select: {
+            employeeId: true,
+            monthsSnapshot: true,
+            weekCycle: {
+              select: {
+                startedAt: true
+              }
+            }
+          }
+        })
+      : [];
+
+  const previousMonthsByEmployee = new Map<number, { startedAt: number; months: number }>();
+  for (const snapshot of previousMonthsSnapshots) {
+    if (snapshot.monthsSnapshot == null) {
+      continue;
+    }
+
+    const startedAt = snapshot.weekCycle.startedAt.getTime();
+    const existing = previousMonthsByEmployee.get(snapshot.employeeId);
+    if (!existing || startedAt > existing.startedAt) {
+      previousMonthsByEmployee.set(snapshot.employeeId, {
+        startedAt,
+        months: snapshot.monthsSnapshot
+      });
+    }
+  }
+
+  for (const row of totals.values()) {
+    if (!row.employeeId) {
+      continue;
+    }
+
+    const cycleSnapshot = cycleMonthsByEmployee.get(row.employeeId);
+    if (typeof cycleSnapshot === 'number') {
+      row.monthsInCity = cycleSnapshot;
+      continue;
+    }
+
+    const previousSnapshot = previousMonthsByEmployee.get(row.employeeId);
+    if (previousSnapshot) {
+      row.monthsInCity = previousSnapshot.months;
+    }
   }
 
   for (const event of events) {

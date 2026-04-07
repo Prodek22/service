@@ -426,6 +426,34 @@ html[data-theme='dark'] .modal button {
   box-shadow: none;
 }
 
+.btn-table-action {
+  border: 1px solid #315075;
+  background: linear-gradient(180deg, #25486a 0%, #1d3855 100%);
+  color: #eef5ff;
+  border-radius: 999px;
+  padding: 5px 11px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.btn-table-action.secondary {
+  border-color: #6e533e;
+  background: linear-gradient(180deg, #9a6b45 0%, #7f5535 100%);
+}
+
+.btn-table-action:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(10, 26, 44, 0.22);
+}
+
+.table-actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
 .table-wrapper {
   overflow-x: auto;
 }
@@ -673,6 +701,50 @@ html[data-theme='dark'] .stat-card strong {
   gap: 10px;
   align-items: center;
   margin: 12px 0;
+}
+
+.btn-pagination {
+  border: 1px solid #44648a;
+  background: linear-gradient(180deg, #355478 0%, #2a4461 100%);
+  color: #ecf4ff;
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: filter 0.12s ease, transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.btn-pagination:hover:not(:disabled) {
+  transform: translateY(-1px);
+  filter: brightness(1.04);
+  box-shadow: 0 6px 14px rgba(16, 36, 60, 0.2);
+}
+
+.btn-pagination:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.timesheet-months-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-inline-edit {
+  border: 1px solid #8b5f3d;
+  background: linear-gradient(180deg, #bb8358 0%, #9f6b44 100%);
+  color: #fff8f1;
+  border-radius: 999px;
+  padding: 4px 9px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-inline-edit:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 .modal-backdrop {
