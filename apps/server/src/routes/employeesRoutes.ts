@@ -559,6 +559,23 @@ employeesRouter.get('/:id/id-image', async (req, res) => {
     return;
   }
 
+  if (isLocalIdImageUrl(resolvedUrl)) {
+    const absolutePath = resolveLocalIdImageAbsolutePath(resolvedUrl);
+    if (!absolutePath) {
+      res.status(404).json({ error: 'Poza locala invalida' });
+      return;
+    }
+
+    try {
+      await fs.access(absolutePath, fsConstants.F_OK);
+      res.sendFile(absolutePath);
+      return;
+    } catch {
+      res.status(404).json({ error: 'Poza locala lipsa' });
+      return;
+    }
+  }
+
   if (resolvedUrl.startsWith('/')) {
     res.redirect(302, resolvedUrl);
     return;

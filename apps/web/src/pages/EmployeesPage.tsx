@@ -32,6 +32,7 @@ export const EmployeesPage = ({ readOnly = false }: EmployeesPageProps) => {
   const [rawEntries, setRawEntries] = useState<EmployeeCvRawEntry[]>([]);
   const [verifyBusy, setVerifyBusy] = useState(false);
   const [verifyResult, setVerifyResult] = useState<VerifyIdImagesResponse | null>(null);
+  const [previewImage, setPreviewImage] = useState<{ employeeId: number; label: string; cacheKey: number } | null>(null);
 
   const query = useMemo(() => {
     const params = new URLSearchParams({
@@ -131,6 +132,15 @@ export const EmployeesPage = ({ readOnly = false }: EmployeesPageProps) => {
     } finally {
       setVerifyBusy(false);
     }
+  };
+
+  const openIdImagePreview = (employee: Employee) => {
+    const label = employee.nickname ?? employee.fullName ?? employee.iban ?? `#${employee.id}`;
+    setPreviewImage({
+      employeeId: employee.id,
+      label,
+      cacheKey: Date.now()
+    });
   };
 
   return (
@@ -310,9 +320,9 @@ export const EmployeesPage = ({ readOnly = false }: EmployeesPageProps) => {
                 <td>{formatDate(employee.cvPostedAt)}</td>
                 <td>
                   {employee.idImageUrl ? (
-                    <a href={`/api/employees/${employee.id}/id-image`} target="_blank" rel="noreferrer">
+                    <button type="button" className="link-button" onClick={() => openIdImagePreview(employee)}>
                       Deschide
-                    </a>
+                    </button>
                   ) : (
                     <span className="badge warning">Lipsa</span>
                   )}
@@ -414,6 +424,35 @@ export const EmployeesPage = ({ readOnly = false }: EmployeesPageProps) => {
             </div>
             <div className="modal-actions">
               <button onClick={() => setRawEmployeeId(null)}>Inchide</button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {previewImage ? (
+        <div className="modal-backdrop image-lightbox" onClick={() => setPreviewImage(null)}>
+          <div className="image-lightbox-card" onClick={(event) => event.stopPropagation()}>
+            <header className="image-lightbox-header">
+              <h3>Buletin - {previewImage.label}</h3>
+              <button type="button" className="btn-table-action" onClick={() => setPreviewImage(null)}>
+                Inchide
+              </button>
+            </header>
+            <div className="image-lightbox-body">
+              <img
+                src={`/api/employees/${previewImage.employeeId}/id-image?v=${previewImage.cacheKey}`}
+                alt={`Buletin ${previewImage.label}`}
+                loading="lazy"
+              />
+            </div>
+            <div className="image-lightbox-actions">
+              <a
+                href={`/api/employees/${previewImage.employeeId}/id-image?v=${previewImage.cacheKey}`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Deschide in tab nou
+              </a>
             </div>
           </div>
         </div>

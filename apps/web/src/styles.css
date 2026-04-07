@@ -97,6 +97,20 @@ a {
   color: var(--accent);
 }
 
+.link-button {
+  border: none;
+  background: transparent;
+  color: var(--accent);
+  font: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+}
+
+.link-button:hover {
+  filter: brightness(1.08);
+}
+
 .layout {
   min-height: 100vh;
   display: grid;
@@ -823,6 +837,58 @@ html[data-theme='dark'] .stat-card strong {
   display: grid;
   place-items: center;
   padding: 16px;
+}
+
+.image-lightbox {
+  background: rgba(8, 14, 22, 0.84);
+  z-index: 45;
+}
+
+.image-lightbox-card {
+  width: min(1100px, 96vw);
+  max-height: 92vh;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 10px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 12px;
+  box-shadow: 0 18px 44px rgba(4, 8, 14, 0.48);
+}
+
+.image-lightbox-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.image-lightbox-header h3 {
+  margin: 0;
+}
+
+.image-lightbox-body {
+  min-height: 220px;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.3);
+  display: grid;
+  place-items: center;
+  padding: 10px;
+}
+
+.image-lightbox-body img {
+  max-width: 100%;
+  max-height: 72vh;
+  border-radius: 8px;
+  object-fit: contain;
+}
+
+.image-lightbox-actions {
+  display: flex;
+  justify-content: flex-end;
 }
 
 .modal {
