@@ -12,7 +12,8 @@
     "start": "npm run start -w @gta-service/server",
     "db:migrate": "npm run db:migrate -w @gta-service/server",
     "db:generate": "npm run db:generate -w @gta-service/server",
-    "backfill": "npm run backfill -w @gta-service/server"
+    "backfill": "npm run backfill -w @gta-service/server",
+    "id-images:localize": "npm run id-images:localize -w @gta-service/server"
   },
   "devDependencies": {
     "concurrently": "^9.0.1"

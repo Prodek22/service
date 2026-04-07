@@ -1,9 +1,11 @@
 import { randomUUID } from 'crypto';
+import { existsSync } from 'fs';
 import { promises as fs } from 'fs';
 import path from 'path';
 
 const DEFAULT_STORAGE_RELATIVE_DIR = path.join('storage', 'uploads', 'id-cards');
 export const ID_IMAGE_PUBLIC_BASE_PATH = '/api/uploads/id-cards';
+const PRIMARY_STORAGE_DIR = path.resolve(__dirname, '..', '..', DEFAULT_STORAGE_RELATIVE_DIR);
 
 type IdImageSource = {
   url: string;
@@ -78,8 +80,33 @@ const buildFileName = (source: IdImageSource, responseContentType?: string | nul
   return `${Date.now()}-${randomUUID()}.${ext}`;
 };
 
-export const getIdImageStorageDir = (): string =>
-  path.resolve(process.cwd(), DEFAULT_STORAGE_RELATIVE_DIR);
+const uniquePaths = (items: string[]): string[] => {
+  const seen = new Set<string>();
+  const result: string[] = [];
+
+  for (const item of items) {
+    const normalized = path.resolve(item);
+    if (seen.has(normalized)) {
+      continue;
+    }
+
+    seen.add(normalized);
+    result.push(normalized);
+  }
+
+  return result;
+};
+
+export const getIdImageStorageDir = (): string => PRIMARY_STORAGE_DIR;
+
+export const getIdImageStaticDirs = (): string[] => {
+  const cwd = process.cwd();
+  return uniquePaths([
+    PRIMARY_STORAGE_DIR,
+    path.resolve(cwd, DEFAULT_STORAGE_RELATIVE_DIR),
+    path.resolve(cwd, 'apps', 'server', DEFAULT_STORAGE_RELATIVE_DIR)
+  ]);
+};
 
 const ensureStorageDir = async (): Promise<string> => {
   const target = getIdImageStorageDir();
@@ -133,6 +160,14 @@ export const resolveLocalIdImageAbsolutePath = (value: string): string | null =>
     return null;
   }
 
+  const allDirs = getIdImageStaticDirs();
+  for (const dir of allDirs) {
+    const candidate = path.join(dir, safeFilename);
+    if (existsSync(candidate)) {
+      return candidate;
+    }
+  }
+
   return path.join(getIdImageStorageDir(), safeFilename);
 };
 
@@ -141,22 +176,37 @@ export const deleteLocalIdImage = async (value?: string | null): Promise<boolean
     return false;
   }
 
-  const absolutePath = resolveLocalIdImageAbsolutePath(value);
-  if (!absolutePath) {
+  const publicPath = parseLocalStoredPath(value);
+  if (!publicPath) {
     return false;
   }
 
-  try {
-    await fs.unlink(absolutePath);
-    return true;
-  } catch (error) {
-    const code = (error as NodeJS.ErrnoException)?.code;
-    if (code === 'ENOENT') {
-      return false;
-    }
-
-    throw error;
+  const encodedFilename = publicPath.slice(`${ID_IMAGE_PUBLIC_BASE_PATH}/`.length);
+  if (!encodedFilename) {
+    return false;
   }
+
+  const filename = safeDecodeURIComponent(encodedFilename);
+  const safeFilename = path.basename(filename);
+  if (!safeFilename || safeFilename !== filename) {
+    return false;
+  }
+
+  let removed = false;
+  for (const dir of getIdImageStaticDirs()) {
+    const absolutePath = path.join(dir, safeFilename);
+    try {
+      await fs.unlink(absolutePath);
+      removed = true;
+    } catch (error) {
+      const code = (error as NodeJS.ErrnoException)?.code;
+      if (code !== 'ENOENT') {
+        throw error;
+      }
+    }
+  }
+
+  return removed;
 };
 
 export const saveIdImageLocally = async (source: IdImageSource): Promise<string> => {
@@ -197,7 +247,9 @@ export const saveIdImageLocally = async (source: IdImageSource): Promise<string>
 };
 
 export const purgeLocalIdImageStorage = async (): Promise<void> => {
-  const targetDir = getIdImageStorageDir();
-  await fs.rm(targetDir, { recursive: true, force: true });
-  await fs.mkdir(targetDir, { recursive: true });
+  const allDirs = getIdImageStaticDirs();
+  for (const targetDir of allDirs) {
+    await fs.rm(targetDir, { recursive: true, force: true });
+    await fs.mkdir(targetDir, { recursive: true });
+  }
 };

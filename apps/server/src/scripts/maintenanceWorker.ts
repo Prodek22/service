@@ -4,7 +4,7 @@ import { env } from '../config/env';
 import { prisma } from '../db/prisma';
 import { BackfillProgress, runBackfill } from '../services/backfillRunner';
 import { createGuildMemberFilter } from '../services/guildMemberFilter';
-import { deleteLocalIdImage, purgeLocalIdImageStorage } from '../services/idImageStorage';
+import { deleteLocalIdImage, isLocalIdImageUrl, purgeLocalIdImageStorage, saveIdImageLocally } from '../services/idImageStorage';
 
 type WorkerInput = {
   id: string;
@@ -324,6 +324,52 @@ const runIncrementalEmployeeSync = async (lookbackDaysInput?: number) => {
       updatedProfiles += updated.count;
     }
 
+    sendProgress(42, 'Convertire imagini de buletin ramase pe link Discord in storage local...');
+    const remoteImageRows = await prisma.employee.findMany({
+      where: {
+        status: {
+          not: EmployeeStatus.DELETED
+        },
+        discordUserId: {
+          in: rosterIdList
+        },
+        idImageUrl: {
+          not: null
+        }
+      },
+      select: {
+        id: true,
+        idImageUrl: true
+      }
+    });
+
+    let localizedImages = 0;
+    let failedImageLocalization = 0;
+    for (const row of remoteImageRows) {
+      const currentUrl = row.idImageUrl;
+      if (!currentUrl || isLocalIdImageUrl(currentUrl)) {
+        continue;
+      }
+
+      try {
+        const localizedUrl = await saveIdImageLocally({ url: currentUrl });
+        if (localizedUrl && localizedUrl !== currentUrl) {
+          await prisma.employee.update({
+            where: {
+              id: row.id
+            },
+            data: {
+              idImageUrl: localizedUrl
+            }
+          });
+          localizedImages += 1;
+        }
+      } catch (error) {
+        failedImageLocalization += 1;
+        console.warn(`[maintenance] failed to localize id image for employee ${row.id}`, error);
+      }
+    }
+
     const latestCvRaw = await prisma.employeeCvRaw.findFirst({
       orderBy: {
         createdAt: 'desc'
@@ -362,6 +408,8 @@ const runIncrementalEmployeeSync = async (lookbackDaysInput?: number) => {
       deletedEmployees: 0,
       deletedGhostCycles,
       updatedProfiles,
+      localizedImages,
+      failedImageLocalization,
       processed: backfillResult
     };
   } finally {

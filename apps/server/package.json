@@ -11,7 +11,8 @@
     "db:migrate": "prisma migrate deploy",
     "db:migrate:dev": "prisma migrate dev",
     "backfill": "tsx src/scripts/backfill.ts",
-    "admin:create": "tsx src/scripts/createAdminUser.ts"
+    "admin:create": "tsx src/scripts/createAdminUser.ts",
+    "id-images:localize": "tsx src/scripts/localizeIdImages.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
