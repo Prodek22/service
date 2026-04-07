@@ -12,6 +12,8 @@ type IdImageSource = {
   contentType?: string | null;
 };
 
+const IMAGE_FOLLOW_UP_WINDOW_MS = 45 * 60 * 1000;
+
 const isImageAttachment = (name?: string, contentType?: string | null): boolean => {
   if (contentType?.startsWith('image/')) {
     return true;
@@ -131,19 +133,31 @@ const attachImageToExistingCv = async (
     return null;
   }
 
-  const candidate = await prisma.employee.findFirst({
+  const candidates = await prisma.employee.findMany({
     where: {
       discordUserId: {
         in: candidateUserIds
       },
       cvChannelId: message.channelId,
       deletedAt: null,
-      OR: [{ idImageUrl: null }, { idImageUrl: '' }]
+      cvPostedAt: {
+        lte: message.createdAt
+      }
     },
-    orderBy: {
-      cvPostedAt: 'desc'
-    }
+    orderBy: [{ cvPostedAt: 'desc' }, { updatedAt: 'desc' }],
+    take: 10
   });
+
+  const candidateMissingImage = candidates.find((candidateItem) => !candidateItem.idImageUrl);
+
+  const candidateRecentAnyImage = candidates.find((candidateItem) => {
+    const cvPostedAt = candidateItem.cvPostedAt ?? candidateItem.createdAt;
+    const gap = message.createdAt.getTime() - cvPostedAt.getTime();
+
+    return gap >= 0 && gap <= IMAGE_FOLLOW_UP_WINDOW_MS;
+  });
+
+  const candidate = candidateMissingImage ?? candidateRecentAnyImage;
 
   if (!candidate) {
     return null;
