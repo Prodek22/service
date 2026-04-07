@@ -4,6 +4,13 @@ import { parseCvMessage } from '../parsers/cvParser';
 import { MessageInput, ParsedCv } from '../types';
 import { normalizeForCompare } from '../utils/normalize';
 import { ensureEmployeeAliases } from './employeeMatcher';
+import { deleteLocalIdImage, saveIdImageLocally } from './idImageStorage';
+
+type IdImageSource = {
+  url: string;
+  name?: string;
+  contentType?: string | null;
+};
 
 const isImageAttachment = (name?: string, contentType?: string | null): boolean => {
   if (contentType?.startsWith('image/')) {
@@ -100,9 +107,21 @@ const extractMentionedUserId = (content: string): string | undefined => {
   return mention?.[1];
 };
 
+const persistIdImageWithFallback = async (
+  source: IdImageSource,
+  context: string
+): Promise<string> => {
+  try {
+    return await saveIdImageLocally(source);
+  } catch (error) {
+    console.warn(`[cv] Failed to store ID image locally (${context})`, error);
+    return source.url;
+  }
+};
+
 const attachImageToExistingCv = async (
   message: MessageInput,
-  imageUrl: string
+  imageSource: IdImageSource
 ) => {
   const candidateUserIds = [message.authorId, extractMentionedUserId(message.content)]
     .filter(Boolean)
@@ -130,6 +149,8 @@ const attachImageToExistingCv = async (
     return null;
   }
 
+  const imageUrl = await persistIdImageWithFallback(imageSource, 'attach-image-to-existing-cv');
+
   const updated = await prisma.employee.update({
     where: { id: candidate.id },
     data: {
@@ -142,6 +163,10 @@ const attachImageToExistingCv = async (
       })
     }
   });
+
+  if (candidate.idImageUrl && candidate.idImageUrl !== imageUrl) {
+    await deleteLocalIdImage(candidate.idImageUrl);
+  }
 
   await prisma.employeeCvRaw.create({
     data: {
@@ -165,19 +190,31 @@ export const processCvMessage = async (
   }
 ) => {
   const parsed = parseCvMessage(message.content, message.attachments);
-  const imageFromAttachments = message.attachments.find((attachment) =>
+  const imageAttachment = message.attachments.find((attachment) =>
     isImageAttachment(attachment.name, attachment.contentType)
-  )?.url;
+  );
   const cvSignals = countCvSignals(parsed);
+  const parsedImageSource = parsed.idImageUrl
+    ? {
+        url: parsed.idImageUrl
+      }
+    : null;
+  const attachmentImageSource = imageAttachment
+    ? {
+        url: imageAttachment.url,
+        name: imageAttachment.name,
+        contentType: imageAttachment.contentType
+      }
+    : null;
+  const imageSource = attachmentImageSource ?? parsedImageSource;
 
   // Skip noise messages from the CV channel and auto-link image-only messages to an existing CV.
-  if (cvSignals === 0 && !parsed.idImageUrl && !imageFromAttachments) {
+  if (cvSignals === 0 && !imageSource) {
     return null;
   }
 
-  if (cvSignals === 0 && (parsed.idImageUrl || imageFromAttachments)) {
-    const imageUrl = parsed.idImageUrl ?? imageFromAttachments!;
-    const attached = await attachImageToExistingCv(message, imageUrl);
+  if (cvSignals === 0 && imageSource) {
+    const attached = await attachImageToExistingCv(message, imageSource);
     if (attached) {
       return attached;
     }
@@ -203,6 +240,10 @@ export const processCvMessage = async (
     employee = await findByNameAndNickname(parsed.fullName, parsed.nickname);
   }
 
+  const persistedIdImageUrl = imageSource
+    ? await persistIdImageWithFallback(imageSource, 'process-cv-message')
+    : undefined;
+
   const nextData = {
     discordUserId: message.authorId,
     nickname: options?.nicknameFromGuild ?? parsed.nickname,
@@ -214,7 +255,7 @@ export const processCvMessage = async (
     employerName: parsed.employerName,
     recommendation: parsed.recommendation,
     rank: options?.rankFromRole ?? parsed.rank,
-    idImageUrl: parsed.idImageUrl ?? imageFromAttachments,
+    idImageUrl: persistedIdImageUrl,
     cvMessageId: message.id,
     cvChannelId: message.channelId,
     cvPostedAt: options?.entryDateFromGuild ?? message.createdAt,
@@ -244,6 +285,10 @@ export const processCvMessage = async (
           status
         }
       });
+
+  if (employee?.idImageUrl && persistedIdImageUrl && employee.idImageUrl !== persistedIdImageUrl) {
+    await deleteLocalIdImage(employee.idImageUrl);
+  }
 
   await prisma.employeeCvRaw.create({
     data: {
@@ -303,16 +348,25 @@ export const attachIdImageFromReply = async (message: MessageInput): Promise<boo
     return false;
   }
 
+  const persistedImageUrl = await persistIdImageWithFallback(
+    {
+      url: image.url,
+      name: image.name,
+      contentType: image.contentType
+    },
+    'attach-id-image-from-reply'
+  );
+
   if (!employee.idImageUrl) {
     await prisma.employee.update({
       where: { id: employee.id },
       data: {
-        idImageUrl: image.url,
+        idImageUrl: persistedImageUrl,
         status: evaluateStatus({
           iban: employee.iban,
           fullName: employee.fullName,
           nickname: employee.nickname,
-          idImageUrl: image.url
+          idImageUrl: persistedImageUrl
         })
       }
     });

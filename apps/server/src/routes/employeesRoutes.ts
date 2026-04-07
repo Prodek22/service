@@ -1,8 +1,10 @@
 import { EmployeeStatus } from '@prisma/client';
+import { constants as fsConstants, promises as fs } from 'fs';
 import { Router } from 'express';
 import { requireAdmin } from '../auth/middleware';
 import { prisma } from '../db/prisma';
 import { recordAuditLog } from '../services/auditLogService';
+import { deleteLocalIdImage, isLocalIdImageUrl, resolveLocalIdImageAbsolutePath } from '../services/idImageStorage';
 import { normalizeForCompare } from '../utils/normalize';
 
 const toBoolean = (value: unknown): boolean => String(value).toLowerCase() === 'true';
@@ -35,6 +37,44 @@ const checkImageUrl = async (
   employee: { id: number; iban: string | null; nickname: string | null; fullName: string | null; idImageUrl: string }
 ): Promise<ImageCheckResult> => {
   const url = employee.idImageUrl;
+  if (isLocalIdImageUrl(url)) {
+    const absolutePath = resolveLocalIdImageAbsolutePath(url);
+
+    if (!absolutePath) {
+      return {
+        employeeId: employee.id,
+        employeeCode: employee.iban,
+        nickname: employee.nickname,
+        fullName: employee.fullName,
+        url,
+        ok: false,
+        reason: 'Invalid local image path'
+      };
+    }
+
+    try {
+      await fs.access(absolutePath, fsConstants.F_OK);
+      return {
+        employeeId: employee.id,
+        employeeCode: employee.iban,
+        nickname: employee.nickname,
+        fullName: employee.fullName,
+        url,
+        ok: true,
+        reason: 'ok'
+      };
+    } catch {
+      return {
+        employeeId: employee.id,
+        employeeCode: employee.iban,
+        nickname: employee.nickname,
+        fullName: employee.fullName,
+        url,
+        ok: false,
+        reason: 'Local file missing'
+      };
+    }
+  }
 
   try {
     const response = await fetch(url, {
@@ -436,6 +476,10 @@ employeesRouter.patch('/:id', requireAdmin, async (req, res) => {
       status: typeof payload.status === 'string' ? (payload.status as EmployeeStatus) : undefined
     }
   });
+
+  if (existing.idImageUrl && existing.idImageUrl !== employee.idImageUrl) {
+    await deleteLocalIdImage(existing.idImageUrl);
+  }
 
   await recordAuditLog({
     req,

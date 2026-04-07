@@ -10,6 +10,7 @@ import { employeesRouter } from './routes/employeesRoutes';
 import { healthRouter } from './routes/healthRoutes';
 import { maintenanceRouter } from './routes/maintenanceRoutes';
 import { timesheetRouter } from './routes/timesheetRoutes';
+import { getIdImageStorageDir, ID_IMAGE_PUBLIC_BASE_PATH } from './services/idImageStorage';
 
 export const createApp = () => {
   const app = express();
@@ -22,6 +23,7 @@ export const createApp = () => {
   );
   app.use(cookieParser());
   app.use(express.json({ limit: '5mb' }));
+  app.use(ID_IMAGE_PUBLIC_BASE_PATH, express.static(getIdImageStorageDir()));
 
   app.use('/api/health', healthRouter);
   app.use('/api/auth', authRouter);

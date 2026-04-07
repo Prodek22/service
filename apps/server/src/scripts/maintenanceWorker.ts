@@ -4,6 +4,7 @@ import { env } from '../config/env';
 import { prisma } from '../db/prisma';
 import { BackfillProgress, runBackfill } from '../services/backfillRunner';
 import { createGuildMemberFilter } from '../services/guildMemberFilter';
+import { deleteLocalIdImage, purgeLocalIdImageStorage } from '../services/idImageStorage';
 
 type WorkerInput = {
   id: string;
@@ -218,12 +219,54 @@ const runIncrementalEmployeeSync = async (lookbackDaysInput?: number) => {
       },
       select: {
         id: true,
-        discordUserId: true
+        discordUserId: true,
+        idImageUrl: true
+      }
+    });
+
+    const staleUsersWithImages = await prisma.employee.findMany({
+      where: {
+        discordUserId: {
+          not: null
+        },
+        idImageUrl: {
+          not: null
+        },
+        NOT: {
+          discordUserId: {
+            in: rosterIdList
+          }
+        }
+      },
+      select: {
+        id: true,
+        idImageUrl: true
       }
     });
 
     const staleEmployeeIds = staleUsers.map((user) => user.id);
     const staleUsersCount = staleUsers.length;
+    let removedLocalIdImages = 0;
+    for (const staleUser of staleUsersWithImages) {
+      const removed = await deleteLocalIdImage(staleUser.idImageUrl);
+      if (removed) {
+        removedLocalIdImages += 1;
+      }
+    }
+
+    if (staleUsersWithImages.length > 0) {
+      await prisma.employee.updateMany({
+        where: {
+          id: {
+            in: staleUsersWithImages.map((item) => item.id)
+          }
+        },
+        data: {
+          idImageUrl: null
+        }
+      });
+    }
+
     const staleMarkedDeleted =
       staleEmployeeIds.length > 0
         ? await prisma.employee.updateMany({
@@ -234,30 +277,15 @@ const runIncrementalEmployeeSync = async (lookbackDaysInput?: number) => {
             },
             data: {
               status: EmployeeStatus.DELETED,
+              idImageUrl: null,
               deletedAt: new Date()
-            }
-          })
-        : { count: 0 };
-
-    const reactivatedEmployees =
-      rosterIdList.length > 0
-        ? await prisma.employee.updateMany({
-            where: {
-              discordUserId: {
-                in: rosterIdList
-              },
-              status: EmployeeStatus.DELETED
-            },
-            data: {
-              status: EmployeeStatus.ACTIVE,
-              deletedAt: null
             }
           })
         : { count: 0 };
 
     sendProgress(
       30,
-      `Curatare roster: ${staleMarkedDeleted.count} marcati DELETED, ${reactivatedEmployees.count} reactivati.`
+      `Curatare roster: ${staleMarkedDeleted.count} marcati DELETED imediat, ${removedLocalIdImages} imagini sterse.`
     );
 
     let updatedProfiles = 0;
@@ -328,7 +356,8 @@ const runIncrementalEmployeeSync = async (lookbackDaysInput?: number) => {
       rosterCount: roster.length,
       staleUsersCount,
       markedDeletedEmployees: staleMarkedDeleted.count,
-      reactivatedEmployees: reactivatedEmployees.count,
+      removedLocalIdImages,
+      reactivatedEmployees: 0,
       deletedTimeEvents: 0,
       deletedEmployees: 0,
       deletedGhostCycles,
@@ -454,6 +483,7 @@ const run = async () => {
   if (input.type === 'rebuild-all') {
     sendProgress(2, 'Pornire reset complet...');
     sendProgress(8, 'Stergere date operationale existente...');
+    await purgeLocalIdImageStorage();
     await prisma.$transaction([
       prisma.timeEvent.deleteMany({}),
       prisma.timesheetPayrollStatus.deleteMany({}),
