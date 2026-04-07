@@ -8,7 +8,7 @@ import { deleteLocalIdImage, isLocalIdImageUrl, purgeLocalIdImageStorage, saveId
 
 type WorkerInput = {
   id: string;
-  type: 'sync-new' | 'sync-timesheet-window' | 'rebuild-all' | 'sync-employees-incremental';
+  type: 'sync-new' | 'sync-timesheet-window' | 'rebuild-all' | 'sync-employees-incremental' | 'rebuild-cv-all';
   payload?: {
     latestLimitPerChannel?: number;
     days?: number;
@@ -417,12 +417,192 @@ const runIncrementalEmployeeSync = async (lookbackDaysInput?: number) => {
   }
 };
 
+const runCvRebuildAll = async () => {
+  const client = new Client({
+    intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers],
+    partials: [Partials.GuildMember]
+  });
+
+  try {
+    sendProgress(5, 'Conectare Discord pentru rebuild CV-uri...');
+    await client.login(env.DISCORD_TOKEN);
+    const memberFilter = await createGuildMemberFilter(client);
+    const roster = await memberFilter.listEmployeeMembers();
+    sendProgress(18, `Lista angajati preluata (${roster.length} membri cu rol Angajat).`);
+    const rosterIds = new Set(roster.map((member) => member.userId));
+    const rosterIdList = [...rosterIds];
+
+    const staleUsers = await prisma.employee.findMany({
+      where: {
+        discordUserId: {
+          not: null
+        },
+        status: {
+          not: EmployeeStatus.DELETED
+        },
+        NOT: {
+          discordUserId: {
+            in: rosterIdList
+          }
+        }
+      },
+      select: {
+        id: true,
+        idImageUrl: true
+      }
+    });
+
+    let removedLocalIdImages = 0;
+    for (const staleUser of staleUsers) {
+      const removed = await deleteLocalIdImage(staleUser.idImageUrl);
+      if (removed) {
+        removedLocalIdImages += 1;
+      }
+    }
+
+    const staleMarkedDeleted =
+      staleUsers.length > 0
+        ? await prisma.employee.updateMany({
+            where: {
+              id: {
+                in: staleUsers.map((user) => user.id)
+              }
+            },
+            data: {
+              status: EmployeeStatus.DELETED,
+              idImageUrl: null,
+              deletedAt: new Date()
+            }
+          })
+        : { count: 0 };
+
+    sendProgress(
+      28,
+      `Curatare roster: ${staleMarkedDeleted.count} marcati DELETED, ${removedLocalIdImages} imagini sterse.`
+    );
+
+    let updatedProfiles = 0;
+    for (const member of roster) {
+      const profileUpdate: {
+        nickname?: string;
+        rank?: string;
+        cvPostedAt?: Date;
+        deletedAt?: null;
+      } = {};
+
+      if (member.rpNickname) {
+        profileUpdate.nickname = member.rpNickname;
+      }
+
+      if (member.cvRank) {
+        profileUpdate.rank = member.cvRank;
+      }
+
+      if (member.joinedAt) {
+        profileUpdate.cvPostedAt = member.joinedAt;
+      }
+      profileUpdate.deletedAt = null;
+
+      if (!Object.keys(profileUpdate).length) {
+        continue;
+      }
+
+      const updated = await prisma.employee.updateMany({
+        where: {
+          discordUserId: member.userId
+        },
+        data: profileUpdate
+      });
+
+      updatedProfiles += updated.count;
+    }
+
+    sendProgress(36, 'Reprocesare completa canal CV...');
+    const backfillResult = await runBackfill({
+      mode: 'all',
+      channels: ['cv'],
+      onProgress: (progress) => emitBackfillProgress(progress, 36, 88)
+    });
+
+    sendProgress(90, 'Localizare imagini ramase pe link Discord...');
+    const remoteImageRows = await prisma.employee.findMany({
+      where: {
+        status: {
+          not: EmployeeStatus.DELETED
+        },
+        discordUserId: {
+          in: rosterIdList
+        },
+        idImageUrl: {
+          not: null
+        }
+      },
+      select: {
+        id: true,
+        idImageUrl: true
+      }
+    });
+
+    let localizedImages = 0;
+    let failedImageLocalization = 0;
+    for (const row of remoteImageRows) {
+      const currentUrl = row.idImageUrl;
+      if (!currentUrl || isLocalIdImageUrl(currentUrl)) {
+        continue;
+      }
+
+      try {
+        const localizedUrl = await saveIdImageLocally({ url: currentUrl });
+        if (localizedUrl && localizedUrl !== currentUrl) {
+          await prisma.employee.update({
+            where: {
+              id: row.id
+            },
+            data: {
+              idImageUrl: localizedUrl
+            }
+          });
+          localizedImages += 1;
+        }
+      } catch (error) {
+        failedImageLocalization += 1;
+        console.warn(`[maintenance] failed to localize id image for employee ${row.id}`, error);
+      }
+    }
+
+    return {
+      mode: 'rebuild-cv-all',
+      rosterCount: roster.length,
+      markedDeletedEmployees: staleMarkedDeleted.count,
+      removedLocalIdImages,
+      updatedProfiles,
+      localizedImages,
+      failedImageLocalization,
+      processed: backfillResult
+    };
+  } finally {
+    client.destroy();
+  }
+};
+
 const run = async () => {
   const input = getInput();
 
   if (input.type === 'sync-employees-incremental') {
     sendProgress(2, 'Pornire sync incremental angajati...');
     const result = await runIncrementalEmployeeSync(input.payload?.lookbackDays);
+
+    process.send?.({
+      type: 'job-success',
+      payload: result
+    });
+
+    return;
+  }
+
+  if (input.type === 'rebuild-cv-all') {
+    sendProgress(2, 'Pornire rebuild complet CV-uri...');
+    const result = await runCvRebuildAll();
 
     process.send?.({
       type: 'job-success',

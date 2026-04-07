@@ -181,3 +181,28 @@ maintenanceRouter.post('/rebuild-all', (req, res) => {
   }
 });
 
+maintenanceRouter.post('/rebuild-cv-all', (req, res) => {
+  try {
+    const status = startMaintenanceJob('rebuild-cv-all');
+
+    void recordAuditLog({
+      req,
+      res,
+      action: 'MAINTENANCE_REBUILD_CV_ALL',
+      entityType: 'maintenance_job',
+      entityId: status.id,
+      metadata: {
+        type: 'rebuild-cv-all'
+      }
+    });
+
+    res.status(202).json({
+      ok: true,
+      message: 'Full CV rebuild started',
+      job: status
+    });
+  } catch (error) {
+    res.status(409).json({ error: error instanceof Error ? error.message : 'Could not start CV rebuild job' });
+  }
+});
+

@@ -133,6 +133,18 @@ export const DashboardPage = ({ canManage = false }: DashboardPageProps) => {
     await startBackgroundJob('/maintenance/sync-timesheet-window', { days: 14 }, 'Sync pontaje saptamana in curs pornit.');
   };
 
+  const rebuildAllCvData = async () => {
+    const confirmed = window.confirm(
+      'Se va reprocesa complet canalul CV (fara reset la pontaje). Continui?'
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    await startBackgroundJob('/maintenance/rebuild-cv-all', {}, 'Rebuild complet CV-uri pornit.');
+  };
+
   const rebuildAllData = async () => {
     const confirmed = window.confirm(
       'Actiune critica: se sterg toate datele operationale (CV + pontaj) si se ruleaza reimport complet. Continui?'
@@ -190,6 +202,17 @@ export const DashboardPage = ({ canManage = false }: DashboardPageProps) => {
               disabled={maintenanceBusy}
             >
               <span>Sincronizeaza pontaj saptamana in curs</span>
+              <span className="warning-triangle" aria-hidden="true">
+                <span>!</span>
+              </span>
+            </button>
+            <button
+              type="button"
+              className="btn-danger-action"
+              onClick={() => void rebuildAllCvData()}
+              disabled={maintenanceBusy}
+            >
+              <span>Rebuild complet CV-uri</span>
               <span className="warning-triangle" aria-hidden="true">
                 <span>!</span>
               </span>

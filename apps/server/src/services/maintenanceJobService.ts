@@ -2,7 +2,12 @@
 import path from 'path';
 import { fork } from 'child_process';
 
-export type MaintenanceJobType = 'sync-new' | 'sync-timesheet-window' | 'rebuild-all' | 'sync-employees-incremental';
+export type MaintenanceJobType =
+  | 'sync-new'
+  | 'sync-timesheet-window'
+  | 'rebuild-all'
+  | 'sync-employees-incremental'
+  | 'rebuild-cv-all';
 
 export type MaintenanceJobState = 'idle' | 'running' | 'success' | 'failed';
 
