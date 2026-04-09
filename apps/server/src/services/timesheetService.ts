@@ -417,6 +417,7 @@ export const getCycleTotals = async (cycleId: number) => {
   if (!cycle) {
     return [];
   }
+  const isOpenCycle = cycle.endedAt == null;
 
   const [events, employees] = await Promise.all([
     prisma.timeEvent.findMany({
@@ -469,7 +470,7 @@ export const getCycleTotals = async (cycleId: number) => {
       key,
       employeeId: employee.id,
       employeeCode: employee.iban ?? null,
-      rank: null,
+      rank: isOpenCycle ? (employee.rank ?? null) : null,
       monthsInCity: employee.monthsInCity ?? null,
       entryDate: getEmployeePresenceStart(employee),
       displayName: employee.nickname ?? employee.fullName ?? employee.iban ?? `Employee #${employee.id}`,
@@ -518,14 +519,16 @@ export const getCycleTotals = async (cycleId: number) => {
       .map((item) => [item.employeeId, item.rankSnapshot as string])
   );
 
-  for (const row of totals.values()) {
-    if (!row.employeeId) {
-      continue;
-    }
+  if (!isOpenCycle) {
+    for (const row of totals.values()) {
+      if (!row.employeeId) {
+        continue;
+      }
 
-    const cycleRank = cycleRanksByEmployee.get(row.employeeId);
-    if (cycleRank) {
-      row.rank = cycleRank;
+      const cycleRank = cycleRanksByEmployee.get(row.employeeId);
+      if (cycleRank) {
+        row.rank = cycleRank;
+      }
     }
   }
 
@@ -655,20 +658,36 @@ export const getCycleTotals = async (cycleId: number) => {
       skipDuplicates: true
     });
 
-    await Promise.all(
-      rankSnapshotCandidates.map((item) =>
-        prisma.timesheetPayrollStatus.updateMany({
-          where: {
-            weekCycleId: cycleId,
-            employeeId: item.employeeId,
-            rankSnapshot: null
-          },
-          data: {
-            rankSnapshot: item.rank
-          }
-        })
-      )
-    );
+    if (isOpenCycle) {
+      await Promise.all(
+        rankSnapshotCandidates.map((item) =>
+          prisma.timesheetPayrollStatus.updateMany({
+            where: {
+              weekCycleId: cycleId,
+              employeeId: item.employeeId
+            },
+            data: {
+              rankSnapshot: item.rank
+            }
+          })
+        )
+      );
+    } else {
+      await Promise.all(
+        rankSnapshotCandidates.map((item) =>
+          prisma.timesheetPayrollStatus.updateMany({
+            where: {
+              weekCycleId: cycleId,
+              employeeId: item.employeeId,
+              rankSnapshot: null
+            },
+            data: {
+              rankSnapshot: item.rank
+            }
+          })
+        )
+      );
+    }
   }
 
   const recentCycles = await prisma.weekCycle.findMany({
