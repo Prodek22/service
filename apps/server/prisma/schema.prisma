@@ -125,6 +125,7 @@ model TimesheetPayrollStatus {
   isPaid      Boolean  @default(false) @map("is_paid")
   isUp        Boolean  @default(false) @map("is_up")
   monthsSnapshot Int?  @map("months_snapshot")
+  rankSnapshot String? @map("rank_snapshot")
   paidAt      DateTime? @map("paid_at")
   paidBy      String?  @map("paid_by")
   note        String?  @db.Text

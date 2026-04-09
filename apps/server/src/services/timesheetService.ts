@@ -469,7 +469,7 @@ export const getCycleTotals = async (cycleId: number) => {
       key,
       employeeId: employee.id,
       employeeCode: employee.iban ?? null,
-      rank: employee.rank ?? null,
+      rank: null,
       monthsInCity: employee.monthsInCity ?? null,
       entryDate: getEmployeePresenceStart(employee),
       displayName: employee.nickname ?? employee.fullName ?? employee.iban ?? `Employee #${employee.id}`,
@@ -491,29 +491,43 @@ export const getCycleTotals = async (cycleId: number) => {
 
   const eligibleEmployeeIds = eligibleEmployees.map((employee) => employee.id);
 
-  const cycleMonthsSnapshots =
+  const cyclePayrollSnapshots =
     eligibleEmployeeIds.length > 0
       ? await prisma.timesheetPayrollStatus.findMany({
           where: {
             weekCycleId: cycleId,
             employeeId: {
               in: eligibleEmployeeIds
-            },
-            monthsSnapshot: {
-              not: null
             }
           },
           select: {
             employeeId: true,
-            monthsSnapshot: true
+            monthsSnapshot: true,
+            rankSnapshot: true
           }
         })
       : [];
   const cycleMonthsByEmployee = new Map(
-    cycleMonthsSnapshots
+    cyclePayrollSnapshots
       .filter((item) => item.monthsSnapshot != null)
       .map((item) => [item.employeeId, item.monthsSnapshot as number])
   );
+  const cycleRanksByEmployee = new Map(
+    cyclePayrollSnapshots
+      .filter((item) => item.rankSnapshot != null && String(item.rankSnapshot).trim().length > 0)
+      .map((item) => [item.employeeId, item.rankSnapshot as string])
+  );
+
+  for (const row of totals.values()) {
+    if (!row.employeeId) {
+      continue;
+    }
+
+    const cycleRank = cycleRanksByEmployee.get(row.employeeId);
+    if (cycleRank) {
+      row.rank = cycleRank;
+    }
+  }
 
   const previousMonthsSnapshots =
     eligibleEmployeeIds.length > 0
@@ -615,6 +629,46 @@ export const getCycleTotals = async (cycleId: number) => {
     }
 
     current.eventsCount += 1;
+  }
+
+  for (const row of totals.values()) {
+    if (!row.rank) {
+      const employee = row.employeeId ? eligibleEmployeeById.get(row.employeeId) : null;
+      row.rank = employee?.rank ?? null;
+    }
+  }
+
+  const rankSnapshotCandidates = [...totals.values()]
+    .filter((row) => row.employeeId != null && row.rank)
+    .map((row) => ({
+      employeeId: row.employeeId as number,
+      rank: row.rank as string
+    }));
+
+  if (rankSnapshotCandidates.length > 0) {
+    await prisma.timesheetPayrollStatus.createMany({
+      data: rankSnapshotCandidates.map((item) => ({
+        weekCycleId: cycleId,
+        employeeId: item.employeeId,
+        rankSnapshot: item.rank
+      })),
+      skipDuplicates: true
+    });
+
+    await Promise.all(
+      rankSnapshotCandidates.map((item) =>
+        prisma.timesheetPayrollStatus.updateMany({
+          where: {
+            weekCycleId: cycleId,
+            employeeId: item.employeeId,
+            rankSnapshot: null
+          },
+          data: {
+            rankSnapshot: item.rank
+          }
+        })
+      )
+    );
   }
 
   const recentCycles = await prisma.weekCycle.findMany({

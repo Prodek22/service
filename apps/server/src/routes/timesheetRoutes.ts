@@ -229,6 +229,7 @@ timesheetRouter.post('/payroll-status', requireAdmin, async (req, res) => {
       employeeId,
       salaryTotal: employeeRow.salaryTotal,
       isPaid,
+      rankSnapshot: employeeRow.rank ?? null,
       monthsSnapshot: employeeRow.monthsInCity ?? null,
       paidAt: isPaid ? new Date() : null,
       paidBy: isPaid ? username : null,
@@ -303,6 +304,7 @@ timesheetRouter.post('/up-status', requireAdmin, async (req, res) => {
       salaryTotal: employeeRow.salaryTotal,
       isPaid: false,
       isUp,
+      rankSnapshot: employeeRow.rank ?? null,
       monthsSnapshot: employeeRow.monthsInCity ?? null
     },
     update: {
@@ -373,6 +375,7 @@ timesheetRouter.post('/months-status', requireAdmin, async (req, res) => {
       salaryTotal: employeeRow.salaryTotal,
       isPaid: false,
       isUp: false,
+      rankSnapshot: employeeRow.rank ?? null,
       monthsSnapshot: monthsInCity
     },
     update: {
