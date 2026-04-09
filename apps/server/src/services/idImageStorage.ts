@@ -135,15 +135,11 @@ const parseLocalStoredPath = (value: string): string | null => {
   return null;
 };
 
-export const isLocalIdImageUrl = (value?: string | null): boolean => {
+export const extractLocalIdImageFilename = (value?: string | null): string | null => {
   if (!value) {
-    return false;
+    return null;
   }
 
-  return parseLocalStoredPath(value) !== null;
-};
-
-export const resolveLocalIdImageAbsolutePath = (value: string): string | null => {
   const publicPath = parseLocalStoredPath(value);
   if (!publicPath) {
     return null;
@@ -157,6 +153,23 @@ export const resolveLocalIdImageAbsolutePath = (value: string): string | null =>
   const filename = safeDecodeURIComponent(encodedFilename);
   const safeFilename = path.basename(filename);
   if (!safeFilename || safeFilename !== filename) {
+    return null;
+  }
+
+  return safeFilename;
+};
+
+export const isLocalIdImageUrl = (value?: string | null): boolean => {
+  if (!value) {
+    return false;
+  }
+
+  return parseLocalStoredPath(value) !== null;
+};
+
+export const resolveLocalIdImageAbsolutePath = (value: string): string | null => {
+  const safeFilename = extractLocalIdImageFilename(value);
+  if (!safeFilename) {
     return null;
   }
 
@@ -176,19 +189,8 @@ export const deleteLocalIdImage = async (value?: string | null): Promise<boolean
     return false;
   }
 
-  const publicPath = parseLocalStoredPath(value);
-  if (!publicPath) {
-    return false;
-  }
-
-  const encodedFilename = publicPath.slice(`${ID_IMAGE_PUBLIC_BASE_PATH}/`.length);
-  if (!encodedFilename) {
-    return false;
-  }
-
-  const filename = safeDecodeURIComponent(encodedFilename);
-  const safeFilename = path.basename(filename);
-  if (!safeFilename || safeFilename !== filename) {
+  const safeFilename = extractLocalIdImageFilename(value);
+  if (!safeFilename) {
     return false;
   }
 

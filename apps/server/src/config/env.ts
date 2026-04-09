@@ -16,6 +16,10 @@ const envSchema = z.object({
   TIMESHEET_DAILY_SYNC_ENABLED: z.enum(['true', 'false']).default('true'),
   TIMESHEET_SYNC_INTERVAL_HOURS: z.string().default('24'),
   TIMESHEET_SYNC_DAYS: z.string().default('14'),
+  AUTO_CLEANUP_ENABLED: z.enum(['true', 'false']).default('true'),
+  AUTO_CLEANUP_INTERVAL_HOURS: z.string().default('720'),
+  AUTO_CLEANUP_KEEP_CYCLES: z.string().default('12'),
+  AUTO_CLEANUP_RUN_ON_START: z.enum(['true', 'false']).default('false'),
   BACKFILL_BATCH_DELAY_MS: z.string().default('120'),
   DATABASE_URL: z.string().min(1),
   PORT: z.string().default('3001')
@@ -35,6 +39,10 @@ export const env = {
   TIMESHEET_DAILY_SYNC_ENABLED: parsed.data.TIMESHEET_DAILY_SYNC_ENABLED === 'true',
   TIMESHEET_SYNC_INTERVAL_HOURS: Number.parseInt(parsed.data.TIMESHEET_SYNC_INTERVAL_HOURS, 10) || 24,
   TIMESHEET_SYNC_DAYS: Number.parseInt(parsed.data.TIMESHEET_SYNC_DAYS, 10) || 14,
+  AUTO_CLEANUP_ENABLED: parsed.data.AUTO_CLEANUP_ENABLED === 'true',
+  AUTO_CLEANUP_INTERVAL_HOURS: Number.parseInt(parsed.data.AUTO_CLEANUP_INTERVAL_HOURS, 10) || 720,
+  AUTO_CLEANUP_KEEP_CYCLES: Math.max(6, Number.parseInt(parsed.data.AUTO_CLEANUP_KEEP_CYCLES, 10) || 12),
+  AUTO_CLEANUP_RUN_ON_START: parsed.data.AUTO_CLEANUP_RUN_ON_START === 'true',
   BACKFILL_BATCH_DELAY_MS: Math.max(0, Number.parseInt(parsed.data.BACKFILL_BATCH_DELAY_MS, 10) || 120)
 };
 

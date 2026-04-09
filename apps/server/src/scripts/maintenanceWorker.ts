@@ -5,14 +5,22 @@ import { prisma } from '../db/prisma';
 import { BackfillProgress, runBackfill } from '../services/backfillRunner';
 import { createGuildMemberFilter } from '../services/guildMemberFilter';
 import { deleteLocalIdImage, isLocalIdImageUrl, purgeLocalIdImageStorage, saveIdImageLocally } from '../services/idImageStorage';
+import { runRetentionCleanup } from '../services/maintenanceCleanupService';
 
 type WorkerInput = {
   id: string;
-  type: 'sync-new' | 'sync-timesheet-window' | 'rebuild-all' | 'sync-employees-incremental' | 'rebuild-cv-all';
+  type:
+    | 'sync-new'
+    | 'sync-timesheet-window'
+    | 'rebuild-all'
+    | 'sync-employees-incremental'
+    | 'rebuild-cv-all'
+    | 'cleanup-retention';
   payload?: {
     latestLimitPerChannel?: number;
     days?: number;
     lookbackDays?: number;
+    keepCycles?: number;
   };
 };
 
@@ -637,6 +645,22 @@ const run = async () => {
       }
     });
 
+    return;
+  }
+
+  if (input.type === 'cleanup-retention') {
+    const keepCycles = Math.max(6, Math.min(input.payload?.keepCycles ?? env.AUTO_CLEANUP_KEEP_CYCLES, 260));
+    sendProgress(5, `Pornire cleanup retention. Pastrez ultimele ${keepCycles} cicluri per service...`);
+    const result = await runRetentionCleanup(keepCycles);
+    sendProgress(100, 'Cleanup retention finalizat.');
+
+    process.send?.({
+      type: 'job-success',
+      payload: {
+        mode: 'cleanup-retention',
+        ...result
+      }
+    });
     return;
   }
 

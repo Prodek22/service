@@ -7,7 +7,8 @@ export type MaintenanceJobType =
   | 'sync-timesheet-window'
   | 'rebuild-all'
   | 'sync-employees-incremental'
-  | 'rebuild-cv-all';
+  | 'rebuild-cv-all'
+  | 'cleanup-retention';
 
 export type MaintenanceJobState = 'idle' | 'running' | 'success' | 'failed';
 
@@ -15,6 +16,7 @@ export type MaintenanceJobPayload = {
   latestLimitPerChannel?: number;
   days?: number;
   lookbackDays?: number;
+  keepCycles?: number;
 };
 
 export type MaintenanceJobStatus = {

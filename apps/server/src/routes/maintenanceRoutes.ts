@@ -206,3 +206,34 @@ maintenanceRouter.post('/rebuild-cv-all', (req, res) => {
   }
 });
 
+maintenanceRouter.post('/cleanup-retention', (req, res) => {
+  try {
+    const input = Number.parseInt(String(req.body?.keepCycles ?? ''), 10);
+    const keepCycles = Number.isNaN(input) ? undefined : Math.max(6, Math.min(input, 260));
+
+    const status = startMaintenanceJob('cleanup-retention', {
+      ...(keepCycles ? { keepCycles } : {})
+    });
+
+    void recordAuditLog({
+      req,
+      res,
+      action: 'MAINTENANCE_CLEANUP_RETENTION',
+      entityType: 'maintenance_job',
+      entityId: status.id,
+      metadata: {
+        type: 'cleanup-retention',
+        keepCycles: keepCycles ?? null
+      }
+    });
+
+    res.status(202).json({
+      ok: true,
+      message: 'Cleanup retention started',
+      job: status
+    });
+  } catch (error) {
+    res.status(409).json({ error: error instanceof Error ? error.message : 'Could not start cleanup job' });
+  }
+});
+

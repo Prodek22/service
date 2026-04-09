@@ -114,6 +114,10 @@ AUTH_COOKIE_SECURE=true
 TIMESHEET_DAILY_SYNC_ENABLED=true
 TIMESHEET_SYNC_INTERVAL_HOURS=24
 TIMESHEET_SYNC_DAYS=14
+AUTO_CLEANUP_ENABLED=true
+AUTO_CLEANUP_INTERVAL_HOURS=720
+AUTO_CLEANUP_KEEP_CYCLES=12
+AUTO_CLEANUP_RUN_ON_START=false
 DATABASE_URL="mysql://user:password@localhost:3306/service_admin"
 PORT=3001
 ```
@@ -207,6 +211,7 @@ Maintenance (necesita login):
 - `POST /api/maintenance/sync-new` (porneste job async, body: `{ "latestLimitPerChannel": 100 }`)
 - `POST /api/maintenance/sync-timesheet-window` (porneste job async, body: `{ "days": 14 }`)
 - `POST /api/maintenance/rebuild-all` (porneste job async: sterge complet datele operationale + backfill complet)
+- `POST /api/maintenance/cleanup-retention` (porneste cleanup automat/manual, body optional: `{ "keepCycles": 12 }`)
 
 ## Cum functioneaza parsarea CV
 
