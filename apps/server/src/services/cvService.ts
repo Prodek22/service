@@ -1,10 +1,11 @@
 import { EmployeeStatus, ParseStatus } from '@prisma/client';
+import { constants as fsConstants, promises as fs } from 'fs';
 import { prisma } from '../db/prisma';
 import { parseCvMessage } from '../parsers/cvParser';
 import { MessageInput, ParsedCv } from '../types';
 import { normalizeForCompare } from '../utils/normalize';
 import { ensureEmployeeAliases } from './employeeMatcher';
-import { deleteLocalIdImage, saveIdImageLocally } from './idImageStorage';
+import { deleteLocalIdImage, isLocalIdImageUrl, resolveLocalIdImageAbsolutePath, saveIdImageLocally } from './idImageStorage';
 
 type IdImageSource = {
   url: string;
@@ -371,7 +372,22 @@ export const attachIdImageFromReply = async (message: MessageInput): Promise<boo
     'attach-id-image-from-reply'
   );
 
-  if (!employee.idImageUrl) {
+  let shouldReplaceImage = !employee.idImageUrl;
+
+  if (!shouldReplaceImage && employee.idImageUrl && isLocalIdImageUrl(employee.idImageUrl)) {
+    const localPath = resolveLocalIdImageAbsolutePath(employee.idImageUrl);
+    if (!localPath) {
+      shouldReplaceImage = true;
+    } else {
+      try {
+        await fs.access(localPath, fsConstants.F_OK);
+      } catch {
+        shouldReplaceImage = true;
+      }
+    }
+  }
+
+  if (shouldReplaceImage) {
     await prisma.employee.update({
       where: { id: employee.id },
       data: {
@@ -384,6 +400,10 @@ export const attachIdImageFromReply = async (message: MessageInput): Promise<boo
         })
       }
     });
+
+    if (employee.idImageUrl && employee.idImageUrl !== persistedImageUrl) {
+      await deleteLocalIdImage(employee.idImageUrl);
+    }
   }
 
   await prisma.employeeCvRaw.create({
