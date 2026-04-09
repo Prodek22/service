@@ -1,4 +1,4 @@
-import { EmployeeStatus, TimeEventType, WeekCycle } from '@prisma/client';
+import { TimeEventType, WeekCycle } from '@prisma/client';
 import { prisma } from '../db/prisma';
 import { parseTimesheetMessage } from '../parsers/timesheetParser';
 import { MessageInput } from '../types';
@@ -441,9 +441,7 @@ export const getCycleTotals = async (cycleId: number) => {
     }),
     prisma.employee.findMany({
       where: {
-        status: {
-          not: EmployeeStatus.DELETED
-        }
+        OR: [{ deletedAt: null }, { deletedAt: { gt: cycle.startedAt } }]
       },
       select: {
         id: true,
