@@ -211,6 +211,28 @@ a {
   color: var(--muted);
 }
 
+.public-nav-links {
+  margin-top: 8px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.public-nav-links a {
+  color: var(--muted);
+  text-decoration: none;
+  border: 1px solid var(--line);
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+}
+
+.public-nav-links a.active {
+  color: #fff;
+  background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+  border-color: transparent;
+}
+
 html[data-theme='dark'] .public-header {
   background: rgba(23, 33, 49, 0.88);
 }

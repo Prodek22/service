@@ -131,45 +131,142 @@ timesheetRouter.get('/summary', async (req, res) => {
   res.json(payload);
 });
 
-timesheetRouter.get('/active', requireAdmin, async (req, res) => {
+const parseCodesFromText = (rawText: string): string[] => {
+  const matches = [...rawText.matchAll(/@[\p{L}0-9_.-]+(?:\s*-\s*([0-9]{3,}))?/gu)];
+  return matches.map((match) => match[1]?.trim()).filter((value): value is string => Boolean(value));
+};
+
+timesheetRouter.get('/active', async (req, res) => {
   const hoursInput = Number.parseInt(String(req.query.hours ?? '24'), 10);
   const hours = Number.isNaN(hoursInput) ? 24 : Math.max(1, Math.min(hoursInput, 48));
   const since = new Date(Date.now() - hours * 60 * 60 * 1000);
   const serviceCodeFilter = typeof req.query.serviceCode === 'string' ? req.query.serviceCode.trim() : '';
 
-  const events = await prisma.timeEvent.findMany({
-    where: {
-      isDeleted: false,
-      eventType: {
-        in: [TimeEventType.CLOCK_IN, TimeEventType.CLOCK_OUT]
+  const [events, activeEmployees] = await Promise.all([
+    prisma.timeEvent.findMany({
+      where: {
+        isDeleted: false,
+        eventType: {
+          in: [TimeEventType.CLOCK_IN, TimeEventType.CLOCK_OUT]
+        },
+        eventAt: {
+          gte: since
+        },
+        ...(serviceCodeFilter ? { serviceCode: serviceCodeFilter } : {})
       },
-      eventAt: {
-        gte: since
-      },
-      ...(serviceCodeFilter ? { serviceCode: serviceCodeFilter } : {})
-    },
-    include: {
-      employee: {
-        select: {
-          id: true,
-          iban: true,
-          nickname: true,
-          fullName: true,
-          rank: true,
-          discordUserId: true
+      include: {
+        employee: {
+          select: {
+            id: true,
+            iban: true,
+            nickname: true,
+            fullName: true,
+            rank: true,
+            discordUserId: true
+          }
         }
+      },
+      orderBy: [{ eventAt: 'asc' }, { id: 'asc' }]
+    }),
+    prisma.employee.findMany({
+      where: {
+        deletedAt: null
+      },
+      select: {
+        id: true,
+        iban: true,
+        nickname: true,
+        fullName: true,
+        rank: true,
+        discordUserId: true
       }
-    },
-    orderBy: [{ eventAt: 'asc' }, { id: 'asc' }]
-  });
+    })
+  ]);
 
-  const latestByKey = new Map<string, (typeof events)[number]>();
+  const employeesById = new Map(activeEmployees.map((employee) => [employee.id, employee]));
+  const employeesByDiscordId = new Map<string, (typeof activeEmployees)[number]>();
+  const employeesByCode = new Map<string, (typeof activeEmployees)[number]>();
+  const employeesByName = new Map<string, (typeof activeEmployees)[number] | null>();
+
+  const putName = (value: string | null | undefined, employee: (typeof activeEmployees)[number]) => {
+    const normalized = normalizeForCompare(value ?? '');
+    if (!normalized) {
+      return;
+    }
+
+    if (!employeesByName.has(normalized)) {
+      employeesByName.set(normalized, employee);
+      return;
+    }
+
+    const existing = employeesByName.get(normalized);
+    if (existing && existing.id !== employee.id) {
+      employeesByName.set(normalized, null);
+    }
+  };
+
+  for (const employee of activeEmployees) {
+    if (employee.discordUserId && !employeesByDiscordId.has(employee.discordUserId)) {
+      employeesByDiscordId.set(employee.discordUserId, employee);
+    }
+
+    if (employee.iban) {
+      employeesByCode.set(employee.iban.trim(), employee);
+    }
+
+    putName(employee.nickname, employee);
+    putName(employee.fullName, employee);
+  }
+
+  const resolveEmployee = (event: (typeof events)[number]) => {
+    if (event.targetEmployeeId != null) {
+      const byId = employeesById.get(event.targetEmployeeId);
+      if (byId) {
+        return byId;
+      }
+    }
+
+    if (event.employee?.id != null) {
+      const byInclude = employeesById.get(event.employee.id);
+      if (byInclude) {
+        return byInclude;
+      }
+    }
+
+    if (event.discordUserId) {
+      const byDiscord = employeesByDiscordId.get(event.discordUserId);
+      if (byDiscord) {
+        return byDiscord;
+      }
+    }
+
+    const code = parseCodesFromText(event.rawText)[0];
+    if (code) {
+      const byCode = employeesByCode.get(code);
+      if (byCode) {
+        return byCode;
+      }
+    }
+
+    const normalizedTarget = normalizeForCompare(event.targetEmployeeName ?? '');
+    if (normalizedTarget) {
+      const byName = employeesByName.get(normalizedTarget);
+      if (byName) {
+        return byName;
+      }
+    }
+
+    return null;
+  };
+
+  const latestByKey = new Map<string, { event: (typeof events)[number]; employee: (typeof activeEmployees)[number] | null }>();
   for (const event of events) {
     const serviceCode = event.serviceCode ?? 'service';
+    const resolvedEmployee = resolveEmployee(event);
 
     let key: string | null = null;
-    if (event.targetEmployeeId != null) {
-      key = `employee:${event.targetEmployeeId}:${serviceCode}`;
+    if (resolvedEmployee) {
+      key = `employee:${resolvedEmployee.id}:${serviceCode}`;
     } else if (event.discordUserId) {
       key = `discord:${event.discordUserId}:${serviceCode}`;
     } else if (event.targetEmployeeName) {
@@ -180,26 +277,30 @@ timesheetRouter.get('/active', requireAdmin, async (req, res) => {
       continue;
     }
 
-    latestByKey.set(key, event);
+    latestByKey.set(key, { event, employee: resolvedEmployee });
   }
 
   const now = Date.now();
   const items = [...latestByKey.values()]
-    .filter((event) => event.eventType === TimeEventType.CLOCK_IN)
-    .map((event) => {
+    .filter((entry) => entry.event.eventType === TimeEventType.CLOCK_IN)
+    .map((entry) => {
+      const event = entry.event;
+      const employee = entry.employee;
       const displayName =
+        employee?.nickname ??
+        employee?.fullName ??
         event.employee?.nickname ??
         event.employee?.fullName ??
         event.targetEmployeeName ??
         (event.discordUserId ? `@${event.discordUserId}` : 'Necunoscut');
-      const discordUserId = event.discordUserId ?? event.employee?.discordUserId ?? null;
+      const discordUserId = event.discordUserId ?? employee?.discordUserId ?? event.employee?.discordUserId ?? null;
 
       return {
         key: event.discordMessageId,
-        employeeId: event.targetEmployeeId ?? event.employee?.id ?? null,
-        employeeCode: event.employee?.iban ?? null,
+        employeeId: employee?.id ?? event.targetEmployeeId ?? event.employee?.id ?? null,
+        employeeCode: employee?.iban ?? event.employee?.iban ?? null,
         displayName,
-        rank: event.targetEmployeeRank ?? event.employee?.rank ?? null,
+        rank: event.targetEmployeeRank ?? employee?.rank ?? event.employee?.rank ?? null,
         discordUserId,
         serviceCode: event.serviceCode ?? 'service',
         startedAt: event.eventAt.toISOString(),

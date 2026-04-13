@@ -16,7 +16,11 @@ const formatElapsed = (seconds: number): string => {
   return `${minutes}m ${secs}s`;
 };
 
-export const ActiveTimesheetsPage = () => {
+type ActiveTimesheetsPageProps = {
+  canManage?: boolean;
+};
+
+export const ActiveTimesheetsPage = ({ canManage = false }: ActiveTimesheetsPageProps) => {
   const [data, setData] = useState<ActiveTimesheetsResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -67,12 +71,19 @@ export const ActiveTimesheetsPage = () => {
         <span>
           Fereastra: <strong>{data?.hoursWindow ?? 24}h</strong>
         </span>
-        <button type="button" onClick={() => setAutoRefreshEnabled((current) => !current)}>
-          Live: {autoRefreshEnabled ? 'ON (30s)' : 'OFF'}
-        </button>
-        <button type="button" onClick={() => void load()} disabled={loading}>
-          {loading ? 'Actualizare...' : 'Refresh'}
-        </button>
+        <span>
+          Refresh automat: <strong>{autoRefreshEnabled ? 'ON (30s)' : 'OFF'}</strong>
+        </span>
+        {canManage ? (
+          <button type="button" onClick={() => setAutoRefreshEnabled((current) => !current)}>
+            Live: {autoRefreshEnabled ? 'ON (30s)' : 'OFF'}
+          </button>
+        ) : null}
+        {canManage ? (
+          <button type="button" onClick={() => void load()} disabled={loading}>
+            {loading ? 'Actualizare...' : 'Refresh'}
+          </button>
+        ) : null}
       </div>
 
       {error ? <p className="error">{error}</p> : null}
