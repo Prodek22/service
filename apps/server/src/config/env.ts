@@ -21,6 +21,7 @@ const envSchema = z.object({
   AUTO_CLEANUP_KEEP_CYCLES: z.string().default('12'),
   AUTO_CLEANUP_RUN_ON_START: z.enum(['true', 'false']).default('false'),
   BACKFILL_BATCH_DELAY_MS: z.string().default('120'),
+  MAINTENANCE_WORKER_MAX_OLD_SPACE_MB: z.string().default('256'),
   DATABASE_URL: z.string().min(1),
   PORT: z.string().default('3001')
 });
@@ -43,6 +44,10 @@ export const env = {
   AUTO_CLEANUP_INTERVAL_HOURS: Number.parseInt(parsed.data.AUTO_CLEANUP_INTERVAL_HOURS, 10) || 720,
   AUTO_CLEANUP_KEEP_CYCLES: Math.max(6, Number.parseInt(parsed.data.AUTO_CLEANUP_KEEP_CYCLES, 10) || 12),
   AUTO_CLEANUP_RUN_ON_START: parsed.data.AUTO_CLEANUP_RUN_ON_START === 'true',
-  BACKFILL_BATCH_DELAY_MS: Math.max(0, Number.parseInt(parsed.data.BACKFILL_BATCH_DELAY_MS, 10) || 120)
+  BACKFILL_BATCH_DELAY_MS: Math.max(0, Number.parseInt(parsed.data.BACKFILL_BATCH_DELAY_MS, 10) || 120),
+  MAINTENANCE_WORKER_MAX_OLD_SPACE_MB: Math.max(
+    128,
+    Math.min(2048, Number.parseInt(parsed.data.MAINTENANCE_WORKER_MAX_OLD_SPACE_MB, 10) || 256)
+  )
 };
 

@@ -596,21 +596,13 @@ const runCvRebuildAll = async () => {
 };
 
 const runRecalculateTimesheets = async () => {
-  const rows = await prisma.timeEvent.findMany({
+  const total = await prisma.timeEvent.count({
     where: {
       channelId: env.TIMESHEET_CHANNEL_ID,
       isDeleted: false
-    },
-    select: {
-      discordMessageId: true,
-      channelId: true,
-      rawText: true,
-      eventAt: true
-    },
-    orderBy: [{ eventAt: 'asc' }, { id: 'asc' }]
+    }
   });
 
-  const total = rows.length;
   if (total === 0) {
     return {
       mode: 'recalculate-timesheets',
@@ -623,23 +615,54 @@ const runRecalculateTimesheets = async () => {
   }
 
   let reprocessed = 0;
-  const checkpoint = Math.max(25, Math.floor(total / 80));
+  const batchSize = 250;
+  const checkpoint = Math.max(50, Math.floor(total / 80));
+  let lastId = 0;
 
-  for (const row of rows) {
-    await processTimesheetMessage({
-      id: row.discordMessageId,
-      channelId: row.channelId,
-      content: row.rawText,
-      createdAt: row.eventAt,
-      attachments: []
+  while (true) {
+    const rows = await prisma.timeEvent.findMany({
+      where: {
+        channelId: env.TIMESHEET_CHANNEL_ID,
+        isDeleted: false,
+        id: {
+          gt: lastId
+        }
+      },
+      select: {
+        id: true,
+        discordMessageId: true,
+        channelId: true,
+        rawText: true,
+        eventAt: true
+      },
+      orderBy: {
+        id: 'asc'
+      },
+      take: batchSize
     });
 
-    reprocessed += 1;
-
-    if (reprocessed % checkpoint === 0 || reprocessed === total) {
-      const percent = 8 + Math.round((reprocessed / total) * 82);
-      sendProgress(percent, `Recalcul pontaje: ${reprocessed}/${total} evenimente procesate...`);
+    if (rows.length === 0) {
+      break;
     }
+
+    for (const row of rows) {
+      await processTimesheetMessage({
+        id: row.discordMessageId,
+        channelId: row.channelId,
+        content: row.rawText,
+        createdAt: row.eventAt,
+        attachments: []
+      });
+
+      reprocessed += 1;
+
+      if (reprocessed % checkpoint === 0 || reprocessed === total) {
+        const percent = 8 + Math.round((reprocessed / total) * 82);
+        sendProgress(percent, `Recalcul pontaje: ${reprocessed}/${total} evenimente procesate...`);
+      }
+    }
+
+    lastId = rows[rows.length - 1].id;
   }
 
   sendProgress(93, 'Normalizare cicluri dupa recalcul pontaje...');

@@ -118,6 +118,7 @@ AUTO_CLEANUP_ENABLED=true
 AUTO_CLEANUP_INTERVAL_HOURS=720
 AUTO_CLEANUP_KEEP_CYCLES=12
 AUTO_CLEANUP_RUN_ON_START=false
+MAINTENANCE_WORKER_MAX_OLD_SPACE_MB=256
 DATABASE_URL="mysql://user:password@localhost:3306/service_admin"
 PORT=3001
 ```
@@ -210,6 +211,7 @@ Maintenance (necesita login):
 - `POST /api/maintenance/delete-old` (body: `{ "olderThanDays": 90 }`)
 - `POST /api/maintenance/sync-new` (porneste job async, body: `{ "latestLimitPerChannel": 100 }`)
 - `POST /api/maintenance/sync-timesheet-window` (porneste job async, body: `{ "days": 14 }`)
+- `POST /api/maintenance/recalculate-timesheets` (porneste job async: recalcul complet pontaje, fara reset)
 - `POST /api/maintenance/rebuild-all` (porneste job async: sterge complet datele operationale + backfill complet)
 - `POST /api/maintenance/cleanup-retention` (porneste cleanup automat/manual, body optional: `{ "keepCycles": 12 }`)
 

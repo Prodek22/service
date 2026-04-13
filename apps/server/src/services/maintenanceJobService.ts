@@ -1,6 +1,7 @@
-﻿import { existsSync } from 'fs';
+import { existsSync } from 'fs';
 import path from 'path';
 import { fork } from 'child_process';
+import { env } from '../config/env';
 
 export type MaintenanceJobType =
   | 'sync-new'
@@ -79,7 +80,7 @@ export const startMaintenanceJob = (type: MaintenanceJobType, payload: Maintenan
       ...process.env,
       MAINTENANCE_JOB_INPUT: JSON.stringify({ id: jobId, type, payload })
     },
-    execArgv: ['--max-old-space-size=512'],
+    execArgv: [`--max-old-space-size=${env.MAINTENANCE_WORKER_MAX_OLD_SPACE_MB}`],
     stdio: ['ignore', 'ignore', 'ignore', 'ipc']
   });
 
@@ -108,7 +109,7 @@ export const startMaintenanceJob = (type: MaintenanceJobType, payload: Maintenan
 
     if (data.type === 'job-failed') {
       status.state = 'failed';
-      status.progressMessage = 'Job eșuat.';
+      status.progressMessage = 'Job esuat.';
       status.result = null;
       status.error = String(data.payload?.error ?? 'Job failed');
       status.finishedAt = new Date().toISOString();
@@ -127,3 +128,5 @@ export const startMaintenanceJob = (type: MaintenanceJobType, payload: Maintenan
 
   return getMaintenanceStatus();
 };
+
+
