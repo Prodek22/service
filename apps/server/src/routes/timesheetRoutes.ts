@@ -5,30 +5,17 @@ import { prisma } from '../db/prisma';
 import { normalizeForCompare } from '../utils/normalize';
 import { recordAuditLog } from '../services/auditLogService';
 import { resolveDiscordAvatarMap } from '../services/discordAvatarService';
+import {
+  getTimesheetSummaryFromCache,
+  invalidateTimesheetSummaryCache,
+  setTimesheetSummaryCache
+} from '../services/timesheetSummaryCache';
 import { buildCsv, secondsToHm } from '../utils/time';
 import { getCycleTotals, getEmployeeCycleHistory, getWeekCycles } from '../services/timesheetService';
 
 export const timesheetRouter = Router();
-
-type SummaryCacheEntry = {
-  payload: {
-    cycleId: number | null;
-    totals: Array<Record<string, unknown>>;
-  };
-  expiresAt: number;
-};
-
-const SUMMARY_CACHE_TTL_MS = 20 * 1000;
-const summaryCache = new Map<number, SummaryCacheEntry>();
-
-const invalidateSummaryCache = (cycleId?: number) => {
-  if (typeof cycleId === 'number') {
-    summaryCache.delete(cycleId);
-    return;
-  }
-
-  summaryCache.clear();
-};
+const SUMMARY_CACHE_TTL_OPEN_MS = 20 * 1000;
+const SUMMARY_CACHE_TTL_CLOSED_MS = 24 * 60 * 60 * 1000;
 
 timesheetRouter.get('/cycles', async (req, res) => {
   const serviceCode = typeof req.query.serviceCode === 'string' ? req.query.serviceCode : undefined;
@@ -78,11 +65,16 @@ timesheetRouter.get('/summary', async (req, res) => {
     return;
   }
 
-  const cached = summaryCache.get(cycleId);
-  if (cached && cached.expiresAt > Date.now()) {
-    res.json(cached.payload);
+  const cached = getTimesheetSummaryFromCache(cycleId);
+  if (cached) {
+    res.json(cached);
     return;
   }
+
+  const cycleMeta = await prisma.weekCycle.findUnique({
+    where: { id: cycleId },
+    select: { endedAt: true }
+  });
 
   const totals = await getCycleTotals(cycleId);
   const employeeIds = totals
@@ -130,10 +122,11 @@ timesheetRouter.get('/summary', async (req, res) => {
     }))
   };
 
-  summaryCache.set(cycleId, {
-    payload,
-    expiresAt: Date.now() + SUMMARY_CACHE_TTL_MS
-  });
+  setTimesheetSummaryCache(
+    cycleId,
+    payload as unknown as Record<string, unknown>,
+    cycleMeta?.endedAt ? SUMMARY_CACHE_TTL_CLOSED_MS : SUMMARY_CACHE_TTL_OPEN_MS
+  );
 
   res.json(payload);
 });
@@ -305,7 +298,7 @@ timesheetRouter.post('/payroll-status', requireAdmin, async (req, res) => {
     }
   });
 
-  invalidateSummaryCache(cycleId);
+  invalidateTimesheetSummaryCache(cycleId);
 });
 
 timesheetRouter.post('/up-status', requireAdmin, async (req, res) => {
@@ -373,7 +366,7 @@ timesheetRouter.post('/up-status', requireAdmin, async (req, res) => {
     }
   });
 
-  invalidateSummaryCache(cycleId);
+  invalidateTimesheetSummaryCache(cycleId);
 });
 
 timesheetRouter.post('/months-status', requireAdmin, async (req, res) => {
@@ -447,7 +440,7 @@ timesheetRouter.post('/months-status', requireAdmin, async (req, res) => {
     }
   });
 
-  invalidateSummaryCache(cycleId);
+  invalidateTimesheetSummaryCache(cycleId);
 });
 
 timesheetRouter.get('/employee/:employeeId/history', async (req, res) => {

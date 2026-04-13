@@ -2,6 +2,7 @@ import { existsSync } from 'fs';
 import path from 'path';
 import { fork } from 'child_process';
 import { env } from '../config/env';
+import { invalidateTimesheetSummaryCache } from './timesheetSummaryCache';
 
 export type MaintenanceJobType =
   | 'sync-new'
@@ -99,6 +100,16 @@ export const startMaintenanceJob = (type: MaintenanceJobType, payload: Maintenan
     }
 
     if (data.type === 'job-success') {
+      if (
+        type === 'sync-new' ||
+        type === 'sync-timesheet-window' ||
+        type === 'rebuild-all' ||
+        type === 'cleanup-retention' ||
+        type === 'recalculate-timesheets'
+      ) {
+        invalidateTimesheetSummaryCache();
+      }
+
       status.state = 'success';
       status.progressPercent = 100;
       status.progressMessage = 'Job finalizat.';
