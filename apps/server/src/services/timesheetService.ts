@@ -718,54 +718,9 @@ export const getCycleTotals = async (cycleId: number) => {
     }
   }
 
-  const rankSnapshotCandidates = [...totals.values()]
-    .filter((row) => row.employeeId != null && row.rank)
-    .map((row) => ({
-      employeeId: row.employeeId as number,
-      rank: row.rank as string
-    }));
-
-  if (rankSnapshotCandidates.length > 0) {
-    await prisma.timesheetPayrollStatus.createMany({
-      data: rankSnapshotCandidates.map((item) => ({
-        weekCycleId: cycleId,
-        employeeId: item.employeeId,
-        rankSnapshot: item.rank
-      })),
-      skipDuplicates: true
-    });
-
-    if (isOpenCycle) {
-      await Promise.all(
-        rankSnapshotCandidates.map((item) =>
-          prisma.timesheetPayrollStatus.updateMany({
-            where: {
-              weekCycleId: cycleId,
-              employeeId: item.employeeId
-            },
-            data: {
-              rankSnapshot: item.rank
-            }
-          })
-        )
-      );
-    } else {
-      await Promise.all(
-        rankSnapshotCandidates.map((item) =>
-          prisma.timesheetPayrollStatus.updateMany({
-            where: {
-              weekCycleId: cycleId,
-              employeeId: item.employeeId,
-              rankSnapshot: null
-            },
-            data: {
-              rankSnapshot: item.rank
-            }
-          })
-        )
-      );
-    }
-  }
+  // Performance note:
+  // Summary endpoint is read-heavy; avoid write amplification on every page switch.
+  // Rank/month snapshots are persisted when payroll status is explicitly updated.
 
   const recentCycles = await prisma.weekCycle.findMany({
     where: {

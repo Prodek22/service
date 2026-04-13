@@ -10,6 +10,26 @@ import { getCycleTotals, getEmployeeCycleHistory, getWeekCycles } from '../servi
 
 export const timesheetRouter = Router();
 
+type SummaryCacheEntry = {
+  payload: {
+    cycleId: number | null;
+    totals: Array<Record<string, unknown>>;
+  };
+  expiresAt: number;
+};
+
+const SUMMARY_CACHE_TTL_MS = 20 * 1000;
+const summaryCache = new Map<number, SummaryCacheEntry>();
+
+const invalidateSummaryCache = (cycleId?: number) => {
+  if (typeof cycleId === 'number') {
+    summaryCache.delete(cycleId);
+    return;
+  }
+
+  summaryCache.clear();
+};
+
 timesheetRouter.get('/cycles', async (req, res) => {
   const serviceCode = typeof req.query.serviceCode === 'string' ? req.query.serviceCode : undefined;
   const cycles = await getWeekCycles(serviceCode);
@@ -58,6 +78,12 @@ timesheetRouter.get('/summary', async (req, res) => {
     return;
   }
 
+  const cached = summaryCache.get(cycleId);
+  if (cached && cached.expiresAt > Date.now()) {
+    res.json(cached.payload);
+    return;
+  }
+
   const totals = await getCycleTotals(cycleId);
   const employeeIds = totals
     .map((row) => row.employeeId)
@@ -78,7 +104,7 @@ timesheetRouter.get('/summary', async (req, res) => {
     totals.map((row) => row.discordUserId).filter((value): value is string => Boolean(value))
   );
 
-  res.json({
+  const payload = {
     cycleId,
     totals: totals.map((row) => ({
       ...row,
@@ -100,9 +126,16 @@ timesheetRouter.get('/summary', async (req, res) => {
             paidAt: null,
             paidBy: null,
             note: null
-          }
+      }
     }))
+  };
+
+  summaryCache.set(cycleId, {
+    payload,
+    expiresAt: Date.now() + SUMMARY_CACHE_TTL_MS
   });
+
+  res.json(payload);
 });
 
 timesheetRouter.get('/active', requireAdmin, async (req, res) => {
@@ -271,6 +304,8 @@ timesheetRouter.post('/payroll-status', requireAdmin, async (req, res) => {
       note: saved.note
     }
   });
+
+  invalidateSummaryCache(cycleId);
 });
 
 timesheetRouter.post('/up-status', requireAdmin, async (req, res) => {
@@ -337,6 +372,8 @@ timesheetRouter.post('/up-status', requireAdmin, async (req, res) => {
       note: saved.note
     }
   });
+
+  invalidateSummaryCache(cycleId);
 });
 
 timesheetRouter.post('/months-status', requireAdmin, async (req, res) => {
@@ -409,6 +446,8 @@ timesheetRouter.post('/months-status', requireAdmin, async (req, res) => {
       note: saved.note
     }
   });
+
+  invalidateSummaryCache(cycleId);
 });
 
 timesheetRouter.get('/employee/:employeeId/history', async (req, res) => {

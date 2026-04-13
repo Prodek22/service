@@ -8,6 +8,7 @@ type AvatarCacheEntry = {
 };
 
 const CACHE_TTL_MS = 15 * 60 * 1000;
+const FETCH_CONCURRENCY = 8;
 const avatarCache = new Map<string, AvatarCacheEntry>();
 
 const getCachedAvatar = (discordUserId: string): string | null => {
@@ -70,20 +71,39 @@ export const resolveDiscordAvatarMap = async (discordUserIds: string[]): Promise
     }
   }
 
-  for (const id of missing) {
+  const resolveOne = async (id: string): Promise<void> => {
     try {
       if (guild) {
+        const cachedMember = guild.members.cache.get(id);
+        if (cachedMember) {
+          const url = toAvatarUrl(cachedMember);
+          setCachedAvatar(id, url);
+          result[id] = url;
+          return;
+        }
+
         const member = await guild.members.fetch(id);
         const url = toAvatarUrl(member);
         setCachedAvatar(id, url);
         result[id] = url;
-        continue;
+        return;
       }
     } catch {
-      // fallback to user fetch below
+      // fallback below
     }
 
     try {
+      const cachedUser = client.users.cache.get(id);
+      if (cachedUser) {
+        const url = cachedUser.displayAvatarURL({
+          extension: 'png',
+          size: 128
+        });
+        setCachedAvatar(id, url);
+        result[id] = url;
+        return;
+      }
+
       const user = await client.users.fetch(id);
       const url = user.displayAvatarURL({
         extension: 'png',
@@ -94,8 +114,12 @@ export const resolveDiscordAvatarMap = async (discordUserIds: string[]): Promise
     } catch {
       // leave unresolved
     }
+  };
+
+  for (let index = 0; index < missing.length; index += FETCH_CONCURRENCY) {
+    const slice = missing.slice(index, index + FETCH_CONCURRENCY);
+    await Promise.all(slice.map((id) => resolveOne(id)));
   }
 
   return result;
 };
-
