@@ -91,6 +91,13 @@ const isEmployeeEligibleForCycle = (
   return true;
 };
 
+const extractMentionCodes = (rawText: string): string[] => {
+  const matches = [...rawText.matchAll(/@[\p{L}0-9_.-]+(?:\s*-\s*([0-9]{3,}))?/gu)];
+  return matches
+    .map((match) => match[1]?.trim())
+    .filter((value): value is string => Boolean(value));
+};
+
 const ensureCurrentCycle = async (serviceCode: string, at: Date): Promise<WeekCycle> => {
   const openCycle = await prisma.weekCycle.findFirst({
     where: {
@@ -337,7 +344,8 @@ export const processTimesheetMessage = async (message: MessageInput) => {
   const employee = await findEmployeeBestMatch({
     discordUserId: parsed.discordUserId,
     nickname: parsed.targetEmployeeName,
-    fullName: parsed.targetEmployeeName
+    fullName: parsed.targetEmployeeName,
+    employeeCode: parsed.targetEmployeeCode
   });
 
   const resolvedRankSnapshot = existingEvent?.targetEmployeeRank ?? employee?.rank ?? null;
@@ -460,6 +468,41 @@ export const getCycleTotals = async (cycleId: number) => {
 
   const eligibleEmployees = employees.filter((employee) => isEmployeeEligibleForCycle(employee, cycle));
   const eligibleEmployeeById = new Map(eligibleEmployees.map((employee) => [employee.id, employee]));
+  const eligibleEmployeeByDiscordId = new Map<string, number>();
+  const eligibleEmployeeByCode = new Map<string, number>();
+  const eligibleEmployeeByName = new Map<string, number | null>();
+
+  const putNameIndex = (name: string | null | undefined, employeeId: number) => {
+    const normalized = normalizeForCompare(name ?? '');
+    if (!normalized) {
+      return;
+    }
+
+    if (!eligibleEmployeeByName.has(normalized)) {
+      eligibleEmployeeByName.set(normalized, employeeId);
+      return;
+    }
+
+    const existing = eligibleEmployeeByName.get(normalized);
+    if (existing !== employeeId) {
+      // Ambiguous name, do not auto-resolve by name for this token.
+      eligibleEmployeeByName.set(normalized, null);
+    }
+  };
+
+  for (const employee of eligibleEmployees) {
+    if (employee.discordUserId && !eligibleEmployeeByDiscordId.has(employee.discordUserId)) {
+      eligibleEmployeeByDiscordId.set(employee.discordUserId, employee.id);
+    }
+
+    if (employee.iban) {
+      eligibleEmployeeByCode.set(employee.iban.trim(), employee.id);
+    }
+
+    putNameIndex(employee.nickname, employee.id);
+    putNameIndex(employee.fullName, employee.id);
+  }
+
   const totals = new Map<string, EmployeeTotal>();
 
   for (const employee of eligibleEmployees) {
@@ -592,12 +635,48 @@ export const getCycleTotals = async (cycleId: number) => {
     }
   }
 
+  const resolveEventEmployeeId = (event: (typeof events)[number]): number | null => {
+    if (event.targetEmployeeId != null && eligibleEmployeeById.has(event.targetEmployeeId)) {
+      return event.targetEmployeeId;
+    }
+
+    if (event.discordUserId) {
+      const byDiscordId = eligibleEmployeeByDiscordId.get(event.discordUserId);
+      if (typeof byDiscordId === 'number') {
+        return byDiscordId;
+      }
+    }
+
+    const mentionCodes = extractMentionCodes(event.rawText);
+    if (mentionCodes.length > 0) {
+      const preferredCode =
+        event.eventType === TimeEventType.MANUAL_ADJUSTMENT
+          ? mentionCodes[mentionCodes.length - 1]
+          : mentionCodes[0];
+      const byCode = eligibleEmployeeByCode.get(preferredCode.trim());
+      if (typeof byCode === 'number') {
+        return byCode;
+      }
+    }
+
+    const normalizedTargetName = normalizeForCompare(event.targetEmployeeName ?? '');
+    if (normalizedTargetName) {
+      const byName = eligibleEmployeeByName.get(normalizedTargetName);
+      if (typeof byName === 'number') {
+        return byName;
+      }
+    }
+
+    return null;
+  };
+
   for (const event of events) {
-    if (event.targetEmployeeId == null || !eligibleEmployeeById.has(event.targetEmployeeId)) {
+    const resolvedEmployeeId = resolveEventEmployeeId(event);
+    if (resolvedEmployeeId == null) {
       continue;
     }
 
-    const key = `employee:${event.targetEmployeeId}`;
+    const key = `employee:${resolvedEmployeeId}`;
     const current = totals.get(key);
     if (!current) {
       continue;
@@ -605,7 +684,7 @@ export const getCycleTotals = async (cycleId: number) => {
 
     const delta = event.deltaSeconds ?? 0;
     if (!current.rank) {
-      current.rank = event.targetEmployeeRank ?? event.employee?.rank ?? null;
+      current.rank = event.targetEmployeeRank ?? event.employee?.rank ?? eligibleEmployeeById.get(resolvedEmployeeId)?.rank ?? null;
     }
 
     if (!current.discordUserId && event.discordUserId) {

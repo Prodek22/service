@@ -121,6 +121,8 @@ export const parseTimesheetMessage = (rawText: string): ParsedTimeEvent => {
   const secondDiscordId = discordMentions[1]?.discordId;
   const firstTextName = textMentions[0]?.name;
   const secondTextName = textMentions[1]?.name;
+  const firstTextCode = textMentions[0]?.code;
+  const secondTextCode = textMentions[1]?.code;
 
   const hasClockIn =
     /pontaj(?:ul)?/.test(normalized) &&
@@ -158,6 +160,7 @@ export const parseTimesheetMessage = (rawText: string): ParsedTimeEvent => {
       eventType: 'CLOCK_IN',
       discordUserId: firstDiscordId,
       targetEmployeeName: firstTextName,
+      targetEmployeeCode: firstTextCode,
       serviceCode
     };
   }
@@ -167,6 +170,7 @@ export const parseTimesheetMessage = (rawText: string): ParsedTimeEvent => {
       eventType: 'CLOCK_OUT',
       discordUserId: firstDiscordId,
       targetEmployeeName: firstTextName,
+      targetEmployeeCode: firstTextCode,
       serviceCode,
       deltaSeconds
     };
@@ -183,6 +187,7 @@ export const parseTimesheetMessage = (rawText: string): ParsedTimeEvent => {
       actorName: firstTextName,
       discordUserId: secondDiscordId ?? firstDiscordId,
       targetEmployeeName: secondTextName ?? firstTextName,
+      targetEmployeeCode: secondTextCode ?? firstTextCode,
       serviceCode,
       deltaSeconds
     };
@@ -192,6 +197,7 @@ export const parseTimesheetMessage = (rawText: string): ParsedTimeEvent => {
     eventType: 'UNKNOWN',
     discordUserId: firstDiscordId,
     targetEmployeeName: firstTextName,
+    targetEmployeeCode: firstTextCode,
     serviceCode,
     deltaSeconds
   };

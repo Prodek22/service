@@ -237,3 +237,28 @@ maintenanceRouter.post('/cleanup-retention', (req, res) => {
   }
 });
 
+maintenanceRouter.post('/recalculate-timesheets', (req, res) => {
+  try {
+    const status = startMaintenanceJob('recalculate-timesheets');
+
+    void recordAuditLog({
+      req,
+      res,
+      action: 'MAINTENANCE_RECALCULATE_TIMESHEETS',
+      entityType: 'maintenance_job',
+      entityId: status.id,
+      metadata: {
+        type: 'recalculate-timesheets'
+      }
+    });
+
+    res.status(202).json({
+      ok: true,
+      message: 'Timesheet recalculation started',
+      job: status
+    });
+  } catch (error) {
+    res.status(409).json({ error: error instanceof Error ? error.message : 'Could not start timesheet recalculation job' });
+  }
+});
+

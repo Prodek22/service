@@ -36,6 +36,7 @@ export type ParsedTimeEvent = {
   actorDiscordUserId?: string;
   actorName?: string;
   targetEmployeeName?: string;
+  targetEmployeeCode?: string;
   serviceCode?: string;
   deltaSeconds?: number;
 };

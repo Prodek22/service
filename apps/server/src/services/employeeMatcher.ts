@@ -6,6 +6,7 @@ type MatchInput = {
   discordUserId?: string;
   nickname?: string;
   fullName?: string;
+  employeeCode?: string;
 };
 
 const scoreCandidate = (employee: Employee, input: MatchInput): number => {
@@ -64,6 +65,20 @@ export const ensureEmployeeAliases = async (employeeId: number, aliases: string[
 };
 
 export const findEmployeeBestMatch = async (input: MatchInput): Promise<Employee | null> => {
+  const normalizedCode = String(input.employeeCode ?? '').trim();
+  if (normalizedCode) {
+    const byCode = await prisma.employee.findFirst({
+      where: {
+        iban: normalizedCode,
+        deletedAt: null
+      }
+    });
+
+    if (byCode) {
+      return byCode;
+    }
+  }
+
   if (input.discordUserId) {
     const byDiscordId = await prisma.employee.findFirst({
       where: {
@@ -77,7 +92,7 @@ export const findEmployeeBestMatch = async (input: MatchInput): Promise<Employee
     }
   }
 
-  const aliasCandidates = [input.nickname, input.fullName]
+  const aliasCandidates = [input.nickname, input.fullName, input.employeeCode]
     .filter(Boolean)
     .map((value) => normalizeForCompare(value as string))
     .filter(Boolean);

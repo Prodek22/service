@@ -194,7 +194,15 @@ export type SyncTimesheetWindowResponse = {
 
 export type MaintenanceJobStatus = {
   id: string | null;
-  type: 'sync-new' | 'sync-timesheet-window' | 'rebuild-all' | 'sync-employees-incremental' | 'rebuild-cv-all' | null;
+  type:
+    | 'sync-new'
+    | 'sync-timesheet-window'
+    | 'rebuild-all'
+    | 'sync-employees-incremental'
+    | 'rebuild-cv-all'
+    | 'cleanup-retention'
+    | 'recalculate-timesheets'
+    | null;
   state: 'idle' | 'running' | 'success' | 'failed';
   progressPercent: number | null;
   progressMessage: string | null;

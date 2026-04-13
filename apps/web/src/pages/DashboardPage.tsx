@@ -145,6 +145,18 @@ export const DashboardPage = ({ canManage = false }: DashboardPageProps) => {
     await startBackgroundJob('/maintenance/rebuild-cv-all', {}, 'Rebuild complet CV-uri pornit.');
   };
 
+  const recalculateTimesheets = async () => {
+    const confirmed = window.confirm(
+      'Se vor recalcula toate evenimentele de pontaj pe toate ciclurile. Continui?'
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    await startBackgroundJob('/maintenance/recalculate-timesheets', {}, 'Recalculare pontaje pornita.');
+  };
+
   const rebuildAllData = async () => {
     const confirmed = window.confirm(
       'Actiune critica: se sterg toate datele operationale (CV + pontaj) si se ruleaza reimport complet. Continui?'
@@ -213,6 +225,17 @@ export const DashboardPage = ({ canManage = false }: DashboardPageProps) => {
               disabled={maintenanceBusy}
             >
               <span>Rebuild complet CV-uri</span>
+              <span className="warning-triangle" aria-hidden="true">
+                <span>!</span>
+              </span>
+            </button>
+            <button
+              type="button"
+              className="btn-danger-action"
+              onClick={() => void recalculateTimesheets()}
+              disabled={maintenanceBusy}
+            >
+              <span>Recalculeaza timpii (toate saptamanile)</span>
               <span className="warning-triangle" aria-hidden="true">
                 <span>!</span>
               </span>

@@ -315,7 +315,7 @@ export const processCvMessage = async (
     }
   });
 
-  await ensureEmployeeAliases(saved.id, [saved.nickname ?? '', saved.fullName ?? '', saved.discordUserId ?? '']);
+  await ensureEmployeeAliases(saved.id, [saved.nickname ?? '', saved.fullName ?? '', saved.discordUserId ?? '', saved.iban ?? '']);
 
   return saved;
 };

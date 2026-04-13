@@ -8,7 +8,8 @@ export type MaintenanceJobType =
   | 'rebuild-all'
   | 'sync-employees-incremental'
   | 'rebuild-cv-all'
-  | 'cleanup-retention';
+  | 'cleanup-retention'
+  | 'recalculate-timesheets';
 
 export type MaintenanceJobState = 'idle' | 'running' | 'success' | 'failed';
 

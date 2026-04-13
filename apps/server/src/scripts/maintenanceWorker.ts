@@ -6,6 +6,7 @@ import { BackfillProgress, runBackfill } from '../services/backfillRunner';
 import { createGuildMemberFilter } from '../services/guildMemberFilter';
 import { deleteLocalIdImage, isLocalIdImageUrl, purgeLocalIdImageStorage, saveIdImageLocally } from '../services/idImageStorage';
 import { runRetentionCleanup } from '../services/maintenanceCleanupService';
+import { processTimesheetMessage } from '../services/timesheetService';
 
 type WorkerInput = {
   id: string;
@@ -15,7 +16,8 @@ type WorkerInput = {
     | 'rebuild-all'
     | 'sync-employees-incremental'
     | 'rebuild-cv-all'
-    | 'cleanup-retention';
+    | 'cleanup-retention'
+    | 'recalculate-timesheets';
   payload?: {
     latestLimitPerChannel?: number;
     days?: number;
@@ -593,6 +595,66 @@ const runCvRebuildAll = async () => {
   }
 };
 
+const runRecalculateTimesheets = async () => {
+  const rows = await prisma.timeEvent.findMany({
+    where: {
+      channelId: env.TIMESHEET_CHANNEL_ID,
+      isDeleted: false
+    },
+    select: {
+      discordMessageId: true,
+      channelId: true,
+      rawText: true,
+      eventAt: true
+    },
+    orderBy: [{ eventAt: 'asc' }, { id: 'asc' }]
+  });
+
+  const total = rows.length;
+  if (total === 0) {
+    return {
+      mode: 'recalculate-timesheets',
+      reprocessedEvents: 0,
+      normalizedWeekCycleBoundaries: 0,
+      deletedGhostCycles: 0,
+      reassignedCycleEvents: 0,
+      deletedNonResetCycles: 0
+    };
+  }
+
+  let reprocessed = 0;
+  const checkpoint = Math.max(25, Math.floor(total / 80));
+
+  for (const row of rows) {
+    await processTimesheetMessage({
+      id: row.discordMessageId,
+      channelId: row.channelId,
+      content: row.rawText,
+      createdAt: row.eventAt,
+      attachments: []
+    });
+
+    reprocessed += 1;
+
+    if (reprocessed % checkpoint === 0 || reprocessed === total) {
+      const percent = 8 + Math.round((reprocessed / total) * 82);
+      sendProgress(percent, `Recalcul pontaje: ${reprocessed}/${total} evenimente procesate...`);
+    }
+  }
+
+  sendProgress(93, 'Normalizare cicluri dupa recalcul pontaje...');
+  const normalized = await normalizeTimesheetData();
+
+  return {
+    mode: 'recalculate-timesheets',
+    reprocessedEvents: reprocessed,
+    normalizedWeekCycleBoundaries: normalized.normalizedWeekCycleBoundaries,
+    deletedGhostCycles: normalized.deletedGhostCycles,
+    reassignedCycleEvents: normalized.reassignedCycleEvents,
+    deletedNonResetCycles: normalized.deletedNonResetCycles
+  };
+};
+
 const run = async () => {
   const input = getInput();
 
@@ -611,6 +673,19 @@ const run = async () => {
   if (input.type === 'rebuild-cv-all') {
     sendProgress(2, 'Pornire rebuild complet CV-uri...');
     const result = await runCvRebuildAll();
+
+    process.send?.({
+      type: 'job-success',
+      payload: result
+    });
+
+    return;
+  }
+
+  if (input.type === 'recalculate-timesheets') {
+    sendProgress(2, 'Pornire recalcul complet pontaje...');
+    const result = await runRecalculateTimesheets();
+    sendProgress(100, 'Recalcul pontaje finalizat.');
 
     process.send?.({
       type: 'job-success',
