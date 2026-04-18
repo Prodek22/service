@@ -10,6 +10,7 @@ const envSchema = z.object({
   TIMESHEET_CHANNEL_ID: z.string().min(1),
   EMPLOYEE_ROLE_ID: z.string().optional(),
   EMPLOYEE_ROLE_NAME: z.string().default('Angajat'),
+  REACTION_TRACK_MESSAGE_IDS: z.string().default(''),
   AUTH_JWT_SECRET: z.string().min(16),
   CORS_ORIGIN: z.string().default('http://localhost:5173'),
   AUTH_COOKIE_SECURE: z.enum(['true', 'false']).default('true'),
@@ -48,6 +49,10 @@ export const env = {
   MAINTENANCE_WORKER_MAX_OLD_SPACE_MB: Math.max(
     128,
     Math.min(2048, Number.parseInt(parsed.data.MAINTENANCE_WORKER_MAX_OLD_SPACE_MB, 10) || 256)
-  )
+  ),
+  REACTION_TRACK_MESSAGE_IDS: parsed.data.REACTION_TRACK_MESSAGE_IDS
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean)
 };
 

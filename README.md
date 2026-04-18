@@ -108,6 +108,7 @@ CV_CHANNEL_ID=
 TIMESHEET_CHANNEL_ID=
 EMPLOYEE_ROLE_ID=
 EMPLOYEE_ROLE_NAME=Angajat
+REACTION_TRACK_MESSAGE_IDS=
 AUTH_JWT_SECRET=change_this_to_a_long_random_secret
 CORS_ORIGIN=http://localhost:5173
 AUTH_COOKIE_SECURE=true
@@ -214,6 +215,11 @@ Maintenance (necesita login):
 - `POST /api/maintenance/recalculate-timesheets` (porneste job async: recalcul complet pontaje, fara reset)
 - `POST /api/maintenance/rebuild-all` (porneste job async: sterge complet datele operationale + backfill complet)
 - `POST /api/maintenance/cleanup-retention` (porneste cleanup automat/manual, body optional: `{ "keepCycles": 12 }`)
+
+Optional Discord reaction audit:
+
+- set `REACTION_TRACK_MESSAGE_IDS` (comma-separated message IDs) in `apps/server/.env`
+- bot logs `DISCORD_REACTION_ADD` / `DISCORD_REACTION_REMOVE` in `audit_logs`
 
 ## Cum functioneaza parsarea CV
 
