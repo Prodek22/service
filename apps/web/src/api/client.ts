@@ -41,4 +41,9 @@ export const apiPatch = <T>(path: string, body: Record<string, unknown>): Promis
     body: JSON.stringify(body)
   });
 
+export const apiDelete = <T>(path: string): Promise<T> =>
+  request(path, {
+    method: 'DELETE'
+  });
+
 export const apiBaseUrl = API_BASE_URL;

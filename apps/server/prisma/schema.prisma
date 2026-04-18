@@ -188,3 +188,15 @@ model AuditLog {
   @@map("audit_logs")
 }
 
+model ReactionTrackedMessage {
+  id        Int      @id @default(autoincrement())
+  messageId String   @unique @map("message_id")
+  isActive  Boolean  @default(true) @map("is_active")
+  createdBy String?  @map("created_by")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([isActive])
+  @@map("reaction_tracked_messages")
+}
+

@@ -215,10 +215,14 @@ Maintenance (necesita login):
 - `POST /api/maintenance/recalculate-timesheets` (porneste job async: recalcul complet pontaje, fara reset)
 - `POST /api/maintenance/rebuild-all` (porneste job async: sterge complet datele operationale + backfill complet)
 - `POST /api/maintenance/cleanup-retention` (porneste cleanup automat/manual, body optional: `{ "keepCycles": 12 }`)
+- `GET /api/maintenance/reaction-track-messages`
+- `POST /api/maintenance/reaction-track-messages` (body: `{ "messageId": "123456789012345678" }`)
+- `DELETE /api/maintenance/reaction-track-messages/:messageId`
 
 Optional Discord reaction audit:
 
 - set `REACTION_TRACK_MESSAGE_IDS` (comma-separated message IDs) in `apps/server/.env`
+- sau configureaza din Dashboard (input Message ID)
 - bot logs `DISCORD_REACTION_ADD` / `DISCORD_REACTION_REMOVE` in `audit_logs`
 
 ## Cum functioneaza parsarea CV

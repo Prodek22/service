@@ -1,12 +1,72 @@
-﻿import { Router } from 'express';
+import { Router } from 'express';
 import { prisma } from '../db/prisma';
 import { recordAuditLog } from '../services/auditLogService';
 import { getMaintenanceStatus, startMaintenanceJob } from '../services/maintenanceJobService';
+import {
+  listReactionTrackedMessages,
+  removeReactionTrackedMessage,
+  upsertReactionTrackedMessage
+} from '../services/reactionTrackService';
 
 export const maintenanceRouter = Router();
 
 maintenanceRouter.get('/job-status', (_req, res) => {
   res.json(getMaintenanceStatus());
+});
+
+maintenanceRouter.get('/reaction-track-messages', async (_req, res) => {
+  const items = await listReactionTrackedMessages();
+  res.json({ items });
+});
+
+maintenanceRouter.post('/reaction-track-messages', async (req, res) => {
+  const messageId = String(req.body?.messageId ?? '').trim();
+  if (!/^\d{8,30}$/.test(messageId)) {
+    res.status(400).json({ error: 'messageId invalid.' });
+    return;
+  }
+
+  const username = String(res.locals.authUser?.username ?? 'system');
+  await upsertReactionTrackedMessage(messageId, username);
+
+  await recordAuditLog({
+    req,
+    res,
+    action: 'REACTION_TRACK_MESSAGE_UPSERT',
+    entityType: 'reaction_tracked_message',
+    entityId: messageId,
+    metadata: {
+      messageId
+    }
+  });
+
+  const items = await listReactionTrackedMessages();
+  res.json({ ok: true, items });
+});
+
+maintenanceRouter.delete('/reaction-track-messages/:messageId', async (req, res) => {
+  const messageId = String(req.params.messageId ?? '').trim();
+  if (!/^\d{8,30}$/.test(messageId)) {
+    res.status(400).json({ error: 'messageId invalid.' });
+    return;
+  }
+
+  const deleted = await removeReactionTrackedMessage(messageId);
+
+  await recordAuditLog({
+    req,
+    res,
+    action: 'REACTION_TRACK_MESSAGE_DELETE',
+    entityType: 'reaction_tracked_message',
+    entityId: messageId,
+    metadata: {
+      messageId,
+      deleted
+    }
+  });
+
+  const items = await listReactionTrackedMessages();
+  res.json({ ok: true, deleted, items });
 });
 
 maintenanceRouter.post('/delete-old', async (req, res) => {
@@ -261,4 +321,3 @@ maintenanceRouter.post('/recalculate-timesheets', (req, res) => {
     res.status(409).json({ error: error instanceof Error ? error.message : 'Could not start timesheet recalculation job' });
   }
 });
-

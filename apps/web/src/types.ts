@@ -218,6 +218,19 @@ export type MaintenanceStartResponse = {
   job: MaintenanceJobStatus;
 };
 
+export type ReactionTrackedMessage = {
+  id: number;
+  messageId: string;
+  isActive: boolean;
+  createdBy: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type ReactionTrackedMessagesResponse = {
+  items: ReactionTrackedMessage[];
+};
+
 export type ActiveTimesheetsResponse = {
   hoursWindow: number;
   since: string;

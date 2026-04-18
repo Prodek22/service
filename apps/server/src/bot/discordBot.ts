@@ -14,6 +14,7 @@ import { createGuildMemberFilter } from '../services/guildMemberFilter';
 import { MessageInput } from '../types';
 import { attachIdImageFromReply, markCvMessageDeleted, processCvMessage } from '../services/cvService';
 import { logDiscordReactionAudit } from '../services/discordReactionAuditService';
+import { isReactionMessageTracked } from '../services/reactionTrackService';
 import { markTimesheetMessageDeleted, processTimesheetMessage } from '../services/timesheetService';
 import { setDiscordClient } from './clientStore';
 
@@ -134,14 +135,6 @@ const fetchMessageFromDeleteEvent = async (channel: TextBasedChannel, messageId:
   }
 };
 
-const shouldTrackReactionForMessage = (messageId: string): boolean => {
-  if (!env.REACTION_TRACK_MESSAGE_IDS.length) {
-    return false;
-  }
-
-  return env.REACTION_TRACK_MESSAGE_IDS.includes(messageId);
-};
-
 const resolveReaction = async (reaction: MessageReaction): Promise<MessageReaction | null> => {
   if (!reaction.partial) {
     return reaction;
@@ -185,7 +178,7 @@ const handleReactionAudit = async (action: 'ADD' | 'REMOVE', reaction: MessageRe
     return;
   }
 
-  if (!shouldTrackReactionForMessage(message.id)) {
+  if (!(await isReactionMessageTracked(message.id, env.REACTION_TRACK_MESSAGE_IDS))) {
     return;
   }
 
