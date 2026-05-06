@@ -22,6 +22,8 @@ type EmployeeTotal = {
   manualAdjustmentsCount: number;
   eventsCount: number;
   payableSeconds: number;
+  nightSeconds: number;
+  nightBonus: number;
   baseSalary: number;
   topBonus: number;
   salaryTotal: number;
@@ -31,6 +33,9 @@ type EmployeeTotal = {
 const PAYROLL_REFERENCE_SECONDS = 7 * 60 * 60;
 const PAYROLL_MAX_SECONDS = 21 * 60 * 60;
 const TOP_BONUSES = [25000, 20000, 15000] as const;
+const NIGHT_BONUS_MULTIPLIER = 0.2;
+const NIGHT_START_HOUR = 18;
+const NIGHT_END_HOUR = 23;
 
 const RANK_PAY_PER_7H: Record<'ucenic' | 'mecanic_junior' | 'mecanic' | 'mecanic_senior', number> = {
   ucenic: 45000,
@@ -96,6 +101,35 @@ const extractMentionCodes = (rawText: string): string[] => {
   return matches
     .map((match) => match[1]?.trim())
     .filter((value): value is string => Boolean(value));
+};
+
+const getNightWindowOverlapSeconds = (from: Date, to: Date): number => {
+  if (to.getTime() <= from.getTime()) {
+    return 0;
+  }
+
+  let overlapMs = 0;
+  const cursor = new Date(from);
+  cursor.setHours(0, 0, 0, 0);
+
+  while (cursor.getTime() < to.getTime()) {
+    const windowStart = new Date(cursor);
+    windowStart.setHours(NIGHT_START_HOUR, 0, 0, 0);
+
+    const windowEnd = new Date(cursor);
+    windowEnd.setHours(NIGHT_END_HOUR, 0, 0, 0);
+
+    const effectiveStart = Math.max(from.getTime(), windowStart.getTime());
+    const effectiveEnd = Math.min(to.getTime(), windowEnd.getTime());
+
+    if (effectiveEnd > effectiveStart) {
+      overlapMs += effectiveEnd - effectiveStart;
+    }
+
+    cursor.setDate(cursor.getDate() + 1);
+  }
+
+  return Math.floor(overlapMs / 1000);
 };
 
 const ensureCurrentCycle = async (serviceCode: string, at: Date): Promise<WeekCycle> => {
@@ -524,6 +558,8 @@ export const getCycleTotals = async (cycleId: number) => {
       manualAdjustmentsCount: 0,
       eventsCount: 0,
       payableSeconds: 0,
+      nightSeconds: 0,
+      nightBonus: 0,
       baseSalary: 0,
       topBonus: 0,
       salaryTotal: 0,
@@ -670,6 +706,8 @@ export const getCycleTotals = async (cycleId: number) => {
     return null;
   };
 
+  const activeClockInsByEmployee = new Map<number, Date[]>();
+
   for (const event of events) {
     const resolvedEmployeeId = resolveEventEmployeeId(event);
     if (resolvedEmployeeId == null) {
@@ -691,9 +729,30 @@ export const getCycleTotals = async (cycleId: number) => {
       current.discordUserId = event.discordUserId;
     }
 
+    if (event.eventType === TimeEventType.CLOCK_IN) {
+      const activeClockIns = activeClockInsByEmployee.get(resolvedEmployeeId) ?? [];
+      activeClockIns.push(event.eventAt);
+      activeClockInsByEmployee.set(resolvedEmployeeId, activeClockIns);
+    }
+
     if (event.eventType === TimeEventType.CLOCK_OUT) {
       current.normalSeconds += delta;
       current.totalSeconds += delta;
+
+      const activeClockIns = activeClockInsByEmployee.get(resolvedEmployeeId) ?? [];
+      const clockInAt = activeClockIns.pop();
+      if (activeClockIns.length > 0) {
+        activeClockInsByEmployee.set(resolvedEmployeeId, activeClockIns);
+      } else {
+        activeClockInsByEmployee.delete(resolvedEmployeeId);
+      }
+
+      if (clockInAt && delta > 0 && event.eventAt.getTime() > clockInAt.getTime()) {
+        const shiftSeconds = Math.max(1, Math.floor((event.eventAt.getTime() - clockInAt.getTime()) / 1000));
+        const overlapSeconds = getNightWindowOverlapSeconds(clockInAt, event.eventAt);
+        const scaledNightSeconds = Math.round((overlapSeconds / shiftSeconds) * delta);
+        current.nightSeconds += Math.max(0, Math.min(delta, scaledNightSeconds));
+      }
     }
 
     if (event.eventType === TimeEventType.MANUAL_ADJUSTMENT) {
@@ -825,7 +884,11 @@ export const getCycleTotals = async (cycleId: number) => {
     const rank = resolveCanonicalRank(row.rank);
     const referenceSalary = rank ? RANK_PAY_PER_7H[rank] : 0;
     row.payableSeconds = Math.min(Math.max(row.totalSeconds, 0), PAYROLL_MAX_SECONDS);
+    const payableNightSeconds = Math.min(Math.max(row.nightSeconds, 0), row.payableSeconds);
     row.baseSalary = referenceSalary ? Math.round((row.payableSeconds / PAYROLL_REFERENCE_SECONDS) * referenceSalary) : 0;
+    row.nightBonus = referenceSalary
+      ? Math.round((payableNightSeconds / PAYROLL_REFERENCE_SECONDS) * referenceSalary * NIGHT_BONUS_MULTIPLIER)
+      : 0;
     row.salaryTotal = row.baseSalary;
   }
 
@@ -833,7 +896,10 @@ export const getCycleTotals = async (cycleId: number) => {
   for (let index = 0; index < TOP_BONUSES.length && index < bonusCandidates.length; index += 1) {
     const candidate = bonusCandidates[index];
     candidate.topBonus = TOP_BONUSES[index];
-    candidate.salaryTotal = candidate.baseSalary + candidate.topBonus;
+  }
+
+  for (const row of sorted) {
+    row.salaryTotal = row.baseSalary + row.nightBonus + row.topBonus;
   }
 
   return sorted;

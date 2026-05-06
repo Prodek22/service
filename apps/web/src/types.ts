@@ -84,6 +84,8 @@ export type TimesheetSummaryResponse = {
     manualAdjustmentsCount: number;
     eventsCount: number;
     payableSeconds: number;
+    nightSeconds: number;
+    nightBonus: number;
     baseSalary: number;
     topBonus: number;
     salaryTotal: number;

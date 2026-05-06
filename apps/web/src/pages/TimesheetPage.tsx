@@ -83,6 +83,8 @@ export const TimesheetPage = ({ readOnly = false }: TimesheetPageProps) => {
             String(row.negativeAdjustmentSeconds),
             String(row.manualAdjustmentsCount),
             String(row.eventsCount),
+            String(row.nightSeconds),
+            String(row.nightBonus),
             String(row.baseSalary),
             String(row.topBonus),
             String(row.salaryTotal),
@@ -448,6 +450,7 @@ export const TimesheetPage = ({ readOnly = false }: TimesheetPageProps) => {
               <th>Data intrare</th>
               <th>Total timp (min)</th>
               <th>Total ajustari (min)</th>
+              <th>Bonus noapte</th>
               <th>Salariu</th>
               <th>Platit</th>
               <th>Up</th>
@@ -532,7 +535,14 @@ export const TimesheetPage = ({ readOnly = false }: TimesheetPageProps) => {
                 >
                   {formatMinutes(getTotalAdjustmentsSeconds(row))}
                 </td>
-                <td title={`Baza: ${formatCurrency(row.baseSalary)} | Bonus top: ${formatCurrency(row.topBonus)}`}>
+                <td title={`18:00-23:00 | ${formatMinutes(row.nightSeconds)} | ${formatCurrency(row.nightBonus)}`}>
+                  {formatCurrency(row.nightBonus)}
+                </td>
+                <td
+                  title={`Baza: ${formatCurrency(row.baseSalary)} | Bonus noapte: ${formatCurrency(
+                    row.nightBonus
+                  )} | Bonus top: ${formatCurrency(row.topBonus)}`}
+                >
                   {formatCurrency(row.salaryTotal)}
                 </td>
                 <td>
@@ -584,7 +594,7 @@ export const TimesheetPage = ({ readOnly = false }: TimesheetPageProps) => {
             })}
             {!visibleRows.length ? (
               <tr>
-                <td colSpan={11}>
+                <td colSpan={12}>
                   {inactiveOnly
                     ? 'Nu exista angajati marcati ca inactivi pentru acest ciclu.'
                     : 'Nu exista pontaje in ciclul selectat.'}
