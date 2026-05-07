@@ -193,8 +193,11 @@ export const ReactionTrackingPage = () => {
                 <tr key={item.id}>
                   <td>
                     <a href={item.messageUrl} target="_blank" rel="noreferrer">
-                      {item.messageId}
+                      {item.messagePreview && item.messagePreview.trim().length > 0
+                        ? item.messagePreview
+                        : `Mesaj ${item.messageId}`}
                     </a>
+                    <div className="muted-line">ID: {item.messageId}</div>
                   </td>
                   <td>
                     <strong>{item.userDisplayName}</strong>

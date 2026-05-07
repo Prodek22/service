@@ -6,6 +6,7 @@ export type DiscordReactionAuditInput = {
   guildId: string;
   channelId: string;
   messageId: string;
+  messagePreview: string | null;
   userId: string;
   userDisplayName: string | null;
   emojiId: string | null;
@@ -21,6 +22,7 @@ export const logDiscordReactionAudit = async (input: DiscordReactionAuditInput):
       guildId: input.guildId,
       channelId: input.channelId,
       messageId: input.messageId,
+      messagePreview: input.messagePreview,
       userId: input.userId,
       userDisplayName: input.userDisplayName,
       emojiId: input.emojiId,

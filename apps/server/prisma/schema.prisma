@@ -227,6 +227,7 @@ model ReactionEvent {
   messageId       String              @map("message_id")
   channelId       String              @map("channel_id")
   guildId         String              @map("guild_id")
+  messagePreview  String?             @map("message_preview") @db.Text
   userId          String              @map("user_id")
   userDisplayName String?             @map("user_display_name")
   emojiId         String?             @map("emoji_id")

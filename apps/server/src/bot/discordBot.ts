@@ -187,12 +187,15 @@ const handleReactionAudit = async (action: 'ADD' | 'REMOVE', reaction: MessageRe
     (await message.guild?.members.fetch(resolvedUser.id).catch(() => null));
   const userDisplayName =
     guildMember?.displayName ?? resolvedUser.globalName ?? resolvedUser.displayName ?? resolvedUser.username;
+  const rawMessagePreview = buildMessageText(message as Message);
+  const messagePreview = rawMessagePreview.length > 240 ? `${rawMessagePreview.slice(0, 237)}...` : rawMessagePreview || null;
 
   await logDiscordReactionAudit({
     action,
     guildId: message.guildId,
     channelId: message.channelId,
     messageId: message.id,
+    messagePreview,
     userId: resolvedUser.id,
     userDisplayName,
     emojiId: resolvedReaction.emoji.id ?? null,

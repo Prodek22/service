@@ -249,6 +249,7 @@ export type ReactionTrackedMessagesResponse = {
 export type ReactionEventItem = {
   id: number;
   messageId: string;
+  messagePreview: string | null;
   channelId: string;
   guildId: string;
   userId: string;

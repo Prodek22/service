@@ -118,6 +118,7 @@ reactionRouter.get('/events', async (req, res) => {
     items: items.map((item) => ({
       id: item.id,
       messageId: item.messageId,
+      messagePreview: item.messagePreview,
       channelId: item.channelId,
       guildId: item.guildId,
       userId: item.userId,
