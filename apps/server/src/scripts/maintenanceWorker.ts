@@ -6,6 +6,7 @@ import { BackfillProgress, runBackfill } from '../services/backfillRunner';
 import { createGuildMemberFilter } from '../services/guildMemberFilter';
 import { deleteLocalIdImage, isLocalIdImageUrl, purgeLocalIdImageStorage, saveIdImageLocally } from '../services/idImageStorage';
 import { runRetentionCleanup } from '../services/maintenanceCleanupService';
+import { recordEmployeeRankSnapshot } from '../services/rankHistoryService';
 import { processTimesheetMessage } from '../services/timesheetService';
 
 type WorkerInput = {
@@ -299,6 +300,24 @@ const runIncrementalEmployeeSync = async (lookbackDaysInput?: number) => {
     );
 
     let updatedProfiles = 0;
+    const rosterEmployees = await prisma.employee.findMany({
+      where: {
+        discordUserId: {
+          in: rosterIdList
+        }
+      },
+      select: {
+        id: true,
+        discordUserId: true,
+        rank: true
+      }
+    });
+    const rosterEmployeeByDiscordId = new Map(
+      rosterEmployees
+        .filter((item) => Boolean(item.discordUserId))
+        .map((item) => [item.discordUserId as string, item])
+    );
+
     for (const member of roster) {
       const profileUpdate: {
         nickname?: string;
@@ -332,6 +351,21 @@ const runIncrementalEmployeeSync = async (lookbackDaysInput?: number) => {
       });
 
       updatedProfiles += updated.count;
+
+      if (member.cvRank) {
+        const existing = rosterEmployeeByDiscordId.get(member.userId);
+        if (existing) {
+          await recordEmployeeRankSnapshot({
+            employeeId: existing.id,
+            rank: member.cvRank,
+            effectiveFrom: new Date(),
+            source: 'incremental_sync',
+            changedBy: 'maintenance-worker'
+          });
+
+          existing.rank = member.cvRank;
+        }
+      }
     }
 
     sendProgress(42, 'Convertire imagini de buletin ramase pe link Discord in storage local...');
@@ -492,6 +526,24 @@ const runCvRebuildAll = async () => {
     );
 
     let updatedProfiles = 0;
+    const rosterEmployees = await prisma.employee.findMany({
+      where: {
+        discordUserId: {
+          in: rosterIdList
+        }
+      },
+      select: {
+        id: true,
+        discordUserId: true,
+        rank: true
+      }
+    });
+    const rosterEmployeeByDiscordId = new Map(
+      rosterEmployees
+        .filter((item) => Boolean(item.discordUserId))
+        .map((item) => [item.discordUserId as string, item])
+    );
+
     for (const member of roster) {
       const profileUpdate: {
         nickname?: string;
@@ -525,6 +577,21 @@ const runCvRebuildAll = async () => {
       });
 
       updatedProfiles += updated.count;
+
+      if (member.cvRank) {
+        const existing = rosterEmployeeByDiscordId.get(member.userId);
+        if (existing) {
+          await recordEmployeeRankSnapshot({
+            employeeId: existing.id,
+            rank: member.cvRank,
+            effectiveFrom: new Date(),
+            source: 'cv_rebuild_sync',
+            changedBy: 'maintenance-worker'
+          });
+
+          existing.rank = member.cvRank;
+        }
+      }
     }
 
     sendProgress(36, 'Reprocesare completa canal CV...');

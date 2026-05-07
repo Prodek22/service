@@ -52,11 +52,28 @@ model Employee {
   aliases          EmployeeAlias[]
   timeEvents       TimeEvent[]
   payrollStatuses  TimesheetPayrollStatus[]
+  rankHistory      EmployeeRankHistory[]
 
   @@index([discordUserId])
   @@index([fullName])
   @@index([nickname])
   @@map("employees")
+}
+
+model EmployeeRankHistory {
+  id          Int      @id @default(autoincrement())
+  employeeId  Int      @map("employee_id")
+  rank        String
+  effectiveFrom DateTime @map("effective_from")
+  source      String?  @map("source")
+  changedBy   String?  @map("changed_by")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([employeeId, effectiveFrom])
+  @@index([effectiveFrom])
+  @@map("employee_rank_history")
 }
 
 model AdminUser {

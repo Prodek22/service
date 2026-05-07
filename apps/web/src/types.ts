@@ -115,6 +115,18 @@ export type TimeEventHistoryResponse = {
   }>;
 };
 
+export type EmployeeRankHistoryResponse = {
+  cycleId: number;
+  history: Array<{
+    id: number;
+    rank: string;
+    effectiveFrom: string;
+    source: string | null;
+    changedBy: string | null;
+    createdAt: string;
+  }>;
+};
+
 export type EmployeeCvRawEntry = {
   id: number;
   rawText: string;

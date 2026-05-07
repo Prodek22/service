@@ -7,6 +7,7 @@ import { getDiscordClient } from '../bot/clientStore';
 import { env } from '../config/env';
 import { prisma } from '../db/prisma';
 import { recordAuditLog } from '../services/auditLogService';
+import { recordEmployeeRankChangeIfDifferent } from '../services/rankHistoryService';
 import {
   deleteLocalIdImage,
   isLocalIdImageUrl,
@@ -658,6 +659,15 @@ employeesRouter.patch('/:id', requireAdmin, async (req, res) => {
       idImageUrl: typeof payload.idImageUrl === 'string' ? payload.idImageUrl : undefined,
       status: typeof payload.status === 'string' ? (payload.status as EmployeeStatus) : undefined
     }
+  });
+
+  await recordEmployeeRankChangeIfDifferent({
+    employeeId: employee.id,
+    previousRank: existing.rank,
+    nextRank: employee.rank,
+    effectiveFrom: new Date(),
+    source: 'manual_employee_edit',
+    changedBy: String(res.locals.authUser?.username ?? 'system')
   });
 
   if (existing.idImageUrl && existing.idImageUrl !== employee.idImageUrl) {

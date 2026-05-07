@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { apiBaseUrl, apiGet, apiPost } from '../api/client';
-import { TimeEventHistoryResponse, TimesheetSummaryResponse, WeekCycle } from '../types';
+import { EmployeeRankHistoryResponse, TimeEventHistoryResponse, TimesheetSummaryResponse, WeekCycle } from '../types';
 import { formatCurrency, formatDate, formatDateTime, formatMinutes } from '../utils/format';
 
 type TimesheetPageProps = {
@@ -36,6 +36,8 @@ export const TimesheetPage = ({ readOnly = false }: TimesheetPageProps) => {
 
   const [historyTitle, setHistoryTitle] = useState<string | null>(null);
   const [historyRows, setHistoryRows] = useState<TimeEventHistoryResponse['history']>([]);
+  const [rankHistoryTitle, setRankHistoryTitle] = useState<string | null>(null);
+  const [rankHistoryRows, setRankHistoryRows] = useState<EmployeeRankHistoryResponse['history']>([]);
 
   useEffect(() => {
     void apiGet<WeekCycle[]>('/timesheet/cycles').then((response) => {
@@ -154,6 +156,19 @@ export const TimesheetPage = ({ readOnly = false }: TimesheetPageProps) => {
 
     setHistoryTitle(label);
     setHistoryRows(response.history);
+  };
+
+  const openRankHistory = async (employeeId: number | null, label: string) => {
+    if (!employeeId || !selectedCycleId) {
+      return;
+    }
+
+    const response = await apiGet<EmployeeRankHistoryResponse>(
+      `/timesheet/employee/${employeeId}/rank-history?cycleId=${selectedCycleId}`
+    );
+
+    setRankHistoryTitle(label);
+    setRankHistoryRows(response.history);
   };
 
   const getTotalAdjustmentsSeconds = (row: TimesheetSummaryResponse['totals'][number]) =>
@@ -508,7 +523,19 @@ export const TimesheetPage = ({ readOnly = false }: TimesheetPageProps) => {
                     </>
                   )}
                 </td>
-                <td>{row.rank ?? '-'}</td>
+                <td>
+                  <div className="timesheet-months-cell">
+                    <span>{row.rank ?? '-'}</span>
+                    <button
+                      type="button"
+                      className="btn-inline-edit"
+                      onClick={() => void openRankHistory(row.employeeId, row.displayName)}
+                      disabled={!row.employeeId}
+                    >
+                      Istoric rank
+                    </button>
+                  </div>
+                </td>
                 <td>
                   {readOnly ? (
                     row.monthsInCity ?? '-'
@@ -629,6 +656,38 @@ export const TimesheetPage = ({ readOnly = false }: TimesheetPageProps) => {
                 onClick={() => {
                   setHistoryTitle(null);
                   setHistoryRows([]);
+                }}
+              >
+                Inchide
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {rankHistoryTitle ? (
+        <div className="modal-backdrop">
+          <div className="modal">
+            <h3>Istoric rank: {rankHistoryTitle}</h3>
+            <div className="raw-list">
+              {rankHistoryRows.map((item) => (
+                <article key={item.id} className="raw-item">
+                  <header>
+                    <strong>{item.rank}</strong>
+                    <span>{formatDateTime(item.effectiveFrom)}</span>
+                  </header>
+                  <p>
+                    Sursa: <strong>{item.source ?? '-'}</strong> | Schimbat de: <strong>{item.changedBy ?? '-'}</strong>
+                  </p>
+                </article>
+              ))}
+              {!rankHistoryRows.length && <p>Nu exista istoric rank pentru acest ciclu.</p>}
+            </div>
+            <div className="modal-actions">
+              <button
+                onClick={() => {
+                  setRankHistoryTitle(null);
+                  setRankHistoryRows([]);
                 }}
               >
                 Inchide

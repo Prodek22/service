@@ -6,6 +6,7 @@ import { MessageInput, ParsedCv } from '../types';
 import { normalizeForCompare } from '../utils/normalize';
 import { ensureEmployeeAliases } from './employeeMatcher';
 import { deleteLocalIdImage, isLocalIdImageUrl, resolveLocalIdImageAbsolutePath, saveIdImageLocally } from './idImageStorage';
+import { recordEmployeeRankChangeIfDifferent, recordEmployeeRankSnapshot } from './rankHistoryService';
 
 type IdImageSource = {
   url: string;
@@ -300,6 +301,25 @@ export const processCvMessage = async (
           status
         }
       });
+
+  if (employee) {
+    await recordEmployeeRankChangeIfDifferent({
+      employeeId: saved.id,
+      previousRank: employee.rank,
+      nextRank: saved.rank,
+      effectiveFrom: message.createdAt,
+      source: 'cv_message',
+      changedBy: message.authorId ?? null
+    });
+  } else {
+    await recordEmployeeRankSnapshot({
+      employeeId: saved.id,
+      rank: saved.rank,
+      effectiveFrom: saved.cvPostedAt ?? message.createdAt,
+      source: 'cv_create',
+      changedBy: message.authorId ?? null
+    });
+  }
 
   if (employee?.idImageUrl && persistedIdImageUrl && employee.idImageUrl !== persistedIdImageUrl) {
     await deleteLocalIdImage(employee.idImageUrl);

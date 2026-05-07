@@ -11,7 +11,7 @@ import {
   setTimesheetSummaryCache
 } from '../services/timesheetSummaryCache';
 import { buildCsv, secondsToHm } from '../utils/time';
-import { getCycleTotals, getEmployeeCycleHistory, getWeekCycles } from '../services/timesheetService';
+import { getCycleTotals, getEmployeeCycleHistory, getEmployeeCycleRankHistory, getWeekCycles } from '../services/timesheetService';
 
 export const timesheetRouter = Router();
 const SUMMARY_CACHE_TTL_OPEN_MS = 20 * 1000;
@@ -19,7 +19,7 @@ const SUMMARY_CACHE_TTL_CLOSED_MS = 24 * 60 * 60 * 1000;
 
 timesheetRouter.get('/cycles', async (req, res) => {
   const serviceCode = typeof req.query.serviceCode === 'string' ? req.query.serviceCode : undefined;
-  const cycles = await getWeekCycles(serviceCode);
+  const cycles = await getWeekCycles(serviceCode, 4);
   res.json(cycles);
 });
 
@@ -29,7 +29,7 @@ const resolveCycleId = async (cycleIdQuery: string | undefined, serviceCodeQuery
     return Number.isNaN(parsed) ? null : parsed;
   }
 
-  const cycles = await getWeekCycles(serviceCodeQuery);
+  const cycles = await getWeekCycles(serviceCodeQuery, 4);
   if (cycles.length) {
     return cycles[0].id;
   }
@@ -561,6 +561,25 @@ timesheetRouter.get('/employee/:employeeId/history', async (req, res) => {
 
   const history = await getEmployeeCycleHistory(cycleId, employeeId);
 
+  res.json({ cycleId, history });
+});
+
+timesheetRouter.get('/employee/:employeeId/rank-history', async (req, res) => {
+  const employeeId = Number.parseInt(req.params.employeeId, 10);
+
+  if (Number.isNaN(employeeId)) {
+    res.status(400).json({ error: 'employeeId invalid' });
+    return;
+  }
+
+  const cycleId = await resolveCycleId(typeof req.query.cycleId === 'string' ? req.query.cycleId : undefined);
+
+  if (!cycleId) {
+    res.status(404).json({ error: 'Nu exista ciclu pentru istoric rank.' });
+    return;
+  }
+
+  const history = await getEmployeeCycleRankHistory(cycleId, employeeId);
   res.json({ cycleId, history });
 });
 

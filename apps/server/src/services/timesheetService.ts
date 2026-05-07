@@ -437,7 +437,7 @@ export const markTimesheetMessageDeleted = async (messageId: string): Promise<vo
   });
 };
 
-export const getWeekCycles = async (serviceCode?: string, limit = 6) =>
+export const getWeekCycles = async (serviceCode?: string, limit = 4) =>
   prisma.weekCycle.findMany({
     where: {
       ...(serviceCode ? { serviceCode } : {}),
@@ -537,6 +537,35 @@ export const getCycleTotals = async (cycleId: number) => {
     putNameIndex(employee.fullName, employee.id);
   }
 
+  const eligibleEmployeeIds = eligibleEmployees.map((employee) => employee.id);
+  const cycleRankAsOf = cycle.endedAt
+    ? new Date(cycle.endedAt.getTime() - 1)
+    : new Date();
+  const rankHistoryRows =
+    eligibleEmployeeIds.length > 0
+      ? await prisma.employeeRankHistory.findMany({
+          where: {
+            employeeId: {
+              in: eligibleEmployeeIds
+            },
+            effectiveFrom: {
+              lte: cycleRankAsOf
+            }
+          },
+          orderBy: [{ employeeId: 'asc' }, { effectiveFrom: 'desc' }, { id: 'desc' }],
+          select: {
+            employeeId: true,
+            rank: true
+          }
+        })
+      : [];
+  const historyRankByEmployee = new Map<number, string>();
+  for (const row of rankHistoryRows) {
+    if (!historyRankByEmployee.has(row.employeeId)) {
+      historyRankByEmployee.set(row.employeeId, row.rank);
+    }
+  }
+
   const totals = new Map<string, EmployeeTotal>();
 
   for (const employee of eligibleEmployees) {
@@ -545,7 +574,7 @@ export const getCycleTotals = async (cycleId: number) => {
       key,
       employeeId: employee.id,
       employeeCode: employee.iban ?? null,
-      rank: isOpenCycle ? (employee.rank ?? null) : null,
+      rank: historyRankByEmployee.get(employee.id) ?? (isOpenCycle ? (employee.rank ?? null) : null),
       monthsInCity: employee.monthsInCity ?? null,
       entryDate: getEmployeePresenceStart(employee),
       displayName: employee.nickname ?? employee.fullName ?? employee.iban ?? `Employee #${employee.id}`,
@@ -566,8 +595,6 @@ export const getCycleTotals = async (cycleId: number) => {
       inactiveLast3Weeks: false
     });
   }
-
-  const eligibleEmployeeIds = eligibleEmployees.map((employee) => employee.id);
 
   const cyclePayrollSnapshots =
     eligibleEmployeeIds.length > 0
@@ -603,7 +630,7 @@ export const getCycleTotals = async (cycleId: number) => {
       }
 
       const cycleRank = cycleRanksByEmployee.get(row.employeeId);
-      if (cycleRank) {
+      if (cycleRank && !row.rank) {
         row.rank = cycleRank;
       }
     }
@@ -933,5 +960,46 @@ export const getEmployeeCycleHistory = async (cycleId: number, employeeId: numbe
         eventAt: 'desc'
       }
     });
+  });
+
+export const getEmployeeCycleRankHistory = async (cycleId: number, employeeId: number) =>
+  prisma.$transaction(async (tx) => {
+    const cycle = await tx.weekCycle.findUnique({
+      where: { id: cycleId },
+      select: {
+        startedAt: true,
+        endedAt: true
+      }
+    });
+
+    if (!cycle) {
+      return [];
+    }
+
+    const cycleEnd = cycle.endedAt ?? new Date();
+
+    const [beforeCycle, withinCycle] = await Promise.all([
+      tx.employeeRankHistory.findFirst({
+        where: {
+          employeeId,
+          effectiveFrom: {
+            lt: cycle.startedAt
+          }
+        },
+        orderBy: [{ effectiveFrom: 'desc' }, { id: 'desc' }]
+      }),
+      tx.employeeRankHistory.findMany({
+        where: {
+          employeeId,
+          effectiveFrom: {
+            gte: cycle.startedAt,
+            lte: cycleEnd
+          }
+        },
+        orderBy: [{ effectiveFrom: 'asc' }, { id: 'asc' }]
+      })
+    ]);
+
+    return beforeCycle ? [beforeCycle, ...withinCycle] : withinCycle;
   });
 
