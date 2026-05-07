@@ -593,6 +593,10 @@ th {
   background: #eab7bf !important;
 }
 
+.timesheet-table tbody tr.is-exited td {
+  opacity: 0.9;
+}
+
 html[data-theme='dark'] .timesheet-table tbody tr.is-inactive td {
   background: #5a2f39 !important;
   border-bottom-color: #71444f;
@@ -632,6 +636,18 @@ html[data-theme='dark'] .timesheet-table tbody tr.is-inactive:hover td {
 
 .timesheet-table tbody tr td.up-cell input[type='checkbox'] {
   accent-color: #ffffff;
+}
+
+.timesheet-separator-row td {
+  padding: 10px 12px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #eaf1ff;
+  background: linear-gradient(90deg, #3f4f67 0%, #2c3a50 100%) !important;
+  border-top: 2px solid #5e7695;
+  border-bottom: 2px solid #5e7695;
 }
 
 .timesheet-table .btn-history {

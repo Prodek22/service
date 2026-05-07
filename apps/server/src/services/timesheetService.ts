@@ -28,6 +28,7 @@ type EmployeeTotal = {
   topBonus: number;
   salaryTotal: number;
   inactiveLast3Weeks: boolean;
+  isExited: boolean;
 };
 
 const PAYROLL_REFERENCE_SECONDS = 7 * 60 * 60;
@@ -592,7 +593,8 @@ export const getCycleTotals = async (cycleId: number) => {
       baseSalary: 0,
       topBonus: 0,
       salaryTotal: 0,
-      inactiveLast3Weeks: false
+      inactiveLast3Weeks: false,
+      isExited: employee.deletedAt != null
     });
   }
 

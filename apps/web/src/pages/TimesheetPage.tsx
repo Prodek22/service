@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import { apiBaseUrl, apiGet, apiPost } from '../api/client';
 import { EmployeeRankHistoryResponse, TimeEventHistoryResponse, TimesheetSummaryResponse, WeekCycle } from '../types';
 import { formatCurrency, formatDate, formatDateTime, formatMinutes } from '../utils/format';
@@ -117,6 +117,10 @@ export const TimesheetPage = ({ readOnly = false }: TimesheetPageProps) => {
     };
 
     const sorted = [...searchableRows].sort((a, b) => {
+      if (a.isExited !== b.isExited) {
+        return a.isExited ? 1 : -1;
+      }
+
       let delta = 0;
 
       if (sortBy === 'rank') {
@@ -462,142 +466,153 @@ export const TimesheetPage = ({ readOnly = false }: TimesheetPageProps) => {
             </tr>
           </thead>
           <tbody>
-            {visibleRows.map((row) => {
+            {visibleRows.map((row, index) => {
               const upState = getUpVisualState(row);
-              return (
-              <tr
-                key={row.key}
-                className={[
-                  row.payroll.isPaid ? 'is-paid' : '',
-                  row.inactiveLast3Weeks ? 'is-inactive' : ''
-                ]
-                  .filter(Boolean)
-                  .join(' ')}
-              >
-                <td>{row.employeeCode ?? '-'}</td>
-                <td>
-                  {readOnly ? (
-                    <div className="timesheet-user-cell">
-                      <img
-                        className="timesheet-avatar"
-                        src={getAvatarUrl(row)}
-                        alt={row.displayName}
-                        loading="lazy"
-                        referrerPolicy="no-referrer"
-                        onError={(event) => {
-                          const target = event.currentTarget;
-                          if (target.dataset.fallbackApplied === 'true') {
-                            return;
-                          }
+              const showExitedSeparator = row.isExited && index > 0 && !visibleRows[index - 1].isExited;
 
-                          target.dataset.fallbackApplied = 'true';
-                          target.src = getAvatarFallback(row.displayName);
-                        }}
-                      />
-                      <span>{row.displayName}</span>
-                      {row.inactiveLast3Weeks ? (
-                        <span className="badge danger" title="Pontaj 0 in ultimele 3 saptamani complete">
-                          0 in ultimele 3
-                        </span>
-                      ) : null}
-                    </div>
-                  ) : (
-                    <>
-                      {row.displayName}
-                      {row.inactiveLast3Weeks ? (
-                        <span className="badge danger" title="Pontaj 0 in ultimele 3 saptamani complete">
-                          0 in ultimele 3
-                        </span>
-                      ) : null}
-                    </>
-                  )}
-                </td>
-                <td>
-                  <div className="timesheet-months-cell">
-                    <span>{row.rank ?? '-'}</span>
-                  </div>
-                </td>
-                <td>
-                  {readOnly ? (
-                    row.monthsInCity ?? '-'
-                  ) : (
-                    <div className="timesheet-months-cell">
-                      <span>{row.monthsInCity ?? '-'}</span>
-                      <button
-                        type="button"
-                        className="btn-inline-edit"
-                        disabled={!row.employeeId || Boolean(row.employeeId && monthsBusyByEmployee[row.employeeId])}
-                        onClick={() => void updateMonthsSnapshot(row.employeeId, row.monthsInCity)}
-                      >
-                        Editeaza
-                      </button>
-                    </div>
-                  )}
-                </td>
-                <td>{formatDate(row.entryDate)}</td>
-                <td>{formatMinutes(row.totalSeconds)}</td>
-                <td
-                  title={`+ Ajustari: ${formatMinutes(row.positiveAdjustmentSeconds)} | - Ajustari: ${formatMinutes(
-                    Math.abs(row.negativeAdjustmentSeconds)
-                  )}`}
-                >
-                  {formatMinutes(getTotalAdjustmentsSeconds(row))}
-                </td>
-                <td title={`18:00-23:00 | ${formatMinutes(row.nightSeconds)} | ${formatCurrency(row.nightBonus)}`}>
-                  {formatCurrency(row.nightBonus)}
-                </td>
-                <td
-                  title={`Baza: ${formatCurrency(row.baseSalary)} | Bonus noapte: ${formatCurrency(
-                    row.nightBonus
-                  )} | Bonus top: ${formatCurrency(row.topBonus)}`}
-                >
-                  {formatCurrency(row.salaryTotal)}
-                </td>
-                <td>
-                  {readOnly ? (
-                    <span className={`badge ${row.payroll.isPaid ? 'ok' : 'muted'}`}>{row.payroll.isPaid ? 'DA' : 'NU'}</span>
-                  ) : (
-                    <label>
-                      <input
-                        type="checkbox"
-                        checked={row.payroll.isPaid}
-                        disabled={!row.employeeId || Boolean(row.employeeId && payrollBusyByEmployee[row.employeeId])}
-                        onChange={(event) => void togglePayrollStatus(row.employeeId, event.target.checked)}
-                      />{' '}
-                      {row.payroll.isPaid ? 'DA' : 'NU'}
-                    </label>
-                  )}
-                </td>
-                <td
-                  className={`up-cell ${upState.colorClass}`.trim()}
-                  title={upState.title}
-                >
-                  {readOnly ? (
-                    <span className={`badge ${row.payroll.isUp ? 'ok' : 'muted'} ${upState.colorClass}`.trim()}>
-                      {row.payroll.isUp ? 'DA' : 'NU'}
-                    </span>
-                  ) : (
-                    <label>
-                      <input
-                        type="checkbox"
-                        checked={row.payroll.isUp}
-                        disabled={!row.employeeId || Boolean(row.employeeId && upBusyByEmployee[row.employeeId])}
-                        onChange={(event) => void toggleUpStatus(row.employeeId, event.target.checked)}
-                      />{' '}
-                      {row.payroll.isUp ? 'DA' : 'NU'}
-                    </label>
-                  )}
-                </td>
-                <td>
-                  <button
-                    className="btn-history"
-                    onClick={() => void openHistoryModal(row.employeeId, row.displayName)}
-                    disabled={!row.employeeId}
+              return (
+                <Fragment key={row.key}>
+                  {showExitedSeparator ? (
+                    <tr className="timesheet-separator-row">
+                      <td colSpan={12}>Angajati iesiti din service</td>
+                    </tr>
+                  ) : null}
+                  <tr
+                    className={[
+                      row.payroll.isPaid ? 'is-paid' : '',
+                      row.inactiveLast3Weeks ? 'is-inactive' : '',
+                      row.isExited ? 'is-exited' : ''
+                    ]
+                      .filter(Boolean)
+                      .join(' ')}
                   >
-                    Istoric
-                  </button>
-                </td>
-              </tr>
+                    <td>{row.employeeCode ?? '-'}</td>
+                    <td>
+                      {readOnly ? (
+                        <div className="timesheet-user-cell">
+                          <img
+                            className="timesheet-avatar"
+                            src={getAvatarUrl(row)}
+                            alt={row.displayName}
+                            loading="lazy"
+                            referrerPolicy="no-referrer"
+                            onError={(event) => {
+                              const target = event.currentTarget;
+                              if (target.dataset.fallbackApplied === 'true') {
+                                return;
+                              }
+
+                              target.dataset.fallbackApplied = 'true';
+                              target.src = getAvatarFallback(row.displayName);
+                            }}
+                          />
+                          <span>{row.displayName}</span>
+                          {row.isExited ? <span className="badge muted">Iesit</span> : null}
+                          {row.inactiveLast3Weeks ? (
+                            <span className="badge danger" title="Pontaj 0 in ultimele 3 saptamani complete">
+                              0 in ultimele 3
+                            </span>
+                          ) : null}
+                        </div>
+                      ) : (
+                        <>
+                          {row.displayName}
+                          {row.isExited ? <span className="badge muted">Iesit</span> : null}
+                          {row.inactiveLast3Weeks ? (
+                            <span className="badge danger" title="Pontaj 0 in ultimele 3 saptamani complete">
+                              0 in ultimele 3
+                            </span>
+                          ) : null}
+                        </>
+                      )}
+                    </td>
+                    <td>
+                      <div className="timesheet-months-cell">
+                        <span>{row.rank ?? '-'}</span>
+                      </div>
+                    </td>
+                    <td>
+                      {readOnly ? (
+                        row.monthsInCity ?? '-'
+                      ) : (
+                        <div className="timesheet-months-cell">
+                          <span>{row.monthsInCity ?? '-'}</span>
+                          <button
+                            type="button"
+                            className="btn-inline-edit"
+                            disabled={!row.employeeId || Boolean(row.employeeId && monthsBusyByEmployee[row.employeeId])}
+                            onClick={() => void updateMonthsSnapshot(row.employeeId, row.monthsInCity)}
+                          >
+                            Editeaza
+                          </button>
+                        </div>
+                      )}
+                    </td>
+                    <td>{formatDate(row.entryDate)}</td>
+                    <td>{formatMinutes(row.totalSeconds)}</td>
+                    <td
+                      title={`+ Ajustari: ${formatMinutes(row.positiveAdjustmentSeconds)} | - Ajustari: ${formatMinutes(
+                        Math.abs(row.negativeAdjustmentSeconds)
+                      )}`}
+                    >
+                      {formatMinutes(getTotalAdjustmentsSeconds(row))}
+                    </td>
+                    <td title={`18:00-23:00 | ${formatMinutes(row.nightSeconds)} | ${formatCurrency(row.nightBonus)}`}>
+                      {formatCurrency(row.nightBonus)}
+                    </td>
+                    <td
+                      title={`Baza: ${formatCurrency(row.baseSalary)} | Bonus noapte: ${formatCurrency(
+                        row.nightBonus
+                      )} | Bonus top: ${formatCurrency(row.topBonus)}`}
+                    >
+                      {formatCurrency(row.salaryTotal)}
+                    </td>
+                    <td>
+                      {readOnly ? (
+                        <span className={`badge ${row.payroll.isPaid ? 'ok' : 'muted'}`}>{row.payroll.isPaid ? 'DA' : 'NU'}</span>
+                      ) : (
+                        <label>
+                          <input
+                            type="checkbox"
+                            checked={row.payroll.isPaid}
+                            disabled={!row.employeeId || Boolean(row.employeeId && payrollBusyByEmployee[row.employeeId])}
+                            onChange={(event) => void togglePayrollStatus(row.employeeId, event.target.checked)}
+                          />{' '}
+                          {row.payroll.isPaid ? 'DA' : 'NU'}
+                        </label>
+                      )}
+                    </td>
+                    <td
+                      className={`up-cell ${upState.colorClass}`.trim()}
+                      title={upState.title}
+                    >
+                      {readOnly ? (
+                        <span className={`badge ${row.payroll.isUp ? 'ok' : 'muted'} ${upState.colorClass}`.trim()}>
+                          {row.payroll.isUp ? 'DA' : 'NU'}
+                        </span>
+                      ) : (
+                        <label>
+                          <input
+                            type="checkbox"
+                            checked={row.payroll.isUp}
+                            disabled={!row.employeeId || Boolean(row.employeeId && upBusyByEmployee[row.employeeId])}
+                            onChange={(event) => void toggleUpStatus(row.employeeId, event.target.checked)}
+                          />{' '}
+                          {row.payroll.isUp ? 'DA' : 'NU'}
+                        </label>
+                      )}
+                    </td>
+                    <td>
+                      <button
+                        className="btn-history"
+                        onClick={() => void openHistoryModal(row.employeeId, row.displayName)}
+                        disabled={!row.employeeId}
+                      >
+                        Istoric
+                      </button>
+                    </td>
+                  </tr>
+                </Fragment>
               );
             })}
             {!visibleRows.length ? (
