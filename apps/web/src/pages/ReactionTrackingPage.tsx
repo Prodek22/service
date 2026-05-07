@@ -141,6 +141,27 @@ export const ReactionTrackingPage = () => {
     }
   };
 
+  const deleteEventsByMessage = async () => {
+    const messageId = selectedMessageId.trim();
+    if (!/^\d{8,30}$/.test(messageId)) {
+      setError('Selecteaza un mesaj valid mai intai.');
+      return;
+    }
+
+    const confirmed = window.confirm(`Sterg toate logurile de react pentru mesajul ${messageId}?`);
+    if (!confirmed) {
+      return;
+    }
+
+    setError(null);
+    try {
+      await apiDelete<{ ok: boolean; messageId: string; deleted: number }>(`/reactions/events/by-message/${messageId}`);
+      await loadEvents();
+    } catch (deleteError) {
+      setError(deleteError instanceof Error ? deleteError.message : 'Nu am putut sterge logurile mesajului.');
+    }
+  };
+
   return (
     <section>
       <h2>Reacturi mesaje urmarite</h2>
@@ -172,6 +193,14 @@ export const ReactionTrackingPage = () => {
 
         <button type="button" onClick={() => void loadEvents()} disabled={loadingEvents}>
           {loadingEvents ? 'Refresh...' : 'Refresh'}
+        </button>
+        <button
+          type="button"
+          className="btn-table-action secondary"
+          onClick={() => void deleteEventsByMessage()}
+          disabled={!selectedMessageId.trim()}
+        >
+          Sterge toate logurile mesajului selectat
         </button>
       </form>
 

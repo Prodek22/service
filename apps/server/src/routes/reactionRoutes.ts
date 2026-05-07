@@ -284,3 +284,29 @@ reactionRouter.delete('/events/:id', async (req, res) => {
 
   res.json({ ok: true, id });
 });
+
+reactionRouter.delete('/events/by-message/:messageId', async (req, res) => {
+  const messageId = String(req.params.messageId ?? '').trim();
+  if (!/^\d{8,30}$/.test(messageId)) {
+    res.status(400).json({ error: 'messageId invalid.' });
+    return;
+  }
+
+  const deleted = await prisma.reactionEvent.deleteMany({
+    where: { messageId }
+  });
+
+  await recordAuditLog({
+    req,
+    res,
+    action: 'REACTION_EVENT_DELETE_BY_MESSAGE',
+    entityType: 'reaction_event',
+    entityId: messageId,
+    metadata: {
+      messageId,
+      deleted: deleted.count
+    }
+  });
+
+  res.json({ ok: true, messageId, deleted: deleted.count });
+});
