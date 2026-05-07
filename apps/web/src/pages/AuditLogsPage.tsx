@@ -26,6 +26,11 @@ export const AuditLogsPage = () => {
   const [actorFilter, setActorFilter] = useState('');
   const [draftActionFilter, setDraftActionFilter] = useState('');
   const [draftActorFilter, setDraftActorFilter] = useState('');
+  const [activeMetadata, setActiveMetadata] = useState<{
+    action: string;
+    createdAt: string;
+    metadata: unknown;
+  } | null>(null);
 
   const query = useMemo(() => {
     const params = new URLSearchParams({
@@ -129,10 +134,19 @@ export const AuditLogsPage = () => {
                 <td>{item.ipAddress ?? '-'}</td>
                 <td>
                   {item.metadata ? (
-                    <details>
-                      <summary>Vezi</summary>
-                      <pre>{prettyMetadata(item.metadata)}</pre>
-                    </details>
+                    <button
+                      type="button"
+                      className="btn-table-action"
+                      onClick={() =>
+                        setActiveMetadata({
+                          action: item.action,
+                          createdAt: item.createdAt,
+                          metadata: item.metadata
+                        })
+                      }
+                    >
+                      Vezi
+                    </button>
                   ) : (
                     '-'
                   )}
@@ -167,6 +181,26 @@ export const AuditLogsPage = () => {
           Pagina urmatoare
         </button>
       </div>
+
+      {activeMetadata ? (
+        <div className="modal-backdrop" onClick={() => setActiveMetadata(null)}>
+          <div className="modal large" onClick={(event) => event.stopPropagation()}>
+            <h3>Metadata log</h3>
+            <p>
+              <strong>Actiune:</strong> {activeMetadata.action}
+            </p>
+            <p>
+              <strong>Data:</strong> {formatDateTime(activeMetadata.createdAt)}
+            </p>
+            <pre className="audit-modal-pre">{prettyMetadata(activeMetadata.metadata)}</pre>
+            <div className="modal-actions">
+              <button type="button" onClick={() => setActiveMetadata(null)}>
+                Inchide
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 };
