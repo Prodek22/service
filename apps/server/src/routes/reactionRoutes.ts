@@ -1,5 +1,7 @@
 import { Router } from 'express';
+import { ChannelType, TextBasedChannel } from 'discord.js';
 import { prisma } from '../db/prisma';
+import { getDiscordClient } from '../bot/clientStore';
 import { recordAuditLog } from '../services/auditLogService';
 import {
   listReactionTrackedMessages,
@@ -8,6 +10,109 @@ import {
 } from '../services/reactionTrackService';
 
 export const reactionRouter = Router();
+
+const buildMessagePreview = (content: string, embeds: Array<{ title?: string | null; description?: string | null; fields?: Array<{ name?: string; value?: string }>; footer?: { text?: string | null } }>): string | null => {
+  const chunks: string[] = [];
+
+  if (content?.trim()) {
+    chunks.push(content.trim());
+  }
+
+  for (const embed of embeds) {
+    if (embed.title) {
+      chunks.push(embed.title);
+    }
+
+    if (embed.description) {
+      chunks.push(embed.description);
+    }
+
+    for (const field of embed.fields ?? []) {
+      if (field.name) {
+        chunks.push(field.name);
+      }
+      if (field.value) {
+        chunks.push(field.value);
+      }
+    }
+
+    if (embed.footer?.text) {
+      chunks.push(embed.footer.text);
+    }
+  }
+
+  const raw = chunks.join('\n').trim();
+  if (!raw) {
+    return null;
+  }
+
+  return raw.length > 240 ? `${raw.slice(0, 237)}...` : raw;
+};
+
+const hydrateMissingMessagePreviews = async (
+  rows: Array<{ id: number; guildId: string; channelId: string; messageId: string; messagePreview: string | null }>
+): Promise<Map<string, string>> => {
+  const previewsByMessageId = new Map<string, string>();
+  const missingRows = rows.filter((row) => !row.messagePreview || !row.messagePreview.trim());
+  if (!missingRows.length) {
+    return previewsByMessageId;
+  }
+
+  const client = getDiscordClient();
+  if (!client) {
+    return previewsByMessageId;
+  }
+
+  const uniqueMissing = [...new Map(missingRows.map((row) => [row.messageId, row])).values()].slice(0, 30);
+
+  for (const row of uniqueMissing) {
+    try {
+      const guild = client.guilds.cache.get(row.guildId) ?? (await client.guilds.fetch(row.guildId).catch(() => null));
+      if (!guild) {
+        continue;
+      }
+
+      const channel = guild.channels.cache.get(row.channelId) ?? (await guild.channels.fetch(row.channelId).catch(() => null));
+      if (!channel || channel.type === ChannelType.GuildForum) {
+        continue;
+      }
+
+      if (!('messages' in channel)) {
+        continue;
+      }
+
+      const textBased = channel as TextBasedChannel;
+      const message = await textBased.messages.fetch(row.messageId).catch(() => null);
+      if (!message) {
+        continue;
+      }
+
+      const preview = buildMessagePreview(
+        message.content ?? '',
+        message.embeds.map((embed) => ({
+          title: embed.title,
+          description: embed.description,
+          fields: embed.fields?.map((field) => ({ name: field.name, value: field.value })),
+          footer: { text: embed.footer?.text ?? null }
+        }))
+      );
+
+      if (!preview) {
+        continue;
+      }
+
+      previewsByMessageId.set(row.messageId, preview);
+      await prisma.reactionEvent.updateMany({
+        where: { messageId: row.messageId },
+        data: { messagePreview: preview }
+      });
+    } catch {
+      // Ignore per-message hydrate failures.
+    }
+  }
+
+  return previewsByMessageId;
+};
 
 reactionRouter.get('/tracked-messages', async (_req, res) => {
   const items = await listReactionTrackedMessages();
@@ -87,6 +192,8 @@ reactionRouter.get('/events', async (req, res) => {
     prisma.reactionEvent.count({ where })
   ]);
 
+  const hydratedPreviewByMessageId = await hydrateMissingMessagePreviews(items);
+
   const userIds = [...new Set(items.map((item) => item.userId).filter(Boolean))];
   const employees =
     userIds.length > 0
@@ -118,7 +225,7 @@ reactionRouter.get('/events', async (req, res) => {
     items: items.map((item) => ({
       id: item.id,
       messageId: item.messageId,
-      messagePreview: item.messagePreview,
+      messagePreview: item.messagePreview ?? hydratedPreviewByMessageId.get(item.messageId) ?? null,
       channelId: item.channelId,
       guildId: item.guildId,
       userId: item.userId,

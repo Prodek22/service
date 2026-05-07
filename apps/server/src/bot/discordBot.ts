@@ -187,7 +187,8 @@ const handleReactionAudit = async (action: 'ADD' | 'REMOVE', reaction: MessageRe
     (await message.guild?.members.fetch(resolvedUser.id).catch(() => null));
   const userDisplayName =
     guildMember?.displayName ?? resolvedUser.globalName ?? resolvedUser.displayName ?? resolvedUser.username;
-  const rawMessagePreview = buildMessageText(message as Message);
+  const fullMessage = message.partial ? await message.fetch().catch(() => null) : (message as Message);
+  const rawMessagePreview = fullMessage ? buildMessageText(fullMessage as Message) : '';
   const messagePreview = rawMessagePreview.length > 240 ? `${rawMessagePreview.slice(0, 237)}...` : rawMessagePreview || null;
 
   await logDiscordReactionAudit({
