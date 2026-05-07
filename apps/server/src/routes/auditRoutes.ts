@@ -26,6 +26,11 @@ auditRouter.get('/', async (req, res) => {
   const skip = (safePage - 1) * safePageSize;
 
   const where = {
+    NOT: {
+      action: {
+        in: ['DISCORD_REACTION_ADD', 'DISCORD_REACTION_REMOVE']
+      }
+    },
     ...(action ? { action: { contains: action } } : {}),
     ...(actorUsername ? { actorUsername: { contains: actorUsername } } : {})
   };

@@ -1,3 +1,4 @@
+import { ReactionEventAction } from '@prisma/client';
 import { prisma } from '../db/prisma';
 
 export type DiscordReactionAuditInput = {
@@ -6,6 +7,7 @@ export type DiscordReactionAuditInput = {
   channelId: string;
   messageId: string;
   userId: string;
+  userDisplayName: string | null;
   emojiId: string | null;
   emojiName: string | null;
   emojiIdentifier: string | null;
@@ -13,30 +15,18 @@ export type DiscordReactionAuditInput = {
 };
 
 export const logDiscordReactionAudit = async (input: DiscordReactionAuditInput): Promise<void> => {
-  const messageUrl = `https://discord.com/channels/${input.guildId}/${input.channelId}/${input.messageId}`;
-
-  await prisma.auditLog.create({
+  await prisma.reactionEvent.create({
     data: {
-      actorUsername: input.userId,
-      actorRole: 'DISCORD',
-      action: input.action === 'ADD' ? 'DISCORD_REACTION_ADD' : 'DISCORD_REACTION_REMOVE',
-      entityType: 'discord_message_reaction',
-      entityId: input.messageId,
-      metadataJson: JSON.stringify({
-        guildId: input.guildId,
-        channelId: input.channelId,
-        messageId: input.messageId,
-        messageUrl,
-        userId: input.userId,
-        emoji: {
-          id: input.emojiId,
-          name: input.emojiName,
-          identifier: input.emojiIdentifier
-        },
-        eventAt: input.eventAt.toISOString()
-      }),
-      createdAt: input.eventAt
+      action: input.action as ReactionEventAction,
+      guildId: input.guildId,
+      channelId: input.channelId,
+      messageId: input.messageId,
+      userId: input.userId,
+      userDisplayName: input.userDisplayName,
+      emojiId: input.emojiId,
+      emojiName: input.emojiName,
+      emojiIdentifier: input.emojiIdentifier,
+      eventAt: input.eventAt
     }
   });
 };
-

@@ -27,6 +27,11 @@ enum TimeEventType {
   UNKNOWN
 }
 
+enum ReactionEventAction {
+  ADD
+  REMOVE
+}
+
 model Employee {
   id               Int            @id @default(autoincrement())
   discordUserId    String?        @map("discord_user_id")
@@ -215,5 +220,25 @@ model ReactionTrackedMessage {
 
   @@index([isActive])
   @@map("reaction_tracked_messages")
+}
+
+model ReactionEvent {
+  id              Int                 @id @default(autoincrement())
+  messageId       String              @map("message_id")
+  channelId       String              @map("channel_id")
+  guildId         String              @map("guild_id")
+  userId          String              @map("user_id")
+  userDisplayName String?             @map("user_display_name")
+  emojiId         String?             @map("emoji_id")
+  emojiName       String?             @map("emoji_name")
+  emojiIdentifier String?             @map("emoji_identifier")
+  action          ReactionEventAction
+  eventAt         DateTime            @map("event_at")
+  createdAt       DateTime            @default(now()) @map("created_at")
+
+  @@index([messageId, eventAt])
+  @@index([userId, eventAt])
+  @@index([eventAt])
+  @@map("reaction_events")
 }
 

@@ -182,12 +182,19 @@ const handleReactionAudit = async (action: 'ADD' | 'REMOVE', reaction: MessageRe
     return;
   }
 
+  const guildMember =
+    message.guild?.members.cache.get(resolvedUser.id) ??
+    (await message.guild?.members.fetch(resolvedUser.id).catch(() => null));
+  const userDisplayName =
+    guildMember?.displayName ?? resolvedUser.globalName ?? resolvedUser.displayName ?? resolvedUser.username;
+
   await logDiscordReactionAudit({
     action,
     guildId: message.guildId,
     channelId: message.channelId,
     messageId: message.id,
     userId: resolvedUser.id,
+    userDisplayName,
     emojiId: resolvedReaction.emoji.id ?? null,
     emojiName: resolvedReaction.emoji.name ?? null,
     emojiIdentifier: resolvedReaction.emoji.identifier ?? null,

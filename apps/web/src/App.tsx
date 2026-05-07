@@ -6,6 +6,7 @@ import { AuditLogsPage } from './pages/AuditLogsPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { EmployeesPage } from './pages/EmployeesPage';
 import { LoginPage } from './pages/LoginPage';
+import { ReactionTrackingPage } from './pages/ReactionTrackingPage';
 import { TimesheetPage } from './pages/TimesheetPage';
 import { AdminRole, AuthMeResponse } from './types';
 
@@ -57,6 +58,11 @@ const AdminLayout = ({ username, role, canViewAudit, theme, onToggleTheme, onLog
           <NavLink to="/admin/timesheet-active" className={({ isActive }) => (isActive ? 'active' : '')}>
             Pontaje Active
           </NavLink>
+          {role === 'ADMIN' ? (
+            <NavLink to="/admin/reactions" className={({ isActive }) => (isActive ? 'active' : '')}>
+              Reacturi mesaje
+            </NavLink>
+          ) : null}
           {canViewAudit ? (
             <NavLink to="/admin/audit" className={({ isActive }) => (isActive ? 'active' : '')}>
               Loguri actiuni
@@ -303,6 +309,10 @@ export const App = () => {
       <Route
         path="/admin/timesheet-active"
         element={renderAdminPage(<ActiveTimesheetsPage canManage={auth.role === 'ADMIN'} />)}
+      />
+      <Route
+        path="/admin/reactions"
+        element={renderAdminPage(auth.role === 'ADMIN' ? <ReactionTrackingPage /> : <Navigate to="/admin" replace />)}
       />
       <Route
         path="/admin/audit"

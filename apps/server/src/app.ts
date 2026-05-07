@@ -9,6 +9,7 @@ import { dashboardRouter } from './routes/dashboardRoutes';
 import { employeesRouter } from './routes/employeesRoutes';
 import { healthRouter } from './routes/healthRoutes';
 import { maintenanceRouter } from './routes/maintenanceRoutes';
+import { reactionRouter } from './routes/reactionRoutes';
 import { timesheetRouter } from './routes/timesheetRoutes';
 import { getIdImageStaticDirs, ID_IMAGE_PUBLIC_BASE_PATH } from './services/idImageStorage';
 
@@ -34,6 +35,7 @@ export const createApp = () => {
   app.use('/api/dashboard', requireAuth, dashboardRouter);
   app.use('/api/employees', requireAuth, employeesRouter);
   app.use('/api/maintenance', requireAdmin, maintenanceRouter);
+  app.use('/api/reactions', requireAdmin, reactionRouter);
 
   app.use((_req, res) => {
     res.status(404).json({ error: 'Not found' });

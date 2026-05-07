@@ -246,6 +246,31 @@ export type ReactionTrackedMessagesResponse = {
   items: ReactionTrackedMessage[];
 };
 
+export type ReactionEventItem = {
+  id: number;
+  messageId: string;
+  channelId: string;
+  guildId: string;
+  userId: string;
+  userDisplayName: string;
+  emojiId: string | null;
+  emojiName: string | null;
+  emojiIdentifier: string | null;
+  action: 'ADD' | 'REMOVE';
+  eventAt: string;
+  messageUrl: string;
+};
+
+export type ReactionEventsResponse = {
+  items: ReactionEventItem[];
+  pagination: {
+    page: number;
+    pageSize: number;
+    total: number;
+    totalPages: number;
+  };
+};
+
 export type ActiveTimesheetsResponse = {
   hoursWindow: number;
   since: string;

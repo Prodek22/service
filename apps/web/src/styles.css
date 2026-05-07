@@ -694,6 +694,23 @@ html[data-theme='dark'] .timesheet-table tbody tr.is-inactive:hover td {
   color: var(--ink);
 }
 
+.muted-line {
+  font-size: 0.76rem;
+  color: var(--muted);
+}
+
+.reaction-emoji-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.reaction-emoji-cell img {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+}
+
 .audit-table code {
   font-size: 0.8rem;
   font-weight: 600;
