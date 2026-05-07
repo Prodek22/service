@@ -246,3 +246,41 @@ reactionRouter.get('/events', async (req, res) => {
     }
   });
 });
+
+reactionRouter.delete('/events/:id', async (req, res) => {
+  const id = Number.parseInt(String(req.params.id ?? ''), 10);
+  if (Number.isNaN(id) || id <= 0) {
+    res.status(400).json({ error: 'id invalid.' });
+    return;
+  }
+
+  const existing = await prisma.reactionEvent.findUnique({
+    where: { id },
+    select: { id: true, messageId: true, userId: true, action: true }
+  });
+
+  if (!existing) {
+    res.status(404).json({ error: 'Logul nu exista.' });
+    return;
+  }
+
+  await prisma.reactionEvent.delete({
+    where: { id }
+  });
+
+  await recordAuditLog({
+    req,
+    res,
+    action: 'REACTION_EVENT_DELETE',
+    entityType: 'reaction_event',
+    entityId: String(id),
+    metadata: {
+      id: existing.id,
+      messageId: existing.messageId,
+      userId: existing.userId,
+      eventAction: existing.action
+    }
+  });
+
+  res.json({ ok: true, id });
+});

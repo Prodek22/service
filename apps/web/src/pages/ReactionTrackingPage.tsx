@@ -126,6 +126,21 @@ export const ReactionTrackingPage = () => {
     }
   };
 
+  const deleteReactionEvent = async (id: number) => {
+    const confirmed = window.confirm('Sigur vrei sa stergi acest log de react?');
+    if (!confirmed) {
+      return;
+    }
+
+    setError(null);
+    try {
+      await apiDelete<{ ok: boolean; id: number }>(`/reactions/events/${id}`);
+      await loadEvents();
+    } catch (deleteError) {
+      setError(deleteError instanceof Error ? deleteError.message : 'Nu am putut sterge logul.');
+    }
+  };
+
   return (
     <section>
       <h2>Reacturi mesaje urmarite</h2>
@@ -183,6 +198,7 @@ export const ReactionTrackingPage = () => {
               <th>React</th>
               <th>Actiune</th>
               <th>Data / ora</th>
+              <th>Actiuni</th>
             </tr>
           </thead>
           <tbody>
@@ -215,12 +231,21 @@ export const ReactionTrackingPage = () => {
                     </span>
                   </td>
                   <td>{formatDateTime(item.eventAt)}</td>
+                  <td>
+                    <button
+                      type="button"
+                      className="btn-table-action secondary"
+                      onClick={() => void deleteReactionEvent(item.id)}
+                    >
+                      Sterge
+                    </button>
+                  </td>
                 </tr>
               );
             })}
             {!loadingEvents && !(eventsData?.items ?? []).length ? (
               <tr>
-                <td colSpan={5}>Nu exista reacturi pentru filtrul selectat.</td>
+                <td colSpan={6}>Nu exista reacturi pentru filtrul selectat.</td>
               </tr>
             ) : null}
           </tbody>
