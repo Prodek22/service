@@ -933,6 +933,28 @@ html[data-theme='dark'] .stat-card strong {
   gap: 8px;
 }
 
+.modal-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.modal-tabs button {
+  border: 1px solid #4b5f7a;
+  background: linear-gradient(180deg, #2e4666 0%, #243a57 100%);
+  color: #eef4ff;
+  border-radius: 999px;
+  padding: 6px 12px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.modal-tabs button.active {
+  border-color: #7b5133;
+  background: linear-gradient(180deg, #b0784d 0%, #8f5d38 100%);
+  color: #fff6ee;
+}
+
 .raw-list {
   max-height: 60vh;
   overflow: auto;
@@ -1305,3 +1327,7 @@ html[data-theme='dark'] .login-spotlight-title {
     flex-wrap: wrap;
   }
 }
+
+.btn-pill { border: 1px solid var(--line); border-radius: 999px; padding: 4px 10px; background: transparent; color: inherit; cursor: pointer; }
+.btn-pill-danger { border-color: #b33a3a; color: #b33a3a; }
+.btn-pill-danger:hover { background: rgba(179,58,58,0.12); }

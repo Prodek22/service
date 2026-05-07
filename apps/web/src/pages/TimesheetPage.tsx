@@ -33,10 +33,9 @@ export const TimesheetPage = ({ readOnly = false }: TimesheetPageProps) => {
   const [payrollBusyByEmployee, setPayrollBusyByEmployee] = useState<Record<number, boolean>>({});
   const [upBusyByEmployee, setUpBusyByEmployee] = useState<Record<number, boolean>>({});
   const [monthsBusyByEmployee, setMonthsBusyByEmployee] = useState<Record<number, boolean>>({});
-
-  const [historyTitle, setHistoryTitle] = useState<string | null>(null);
+  const [historyModalTitle, setHistoryModalTitle] = useState<string | null>(null);
+  const [historyTab, setHistoryTab] = useState<'events' | 'rank'>('events');
   const [historyRows, setHistoryRows] = useState<TimeEventHistoryResponse['history']>([]);
-  const [rankHistoryTitle, setRankHistoryTitle] = useState<string | null>(null);
   const [rankHistoryRows, setRankHistoryRows] = useState<EmployeeRankHistoryResponse['history']>([]);
 
   useEffect(() => {
@@ -145,30 +144,20 @@ export const TimesheetPage = ({ readOnly = false }: TimesheetPageProps) => {
     [summary]
   );
 
-  const openHistory = async (employeeId: number | null, label: string) => {
+  const openHistoryModal = async (employeeId: number | null, label: string) => {
     if (!employeeId || !selectedCycleId) {
       return;
     }
 
-    const response = await apiGet<TimeEventHistoryResponse>(
-      `/timesheet/employee/${employeeId}/history?cycleId=${selectedCycleId}`
-    );
+    const [eventsResponse, rankResponse] = await Promise.all([
+      apiGet<TimeEventHistoryResponse>(`/timesheet/employee/${employeeId}/history?cycleId=${selectedCycleId}`),
+      apiGet<EmployeeRankHistoryResponse>(`/timesheet/employee/${employeeId}/rank-history?cycleId=${selectedCycleId}`)
+    ]);
 
-    setHistoryTitle(label);
-    setHistoryRows(response.history);
-  };
-
-  const openRankHistory = async (employeeId: number | null, label: string) => {
-    if (!employeeId || !selectedCycleId) {
-      return;
-    }
-
-    const response = await apiGet<EmployeeRankHistoryResponse>(
-      `/timesheet/employee/${employeeId}/rank-history?cycleId=${selectedCycleId}`
-    );
-
-    setRankHistoryTitle(label);
-    setRankHistoryRows(response.history);
+    setHistoryModalTitle(label);
+    setHistoryTab('events');
+    setHistoryRows(eventsResponse.history);
+    setRankHistoryRows(rankResponse.history);
   };
 
   const getTotalAdjustmentsSeconds = (row: TimesheetSummaryResponse['totals'][number]) =>
@@ -526,14 +515,6 @@ export const TimesheetPage = ({ readOnly = false }: TimesheetPageProps) => {
                 <td>
                   <div className="timesheet-months-cell">
                     <span>{row.rank ?? '-'}</span>
-                    <button
-                      type="button"
-                      className="btn-inline-edit"
-                      onClick={() => void openRankHistory(row.employeeId, row.displayName)}
-                      disabled={!row.employeeId}
-                    >
-                      Istoric rank
-                    </button>
                   </div>
                 </td>
                 <td>
@@ -610,10 +591,10 @@ export const TimesheetPage = ({ readOnly = false }: TimesheetPageProps) => {
                 <td>
                   <button
                     className="btn-history"
-                    onClick={() => void openHistory(row.employeeId, row.displayName)}
+                    onClick={() => void openHistoryModal(row.employeeId, row.displayName)}
                     disabled={!row.employeeId}
                   >
-                    Vezi evenimente
+                    Istoric
                   </button>
                 </td>
               </tr>
@@ -632,61 +613,63 @@ export const TimesheetPage = ({ readOnly = false }: TimesheetPageProps) => {
         </table>
       </div>
 
-      {historyTitle ? (
+      {historyModalTitle ? (
         <div className="modal-backdrop">
           <div className="modal large">
-            <h3>Istoric complet: {historyTitle}</h3>
-            <div className="raw-list">
-              {historyRows.map((event) => (
-                <article key={event.id} className="raw-item">
-                  <header>
-                    <strong>{event.eventType}</strong>
-                    <span>{formatDateTime(event.eventAt)}</span>
-                  </header>
-                  <p>
-                    Delta: <strong>{event.deltaSeconds ?? 0}</strong> sec | Service: {event.serviceCode ?? '-'}
-                  </p>
-                  <pre>{event.rawText}</pre>
-                </article>
-              ))}
-              {!historyRows.length && <p>Nu exista evenimente in acest ciclu pentru angajat.</p>}
-            </div>
-            <div className="modal-actions">
+            <h3>Istoric complet: {historyModalTitle}</h3>
+            <div className="modal-tabs">
               <button
-                onClick={() => {
-                  setHistoryTitle(null);
-                  setHistoryRows([]);
-                }}
+                type="button"
+                className={historyTab === 'events' ? 'active' : ''}
+                onClick={() => setHistoryTab('events')}
               >
-                Inchide
+                Evenimente
+              </button>
+              <button
+                type="button"
+                className={historyTab === 'rank' ? 'active' : ''}
+                onClick={() => setHistoryTab('rank')}
+              >
+                Istoric rank
               </button>
             </div>
-          </div>
-        </div>
-      ) : null}
-
-      {rankHistoryTitle ? (
-        <div className="modal-backdrop">
-          <div className="modal">
-            <h3>Istoric rank: {rankHistoryTitle}</h3>
             <div className="raw-list">
-              {rankHistoryRows.map((item) => (
-                <article key={item.id} className="raw-item">
-                  <header>
-                    <strong>{item.rank}</strong>
-                    <span>{formatDateTime(item.effectiveFrom)}</span>
-                  </header>
-                  <p>
-                    Sursa: <strong>{item.source ?? '-'}</strong> | Schimbat de: <strong>{item.changedBy ?? '-'}</strong>
-                  </p>
-                </article>
-              ))}
-              {!rankHistoryRows.length && <p>Nu exista istoric rank pentru acest ciclu.</p>}
+              {historyTab === 'events'
+                ? historyRows.map((event) => (
+                    <article key={event.id} className="raw-item">
+                      <header>
+                        <strong>{event.eventType}</strong>
+                        <span>{formatDateTime(event.eventAt)}</span>
+                      </header>
+                      <p>
+                        Delta: <strong>{event.deltaSeconds ?? 0}</strong> sec | Service: {event.serviceCode ?? '-'}
+                      </p>
+                      <pre>{event.rawText}</pre>
+                    </article>
+                  ))
+                : rankHistoryRows.map((item) => (
+                    <article key={item.id} className="raw-item">
+                      <header>
+                        <strong>{item.rank}</strong>
+                        <span>{formatDateTime(item.effectiveFrom)}</span>
+                      </header>
+                      <p>
+                        Sursa: <strong>{item.source ?? '-'}</strong> | Schimbat de: <strong>{item.changedBy ?? '-'}</strong>
+                      </p>
+                    </article>
+                  ))}
+              {historyTab === 'events' && !historyRows.length ? (
+                <p>Nu exista evenimente in acest ciclu pentru angajat.</p>
+              ) : null}
+              {historyTab === 'rank' && !rankHistoryRows.length ? (
+                <p>Nu exista istoric rank pentru acest ciclu.</p>
+              ) : null}
             </div>
             <div className="modal-actions">
               <button
                 onClick={() => {
-                  setRankHistoryTitle(null);
+                  setHistoryModalTitle(null);
+                  setHistoryRows([]);
                   setRankHistoryRows([]);
                 }}
               >
