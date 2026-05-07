@@ -5,6 +5,7 @@ import { prisma } from '../db/prisma';
 import { normalizeForCompare } from '../utils/normalize';
 import { recordAuditLog } from '../services/auditLogService';
 import { resolveDiscordAvatarMap } from '../services/discordAvatarService';
+import { resolveGuildEmployeeRolePresence } from '../services/guildEmployeePresenceService';
 import {
   getTimesheetSummaryFromCache,
   invalidateTimesheetSummaryCache,
@@ -77,6 +78,14 @@ timesheetRouter.get('/summary', async (req, res) => {
   });
 
   const totals = await getCycleTotals(cycleId);
+  const rolePresenceByDiscordId =
+    cycleMeta?.endedAt == null
+      ? await resolveGuildEmployeeRolePresence(
+          totals
+            .map((row) => row.discordUserId)
+            .filter((value): value is string => Boolean(value))
+        )
+      : {};
   const employeeIds = totals
     .map((row) => row.employeeId)
     .filter((value): value is number => typeof value === 'number');
@@ -100,6 +109,10 @@ timesheetRouter.get('/summary', async (req, res) => {
     cycleId,
     totals: totals.map((row) => ({
       ...row,
+      isExited:
+        cycleMeta?.endedAt == null && row.discordUserId
+          ? rolePresenceByDiscordId[row.discordUserId] === false
+          : row.isExited,
       avatarUrl: row.discordUserId ? avatarByDiscordUserId[row.discordUserId] ?? null : null,
       totalLabel: secondsToHm(row.totalSeconds),
       normalLabel: secondsToHm(row.normalSeconds),
