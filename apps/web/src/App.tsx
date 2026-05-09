@@ -76,10 +76,10 @@ const AdminLayout = ({ username, role, canViewAudit, theme, onToggleTheme, onLog
             <NavLink to="/admin/employees" className={({ isActive }) => (isActive ? 'active' : '')}>
               Angajati & CV-uri
             </NavLink>
-            <NavLink to="/admin/timesheet" className={({ isActive }) => (isActive ? 'active' : '')}>
+            <NavLink to="/" end className={({ isActive }) => (isActive ? 'active' : '')}>
               Pontaj saptamanal
             </NavLink>
-            <NavLink to="/admin/timesheet-active" className={({ isActive }) => (isActive ? 'active' : '')}>
+            <NavLink to="/timesheet-active" className={({ isActive }) => (isActive ? 'active' : '')}>
               Pontaje Active
             </NavLink>
             {role === 'ADMIN' ? (
@@ -92,9 +92,6 @@ const AdminLayout = ({ username, role, canViewAudit, theme, onToggleTheme, onLog
                 Loguri actiuni
               </NavLink>
             ) : null}
-            <NavLink to="/" className={({ isActive }) => (isActive ? 'active' : '')}>
-              Pagina publica
-            </NavLink>
           </nav>
           <div className="sidebar-footer">
             <span>
@@ -118,6 +115,7 @@ type PublicLayoutProps = {
   onToggleTheme: () => void;
   onLogout: () => Promise<void>;
   view: 'weekly' | 'active';
+  canManageWeeklyControls: boolean;
   canManageActiveControls: boolean;
 };
 
@@ -128,16 +126,18 @@ const PublicLayout = ({
   onToggleTheme,
   onLogout,
   view,
+  canManageWeeklyControls,
   canManageActiveControls
 }: PublicLayoutProps) => {
   const [showAdminAccess, setShowAdminAccess] = useState(false);
+  const canManageCurrentView = view === 'active' ? canManageActiveControls : canManageWeeklyControls;
 
   return (
     <div className="public-shell">
       <header className="public-header">
         <div>
           <h1>Pontaj Service</h1>
-          <p>Vizualizare publica read-only</p>
+          <p>{canManageCurrentView ? 'Optiuni admin active pe pagina publica' : 'Vizualizare publica read-only'}</p>
           <div className="public-nav-links">
             <NavLink to="/" end className={({ isActive }) => (isActive ? 'active' : '')}>
               Pontaj saptamanal
@@ -152,7 +152,11 @@ const PublicLayout = ({
         </button>
       </header>
       <main className="content">
-        {view === 'active' ? <ActiveTimesheetsPage canManage={canManageActiveControls} /> : <TimesheetPage readOnly />}
+        {view === 'active' ? (
+          <ActiveTimesheetsPage canManage={canManageActiveControls} />
+        ) : (
+          <TimesheetPage readOnly={!canManageWeeklyControls} />
+        )}
       </main>
       <footer className="public-footer">
         <p className="public-footer-copy">
@@ -298,6 +302,7 @@ export const App = () => {
         onToggleTheme={toggleTheme}
         onLogout={handleLogout}
         view={view}
+        canManageWeeklyControls={auth.role === 'ADMIN'}
         canManageActiveControls={auth.role === 'ADMIN'}
       />
     );
@@ -330,11 +335,8 @@ export const App = () => {
       />
       <Route path="/admin" element={renderAdminPage(<DashboardPage canManage={auth.role === 'ADMIN'} />)} />
       <Route path="/admin/employees" element={renderAdminPage(<EmployeesPage readOnly={auth.role !== 'ADMIN'} />)} />
-      <Route path="/admin/timesheet" element={renderAdminPage(<TimesheetPage readOnly={auth.role !== 'ADMIN'} />)} />
-      <Route
-        path="/admin/timesheet-active"
-        element={renderAdminPage(<ActiveTimesheetsPage canManage={auth.role === 'ADMIN'} />)}
-      />
+      <Route path="/admin/timesheet" element={<Navigate to="/" replace />} />
+      <Route path="/admin/timesheet-active" element={<Navigate to="/timesheet-active" replace />} />
       <Route
         path="/admin/reactions"
         element={renderAdminPage(auth.role === 'ADMIN' ? <ReactionTrackingPage /> : <Navigate to="/admin" replace />)}
@@ -345,7 +347,7 @@ export const App = () => {
       />
       <Route path="/dashboard" element={<Navigate to="/admin" replace />} />
       <Route path="/employees" element={<Navigate to="/admin/employees" replace />} />
-      <Route path="/timesheet" element={<Navigate to="/admin/timesheet" replace />} />
+      <Route path="/timesheet" element={<Navigate to="/" replace />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
