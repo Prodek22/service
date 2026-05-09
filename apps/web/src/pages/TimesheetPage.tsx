@@ -643,6 +643,7 @@ export const TimesheetPage = ({ readOnly = false }: TimesheetPageProps) => {
         <table className="timesheet-table">
           <thead>
             <tr>
+              <th>#</th>
               <th>ID</th>
               <th>Nickname</th>
               <th>Rank</th>
@@ -666,7 +667,7 @@ export const TimesheetPage = ({ readOnly = false }: TimesheetPageProps) => {
                 <Fragment key={row.key}>
                   {showExitedSeparator ? (
                     <tr className="timesheet-separator-row">
-                      <td colSpan={12}>Angajati iesiti din service</td>
+                      <td colSpan={13}>Angajati iesiti din service</td>
                     </tr>
                   ) : null}
                   <tr
@@ -678,6 +679,7 @@ export const TimesheetPage = ({ readOnly = false }: TimesheetPageProps) => {
                       .filter(Boolean)
                       .join(' ')}
                   >
+                    <td>{index + 1}</td>
                     <td>{row.employeeCode ?? '-'}</td>
                     <td>
                       {readOnly ? (
@@ -809,7 +811,7 @@ export const TimesheetPage = ({ readOnly = false }: TimesheetPageProps) => {
             })}
             {!visibleRows.length ? (
               <tr>
-                <td colSpan={12}>
+                <td colSpan={13}>
                   {isSummaryCalculating
                     ? 'Se calculeaza rezultatele pentru acest ciclu...'
                     : inactiveOnly
