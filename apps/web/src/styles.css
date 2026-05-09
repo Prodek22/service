@@ -125,12 +125,17 @@ a {
   min-height: 100vh;
   display: grid;
   grid-template-columns: 250px 1fr;
+  transition: grid-template-columns 0.18s ease;
+}
+
+.layout.sidebar-collapsed {
+  grid-template-columns: 1fr;
 }
 
 .sidebar {
   background: linear-gradient(180deg, #5c3822, #402515);
   color: #fff8ef;
-  padding: 20px;
+  padding: 70px 20px 20px;
 }
 
 html[data-theme='dark'] .sidebar {
@@ -143,6 +148,45 @@ html[data-theme='dark'] .sidebar {
 .sidebar h1 {
   margin-top: 0;
   font-size: 1.3rem;
+}
+
+.sidebar-toggle {
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  z-index: 90;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid rgba(255, 235, 218, 0.35);
+  border-radius: 999px;
+  padding: 8px 12px;
+  background: rgba(92, 56, 34, 0.86);
+  color: #fff8ef;
+  box-shadow: 0 10px 24px rgba(29, 18, 10, 0.24);
+  backdrop-filter: blur(10px);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
+}
+
+.sidebar-toggle:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 28px rgba(29, 18, 10, 0.3);
+}
+
+.sidebar-toggle-icon {
+  font-size: 0.86rem;
+  line-height: 1;
+}
+
+html[data-theme='dark'] .sidebar-toggle {
+  border-color: rgba(255, 195, 120, 0.44);
+  background: linear-gradient(135deg, rgba(255, 155, 34, 0.94), rgba(33, 72, 151, 0.92));
+  color: #fffaf1;
+  box-shadow: 0 12px 28px rgba(5, 12, 28, 0.34);
 }
 
 .sidebar nav {
@@ -218,6 +262,7 @@ html[data-theme='dark'] .sidebar a:hover {
 
 .content {
   padding: 24px;
+  min-width: 0;
 }
 
 .public-shell {
@@ -1529,6 +1574,7 @@ html[data-theme='dark'] .login-spotlight-title {
     position: sticky;
     top: 0;
     z-index: 20;
+    padding-top: 64px;
   }
 
   .sidebar nav {

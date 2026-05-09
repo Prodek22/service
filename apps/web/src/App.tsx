@@ -38,49 +38,74 @@ type AdminLayoutProps = {
 };
 
 const AdminLayout = ({ username, role, canViewAudit, theme, onToggleTheme, onLogout, children }: AdminLayoutProps) => {
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
+    if (typeof window === 'undefined') {
+      return false;
+    }
+
+    return window.localStorage.getItem('service-sidebar-collapsed') === 'true';
+  });
+
+  useEffect(() => {
+    window.localStorage.setItem('service-sidebar-collapsed', String(isSidebarCollapsed));
+  }, [isSidebarCollapsed]);
+
   return (
-    <div className="layout">
-      <aside className="sidebar">
-        <h1>Service Admin</h1>
-        <button type="button" className="theme-toggle" onClick={onToggleTheme}>
-          {theme === 'dark' ? 'Tema light' : 'Tema dark'}
-        </button>
-        <nav>
-          <NavLink to="/admin" end className={({ isActive }) => (isActive ? 'active' : '')}>
-            Dashboard
-          </NavLink>
-          <NavLink to="/admin/employees" className={({ isActive }) => (isActive ? 'active' : '')}>
-            Angajati & CV-uri
-          </NavLink>
-          <NavLink to="/admin/timesheet" className={({ isActive }) => (isActive ? 'active' : '')}>
-            Pontaj saptamanal
-          </NavLink>
-          <NavLink to="/admin/timesheet-active" className={({ isActive }) => (isActive ? 'active' : '')}>
-            Pontaje Active
-          </NavLink>
-          {role === 'ADMIN' ? (
-            <NavLink to="/admin/reactions" className={({ isActive }) => (isActive ? 'active' : '')}>
-              Reacturi mesaje
-            </NavLink>
-          ) : null}
-          {canViewAudit ? (
-            <NavLink to="/admin/audit" className={({ isActive }) => (isActive ? 'active' : '')}>
-              Loguri actiuni
-            </NavLink>
-          ) : null}
-          <NavLink to="/" className={({ isActive }) => (isActive ? 'active' : '')}>
-            Pagina publica
-          </NavLink>
-        </nav>
-        <div className="sidebar-footer">
-          <span>
-            Logat ca: {username} ({role})
-          </span>
-          <button type="button" onClick={() => void onLogout()}>
-            Logout
+    <div className={`layout ${isSidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
+      <button
+        type="button"
+        className="sidebar-toggle"
+        aria-expanded={!isSidebarCollapsed}
+        onClick={() => setIsSidebarCollapsed((current) => !current)}
+      >
+        <span className="sidebar-toggle-icon" aria-hidden="true">
+          {isSidebarCollapsed ? '>>' : '<<'}
+        </span>
+        {isSidebarCollapsed ? 'Arata meniu' : 'Ascunde meniu'}
+      </button>
+      {!isSidebarCollapsed ? (
+        <aside className="sidebar">
+          <h1>Service Admin</h1>
+          <button type="button" className="theme-toggle" onClick={onToggleTheme}>
+            {theme === 'dark' ? 'Tema light' : 'Tema dark'}
           </button>
-        </div>
-      </aside>
+          <nav>
+            <NavLink to="/admin" end className={({ isActive }) => (isActive ? 'active' : '')}>
+              Dashboard
+            </NavLink>
+            <NavLink to="/admin/employees" className={({ isActive }) => (isActive ? 'active' : '')}>
+              Angajati & CV-uri
+            </NavLink>
+            <NavLink to="/admin/timesheet" className={({ isActive }) => (isActive ? 'active' : '')}>
+              Pontaj saptamanal
+            </NavLink>
+            <NavLink to="/admin/timesheet-active" className={({ isActive }) => (isActive ? 'active' : '')}>
+              Pontaje Active
+            </NavLink>
+            {role === 'ADMIN' ? (
+              <NavLink to="/admin/reactions" className={({ isActive }) => (isActive ? 'active' : '')}>
+                Reacturi mesaje
+              </NavLink>
+            ) : null}
+            {canViewAudit ? (
+              <NavLink to="/admin/audit" className={({ isActive }) => (isActive ? 'active' : '')}>
+                Loguri actiuni
+              </NavLink>
+            ) : null}
+            <NavLink to="/" className={({ isActive }) => (isActive ? 'active' : '')}>
+              Pagina publica
+            </NavLink>
+          </nav>
+          <div className="sidebar-footer">
+            <span>
+              Logat ca: {username} ({role})
+            </span>
+            <button type="button" onClick={() => void onLogout()}>
+              Logout
+            </button>
+          </div>
+        </aside>
+      ) : null}
       <main className="content">{children}</main>
     </div>
   );
