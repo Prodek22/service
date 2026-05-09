@@ -60,11 +60,6 @@ export type DashboardResponse = {
     lastUpdatedAt: string | null;
     cacheEntries: number;
   };
-  topEmployees: Array<{
-    displayName: string;
-    totalSeconds: number;
-    totalLabel: string;
-  }>;
 };
 
 export type WeekCycle = {

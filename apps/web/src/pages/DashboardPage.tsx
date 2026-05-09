@@ -275,33 +275,6 @@ export const DashboardPage = ({ canManage = false }: DashboardPageProps) => {
           <p>Acest cont este read-only: poate vedea dashboard-ul, fara actiuni de modificare.</p>
         </div>
       )}
-
-      <div className="card">
-        <h3>Top angajati dupa timp lucrat</h3>
-        <table>
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Angajat</th>
-              <th>Total</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data?.topEmployees.map((employee, index) => (
-              <tr key={`${employee.displayName}-${index}`}>
-                <td>{index + 1}</td>
-                <td>{employee.displayName}</td>
-                <td>{employee.totalLabel}</td>
-              </tr>
-            ))}
-            {!data?.topEmployees?.length ? (
-              <tr>
-                <td colSpan={3}>Momentan nu exista date de pontaj in ciclul curent.</td>
-              </tr>
-            ) : null}
-          </tbody>
-        </table>
-      </div>
     </section>
   );
 };

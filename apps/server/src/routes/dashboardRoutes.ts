@@ -34,28 +34,16 @@ dashboardRouter.get('/', async (_req, res) => {
   ]);
 
   const currentCycle = latestCycles.find((cycle) => cycle.endedAt === null) ?? latestCycles[0] ?? null;
-  const previousCycle = currentCycle
-    ? latestCycles.find((cycle) => cycle.startedAt.getTime() < currentCycle.startedAt.getTime()) ?? null
-    : null;
-
-  const [currentTotals, previousTotals] = await Promise.all([
-    currentCycle ? getCycleTotals(currentCycle.id) : Promise.resolve([]),
-    previousCycle ? getCycleTotals(previousCycle.id) : Promise.resolve([])
-  ]);
+  const currentTotals = currentCycle ? await getCycleTotals(currentCycle.id) : [];
 
   const totalWeekSeconds = currentTotals.reduce((sum, entry) => sum + entry.totalSeconds, 0);
 
   res.json({
     currentCycleId: currentCycle?.id ?? null,
-    topCycleId: previousCycle?.id ?? null,
     totalActiveEmployees: activeEmployees,
     totalIncompleteCvs: incompleteCvs,
     totalWeekSeconds,
     totalWeekLabel: secondsToHm(totalWeekSeconds),
-    topEmployees: previousTotals.slice(0, 5).map((entry) => ({
-      ...entry,
-      totalLabel: secondsToHm(entry.totalSeconds)
-    })),
     timesheetPerformance: {
       ...getTimesheetSummaryMetrics(),
       cacheEntries: getTimesheetSummaryCacheStats().entries

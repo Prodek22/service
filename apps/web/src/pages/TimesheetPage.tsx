@@ -33,6 +33,7 @@ export const TimesheetPage = ({ readOnly = false }: TimesheetPageProps) => {
   const [summary, setSummary] = useState<TimesheetSummaryResponse | null>(null);
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [inactiveOnly, setInactiveOnly] = useState(false);
+  const [showExitedEmployees, setShowExitedEmployees] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<SortBy>('total');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
@@ -161,7 +162,7 @@ export const TimesheetPage = ({ readOnly = false }: TimesheetPageProps) => {
   }, [selectedCycleId]);
 
   const visibleRows = useMemo(() => {
-    const rows = summary?.totals ?? [];
+    const rows = (summary?.totals ?? []).filter((row) => showExitedEmployees || !row.isExited);
     const filtered = inactiveOnly ? rows.filter((row) => row.inactiveLast3Weeks) : rows;
     const normalizedQuery = normalizeSearch(searchQuery);
 
@@ -240,11 +241,26 @@ export const TimesheetPage = ({ readOnly = false }: TimesheetPageProps) => {
     });
 
     return sorted;
-  }, [summary, inactiveOnly, searchQuery, sortBy, sortDir]);
+  }, [summary, inactiveOnly, searchQuery, sortBy, sortDir, showExitedEmployees]);
 
   const cycleSalaryTotal = useMemo(
     () => (summary?.totals ?? []).reduce((sum, row) => sum + row.salaryTotal, 0),
     [summary]
+  );
+  const exitedEmployeesCount = useMemo(
+    () => (summary?.totals ?? []).filter((row) => row.isExited).length,
+    [summary]
+  );
+  const weeklyTopEmployees = useMemo(
+    () =>
+      (summary?.totals ?? [])
+        .filter((row) => row.totalSeconds > 0 && (showExitedEmployees || !row.isExited))
+        .sort((a, b) => {
+          const delta = b.totalSeconds - a.totalSeconds;
+          return delta === 0 ? a.displayName.localeCompare(b.displayName, 'ro') : delta;
+        })
+        .slice(0, 5),
+    [summary, showExitedEmployees]
   );
   const snapshotStatus = summary?.snapshot?.status ?? null;
   const summaryRowsCount = summary?.totals.length ?? 0;
@@ -567,6 +583,15 @@ export const TimesheetPage = ({ readOnly = false }: TimesheetPageProps) => {
           />
           Doar inactivi (0 in ultimele 3)
         </label>
+        <label>
+          <input
+            type="checkbox"
+            checked={showExitedEmployees}
+            disabled={exitedEmployeesCount === 0}
+            onChange={(event) => setShowExitedEmployees(event.target.checked)}
+          />
+          Arata iesiti din service ({exitedEmployeesCount})
+        </label>
       </div>
 
       <div className="card table-wrapper timesheet-table-wrap">
@@ -601,7 +626,7 @@ export const TimesheetPage = ({ readOnly = false }: TimesheetPageProps) => {
           <tbody>
             {visibleRows.map((row, index) => {
               const upState = getUpVisualState(row);
-              const showExitedSeparator = row.isExited && index > 0 && !visibleRows[index - 1].isExited;
+              const showExitedSeparator = row.isExited && (index === 0 || !visibleRows[index - 1].isExited);
 
               return (
                 <Fragment key={row.key}>
@@ -757,6 +782,40 @@ export const TimesheetPage = ({ readOnly = false }: TimesheetPageProps) => {
                     ? 'Nu exista angajati marcati ca inactivi pentru acest ciclu.'
                     : 'Nu exista pontaje in ciclul selectat.'}
                 </td>
+              </tr>
+            ) : null}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="card table-wrapper timesheet-top-card">
+        <h3>Top angajati dupa timp lucrat</h3>
+        <table className="timesheet-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Angajat</th>
+              <th>Rank</th>
+              <th>Total timp</th>
+              <th>Bonus top</th>
+            </tr>
+          </thead>
+          <tbody>
+            {weeklyTopEmployees.map((employee, index) => (
+              <tr key={employee.key}>
+                <td>{index + 1}</td>
+                <td>
+                  {employee.displayName}
+                  {employee.isExited ? <span className="badge muted">Iesit</span> : null}
+                </td>
+                <td>{employee.rank ?? '-'}</td>
+                <td>{formatMinutes(employee.totalSeconds)}</td>
+                <td>{formatCurrency(employee.topBonus)}</td>
+              </tr>
+            ))}
+            {!weeklyTopEmployees.length ? (
+              <tr>
+                <td colSpan={5}>Nu exista pontaje cu timp in ciclul selectat.</td>
               </tr>
             ) : null}
           </tbody>

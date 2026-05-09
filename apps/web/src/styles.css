@@ -846,6 +846,14 @@ html[data-theme='dark'] .timesheet-separator-row td {
   box-shadow: none;
 }
 
+.timesheet-top-card {
+  margin-top: 14px;
+}
+
+.timesheet-top-card h3 {
+  margin-top: 0;
+}
+
 .cycle-select {
   min-width: min(100%, 480px);
   border: 1px solid var(--cycle-border) !important;
