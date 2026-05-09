@@ -74,13 +74,10 @@ const AdminLayout = ({ username, role, canViewAudit, theme, onToggleTheme, onLog
               Dashboard
             </NavLink>
             <NavLink to="/admin/employees" className={({ isActive }) => (isActive ? 'active' : '')}>
-              Angajati & CV-uri
+              Angajati
             </NavLink>
             <NavLink to="/" end className={({ isActive }) => (isActive ? 'active' : '')}>
               Pontaj saptamanal
-            </NavLink>
-            <NavLink to="/timesheet-active" className={({ isActive }) => (isActive ? 'active' : '')}>
-              Pontaje Active
             </NavLink>
             {role === 'ADMIN' ? (
               <NavLink to="/admin/reactions" className={({ isActive }) => (isActive ? 'active' : '')}>
@@ -141,9 +138,6 @@ const PublicLayout = ({
           <div className="public-nav-links">
             <NavLink to="/" end className={({ isActive }) => (isActive ? 'active' : '')}>
               Pontaj saptamanal
-            </NavLink>
-            <NavLink to="/timesheet-active" className={({ isActive }) => (isActive ? 'active' : '')}>
-              Pontaje active
             </NavLink>
           </div>
         </div>

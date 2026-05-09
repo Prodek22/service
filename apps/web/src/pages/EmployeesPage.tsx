@@ -145,7 +145,7 @@ export const EmployeesPage = ({ readOnly = false }: EmployeesPageProps) => {
 
   return (
     <section>
-      <h2>Angajati / CV-uri</h2>
+      <h2>Angajati</h2>
 
       <div className="rank-tabs">
         <button
