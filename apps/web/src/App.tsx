@@ -27,6 +27,55 @@ const LoadingCard = () => (
   </div>
 );
 
+type SiteFooterProps = {
+  isAuthenticated?: boolean;
+  username?: string | null;
+  onLogout?: () => Promise<void>;
+  showAdminAccess?: boolean;
+};
+
+const SiteFooter = ({ isAuthenticated = false, username = null, onLogout, showAdminAccess = false }: SiteFooterProps) => {
+  const [showAdminControls, setShowAdminControls] = useState(false);
+
+  return (
+    <footer className="public-footer">
+      <p className="public-footer-copy">
+        Copyright © {new Date().getFullYear()}{' '}
+        <a className="brand-link" href="https://prodek.ink" target="_blank" rel="noreferrer">
+          <span className="brand-word">Prodek.ink</span>
+        </a>
+        . All rights{' '}
+        <span
+          className="reserved-trigger"
+          onClick={showAdminAccess ? () => setShowAdminControls((current) => !current) : undefined}
+        >
+          reserved
+        </span>
+        .
+      </p>
+      {showAdminAccess && showAdminControls ? (
+        <div className="public-footer-admin">
+          {isAuthenticated ? (
+            <>
+              <span>Conectat: {username ?? 'admin'}</span>
+              <Link to="/admin">Panou admin</Link>
+              {onLogout ? (
+                <button type="button" onClick={() => void onLogout()}>
+                  Logout
+                </button>
+              ) : null}
+            </>
+          ) : (
+            <Link to="/login" className="footer-admin-link">
+              admin access
+            </Link>
+          )}
+        </div>
+      ) : null}
+    </footer>
+  );
+};
+
 type AdminLayoutProps = {
   username: string;
   role: AdminRole;
@@ -100,7 +149,10 @@ const AdminLayout = ({ username, role, canViewAudit, theme, onToggleTheme, onLog
           </div>
         </aside>
       ) : null}
-      <main className="content">{children}</main>
+      <div className="layout-main">
+        <main className="content">{children}</main>
+        <SiteFooter />
+      </div>
     </div>
   );
 };
@@ -114,6 +166,7 @@ type PublicLayoutProps = {
   view: 'weekly' | 'active';
   canManageWeeklyControls: boolean;
   canManageActiveControls: boolean;
+  showFooter?: boolean;
 };
 
 const PublicLayout = ({
@@ -124,13 +177,13 @@ const PublicLayout = ({
   onLogout,
   view,
   canManageWeeklyControls,
-  canManageActiveControls
+  canManageActiveControls,
+  showFooter = true
 }: PublicLayoutProps) => {
-  const [showAdminAccess, setShowAdminAccess] = useState(false);
   const canManageCurrentView = view === 'active' ? canManageActiveControls : canManageWeeklyControls;
 
   return (
-    <div className="public-shell">
+    <div className={`public-shell ${showFooter ? '' : 'embedded'}`.trim()}>
       <header className="public-header">
         <div>
           <h1>Pontaj Service</h1>
@@ -155,36 +208,14 @@ const PublicLayout = ({
           <TimesheetPage readOnly={!canManageWeeklyControls} />
         )}
       </main>
-      <footer className="public-footer">
-        <p className="public-footer-copy">
-          Copyright © {new Date().getFullYear()}{' '}
-          <a className="brand-link" href="https://prodek.ink" target="_blank" rel="noreferrer">
-            <span className="brand-word">Prodek.ink</span>
-          </a>
-          . All rights{' '}
-          <span className="reserved-trigger" onClick={() => setShowAdminAccess((current) => !current)}>
-            reserved
-          </span>
-          .
-        </p>
-        {showAdminAccess ? (
-          <div className="public-footer-admin">
-            {isAuthenticated ? (
-              <>
-                <span>Conectat: {username ?? 'admin'}</span>
-                <Link to="/admin">Panou admin</Link>
-                <button type="button" onClick={() => void onLogout()}>
-                  Logout
-                </button>
-              </>
-            ) : (
-              <Link to="/login" className="footer-admin-link">
-                admin access
-              </Link>
-            )}
-          </div>
-        ) : null}
-      </footer>
+      {showFooter ? (
+        <SiteFooter
+          isAuthenticated={isAuthenticated}
+          username={username}
+          onLogout={onLogout}
+          showAdminAccess
+        />
+      ) : null}
     </div>
   );
 };
@@ -301,6 +332,7 @@ export const App = () => {
         view={view}
         canManageWeeklyControls={auth.role === 'ADMIN'}
         canManageActiveControls={auth.role === 'ADMIN'}
+        showFooter={!auth.checked || !auth.authenticated || !auth.role}
       />
     );
 
@@ -328,7 +360,16 @@ export const App = () => {
       <Route path="/timesheet-active" element={renderPublicPage('active')} />
       <Route
         path="/login"
-        element={auth.authenticated ? <Navigate to="/admin" replace /> : <LoginPage loading={loginLoading} onLogin={handleLogin} />}
+        element={
+          auth.authenticated ? (
+            <Navigate to="/admin" replace />
+          ) : (
+            <div className="auth-page">
+              <LoginPage loading={loginLoading} onLogin={handleLogin} />
+              <SiteFooter showAdminAccess />
+            </div>
+          )
+        }
       />
       <Route path="/admin" element={renderAdminPage(<DashboardPage canManage={auth.role === 'ADMIN'} />)} />
       <Route path="/admin/employees" element={renderAdminPage(<EmployeesPage readOnly={auth.role !== 'ADMIN'} />)} />

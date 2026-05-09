@@ -132,6 +132,13 @@ a {
   grid-template-columns: 1fr;
 }
 
+.layout-main {
+  min-width: 0;
+  min-height: 100vh;
+  display: grid;
+  grid-template-rows: 1fr auto;
+}
+
 .sidebar {
   background: linear-gradient(180deg, #5c3822, #402515);
   color: #fff8ef;
@@ -271,6 +278,10 @@ html[data-theme='dark'] .sidebar a:hover {
   grid-template-rows: auto 1fr auto;
 }
 
+.public-shell.embedded {
+  min-height: auto;
+}
+
 .public-header {
   display: flex;
   flex-wrap: wrap;
@@ -386,6 +397,16 @@ html[data-theme='dark'] .public-footer-admin button {
 
 .public-footer-admin button {
   cursor: pointer;
+}
+
+.auth-page {
+  min-height: 100vh;
+  display: grid;
+  grid-template-rows: 1fr auto;
+}
+
+.auth-page .auth-shell {
+  min-height: auto;
 }
 
 .reserved-trigger {
