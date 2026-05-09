@@ -1,11 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
-import { apiDelete, apiGet, apiPost } from '../api/client';
+import { apiGet, apiPost } from '../api/client';
 import {
   DashboardResponse,
   MaintenanceJobStatus,
-  MaintenanceStartResponse,
-  ReactionTrackedMessage,
-  ReactionTrackedMessagesResponse
+  MaintenanceStartResponse
 } from '../types';
 
 type DashboardPageProps = {
@@ -19,10 +17,6 @@ export const DashboardPage = ({ canManage = false }: DashboardPageProps) => {
   const [maintenanceBusy, setMaintenanceBusy] = useState(false);
   const [jobStatus, setJobStatus] = useState<MaintenanceJobStatus | null>(null);
   const [displayedProgress, setDisplayedProgress] = useState(0);
-  const [reactionTrackInput, setReactionTrackInput] = useState('');
-  const [reactionTrackItems, setReactionTrackItems] = useState<ReactionTrackedMessage[]>([]);
-  const [reactionTrackBusy, setReactionTrackBusy] = useState(false);
-  const [reactionTrackMessage, setReactionTrackMessage] = useState<string | null>(null);
   const pollTimerRef = useRef<number | null>(null);
 
   const stopPolling = () => {
@@ -38,19 +32,6 @@ export const DashboardPage = ({ canManage = false }: DashboardPageProps) => {
     void apiGet<DashboardResponse>('/dashboard')
       .then(setData)
       .catch((loadError) => setError(loadError instanceof Error ? loadError.message : 'Eroare dashboard'));
-  };
-
-  const loadReactionTrackItems = async () => {
-    if (!canManage) {
-      return;
-    }
-
-    try {
-      const response = await apiGet<ReactionTrackedMessagesResponse>('/maintenance/reaction-track-messages');
-      setReactionTrackItems(response.items);
-    } catch {
-      // keep dashboard usable even if this call fails
-    }
   };
 
   const pollJobStatus = async () => {
@@ -109,7 +90,6 @@ export const DashboardPage = ({ canManage = false }: DashboardPageProps) => {
 
   useEffect(() => {
     void loadDashboard();
-    void loadReactionTrackItems();
 
     if (canManage) {
       void pollJobStatus();
@@ -187,47 +167,6 @@ export const DashboardPage = ({ canManage = false }: DashboardPageProps) => {
     }
 
     await startBackgroundJob('/maintenance/rebuild-all', {}, 'Reset complet + reimport pornit.');
-  };
-
-  const addReactionTrackMessage = async () => {
-    const messageId = reactionTrackInput.trim();
-    if (!/^\d{8,30}$/.test(messageId)) {
-      setReactionTrackMessage('Message ID invalid.');
-      return;
-    }
-
-    setReactionTrackBusy(true);
-    setReactionTrackMessage(null);
-
-    try {
-      const response = await apiPost<{ ok: boolean; items: ReactionTrackedMessage[] }>('/maintenance/reaction-track-messages', {
-        messageId
-      });
-      setReactionTrackItems(response.items);
-      setReactionTrackInput('');
-      setReactionTrackMessage('Message ID salvat pentru monitorizare reactii.');
-    } catch (saveError) {
-      setReactionTrackMessage(saveError instanceof Error ? saveError.message : 'Nu am putut salva message ID.');
-    } finally {
-      setReactionTrackBusy(false);
-    }
-  };
-
-  const removeReactionTrackMessage = async (messageId: string) => {
-    setReactionTrackBusy(true);
-    setReactionTrackMessage(null);
-
-    try {
-      const response = await apiDelete<{ ok: boolean; deleted: number; items: ReactionTrackedMessage[] }>(
-        `/maintenance/reaction-track-messages/${messageId}`
-      );
-      setReactionTrackItems(response.items);
-      setReactionTrackMessage('Message ID scos din monitorizare.');
-    } catch (deleteError) {
-      setReactionTrackMessage(deleteError instanceof Error ? deleteError.message : 'Nu am putut sterge message ID.');
-    } finally {
-      setReactionTrackBusy(false);
-    }
   };
 
   return (
@@ -329,57 +268,6 @@ export const DashboardPage = ({ canManage = false }: DashboardPageProps) => {
             {maintenanceMessage ? <p>{maintenanceMessage}</p> : null}
           </div>
 
-          <div className="card">
-            <h3>Monitorizare Reactii Discord</h3>
-            <div className="filters">
-              <input
-                value={reactionTrackInput}
-                onChange={(event) => setReactionTrackInput(event.target.value)}
-                placeholder="Discord message ID"
-                inputMode="numeric"
-              />
-              <button type="button" onClick={() => void addReactionTrackMessage()} disabled={reactionTrackBusy}>
-                Adauga mesaj
-              </button>
-            </div>
-            <div className="table-wrapper">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Message ID</th>
-                    <th>Adaugat de</th>
-                    <th>Creat la</th>
-                    <th>Actiuni</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {reactionTrackItems.map((item) => (
-                    <tr key={item.id}>
-                      <td>{item.messageId}</td>
-                      <td>{item.createdBy ?? '-'}</td>
-                      <td>{new Date(item.createdAt).toLocaleString('ro-RO')}</td>
-                      <td>
-                        <button
-                          type="button"
-                          className="btn-pill btn-pill-danger"
-                          onClick={() => void removeReactionTrackMessage(item.messageId)}
-                          disabled={reactionTrackBusy}
-                        >
-                          Scoate
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                  {!reactionTrackItems.length ? (
-                    <tr>
-                      <td colSpan={4}>Nu exista message ID-uri configurate pentru monitorizare reactii.</td>
-                    </tr>
-                  ) : null}
-                </tbody>
-              </table>
-            </div>
-            {reactionTrackMessage ? <p>{reactionTrackMessage}</p> : null}
-          </div>
         </>
       ) : (
         <div className="card">
