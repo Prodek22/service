@@ -594,6 +594,40 @@ export const TimesheetPage = ({ readOnly = false }: TimesheetPageProps) => {
         </label>
       </div>
 
+      <div className="card table-wrapper timesheet-top-card">
+        <h3>Top angajati dupa timp lucrat</h3>
+        <table className="timesheet-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Angajat</th>
+              <th>Rank</th>
+              <th>Total timp</th>
+              <th>Bonus top</th>
+            </tr>
+          </thead>
+          <tbody>
+            {weeklyTopEmployees.map((employee, index) => (
+              <tr key={employee.key}>
+                <td>{index + 1}</td>
+                <td>
+                  {employee.displayName}
+                  {employee.isExited ? <span className="badge muted">Iesit</span> : null}
+                </td>
+                <td>{employee.rank ?? '-'}</td>
+                <td>{formatMinutes(employee.totalSeconds)}</td>
+                <td>{formatCurrency(employee.topBonus)}</td>
+              </tr>
+            ))}
+            {!weeklyTopEmployees.length ? (
+              <tr>
+                <td colSpan={5}>Nu exista pontaje cu timp in ciclul selectat.</td>
+              </tr>
+            ) : null}
+          </tbody>
+        </table>
+      </div>
+
       <div className="card table-wrapper timesheet-table-wrap">
         {isSummaryCalculating ? (
           <div className="timesheet-loading-banner" role="status" aria-live="polite">
@@ -782,40 +816,6 @@ export const TimesheetPage = ({ readOnly = false }: TimesheetPageProps) => {
                     ? 'Nu exista angajati marcati ca inactivi pentru acest ciclu.'
                     : 'Nu exista pontaje in ciclul selectat.'}
                 </td>
-              </tr>
-            ) : null}
-          </tbody>
-        </table>
-      </div>
-
-      <div className="card table-wrapper timesheet-top-card">
-        <h3>Top angajati dupa timp lucrat</h3>
-        <table className="timesheet-table">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Angajat</th>
-              <th>Rank</th>
-              <th>Total timp</th>
-              <th>Bonus top</th>
-            </tr>
-          </thead>
-          <tbody>
-            {weeklyTopEmployees.map((employee, index) => (
-              <tr key={employee.key}>
-                <td>{index + 1}</td>
-                <td>
-                  {employee.displayName}
-                  {employee.isExited ? <span className="badge muted">Iesit</span> : null}
-                </td>
-                <td>{employee.rank ?? '-'}</td>
-                <td>{formatMinutes(employee.totalSeconds)}</td>
-                <td>{formatCurrency(employee.topBonus)}</td>
-              </tr>
-            ))}
-            {!weeklyTopEmployees.length ? (
-              <tr>
-                <td colSpan={5}>Nu exista pontaje cu timp in ciclul selectat.</td>
               </tr>
             ) : null}
           </tbody>
