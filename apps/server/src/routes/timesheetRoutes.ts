@@ -4,7 +4,7 @@ import { requireAdmin } from '../auth/middleware';
 import { prisma } from '../db/prisma';
 import { normalizeForCompare } from '../utils/normalize';
 import { recordAuditLog } from '../services/auditLogService';
-import { resolveDiscordAvatarMap } from '../services/discordAvatarService';
+import { resolveDiscordAvatarMap, resolveDiscordDisplayNameMap } from '../services/discordAvatarService';
 import { resolveGuildEmployeeRolePresence } from '../services/guildEmployeePresenceService';
 import {
   getTimesheetSummaryFromCache,
@@ -326,12 +326,36 @@ timesheetRouter.get('/active', async (req, res) => {
   const avatarByDiscordUserId = await resolveDiscordAvatarMap(
     items.map((item) => item.discordUserId).filter((value): value is string => Boolean(value))
   );
+  const displayNameByDiscordUserId = await resolveDiscordDisplayNameMap(
+    items.map((item) => item.discordUserId).filter((value): value is string => Boolean(value))
+  );
+
+  const isIdLikeLabel = (value: string): boolean => {
+    const trimmed = value.trim();
+    if (!trimmed) {
+      return true;
+    }
+
+    if (/^@?\d{5,}$/.test(trimmed)) {
+      return true;
+    }
+
+    if (/^<@!?\d{5,}>$/.test(trimmed)) {
+      return true;
+    }
+
+    return false;
+  };
 
   res.json({
     hoursWindow: hours,
     since: since.toISOString(),
     items: items.map((item) => ({
       ...item,
+      displayName:
+        item.discordUserId && isIdLikeLabel(item.displayName)
+          ? displayNameByDiscordUserId[item.discordUserId] ?? item.displayName
+          : item.displayName,
       avatarUrl: item.discordUserId ? avatarByDiscordUserId[item.discordUserId] ?? null : null
     }))
   });
