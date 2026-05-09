@@ -6,6 +6,7 @@ import {
   getTimesheetSummaryFromCache,
   setTimesheetSummaryCache
 } from './timesheetSummaryCache';
+import { recordTimesheetSummaryMetric } from './timesheetPerformanceMetrics';
 import { getCycleTotals, getWeekCycles } from './timesheetService';
 import { secondsToHm } from '../utils/time';
 
@@ -15,6 +16,7 @@ export const SUMMARY_CACHE_TTL_CLOSED_MS = 24 * 60 * 60 * 1000;
 type BuildSummaryOptions = {
   useCache?: boolean;
   includeLivePresenceForOpenCycle?: boolean;
+  recordMetrics?: boolean;
 };
 
 export const buildTimesheetSummaryPayload = async (
@@ -23,10 +25,18 @@ export const buildTimesheetSummaryPayload = async (
 ): Promise<Record<string, unknown> | null> => {
   const useCache = options?.useCache ?? true;
   const includeLivePresenceForOpenCycle = options?.includeLivePresenceForOpenCycle ?? true;
+  const shouldRecordMetrics = options?.recordMetrics ?? true;
+  const startedAtMs = Date.now();
 
   if (useCache) {
     const cached = getTimesheetSummaryFromCache(cycleId);
     if (cached) {
+      if (shouldRecordMetrics) {
+        recordTimesheetSummaryMetric({
+          cacheHit: true,
+          durationMs: Date.now() - startedAtMs
+        });
+      }
       return cached;
     }
   }
@@ -37,6 +47,12 @@ export const buildTimesheetSummaryPayload = async (
   });
 
   if (!cycleMeta) {
+    if (shouldRecordMetrics) {
+      recordTimesheetSummaryMetric({
+        cacheHit: false,
+        durationMs: Date.now() - startedAtMs
+      });
+    }
     return null;
   }
 
@@ -107,6 +123,13 @@ export const buildTimesheetSummaryPayload = async (
     cycleMeta.endedAt ? SUMMARY_CACHE_TTL_CLOSED_MS : SUMMARY_CACHE_TTL_OPEN_MS
   );
 
+  if (shouldRecordMetrics) {
+    recordTimesheetSummaryMetric({
+      cacheHit: false,
+      durationMs: Date.now() - startedAtMs
+    });
+  }
+
   return payload as unknown as Record<string, unknown>;
 };
 
@@ -128,7 +151,8 @@ export const warmTimesheetSummaryCache = async (
     try {
       await buildTimesheetSummaryPayload(cycle.id, {
         useCache: false,
-        includeLivePresenceForOpenCycle: false
+        includeLivePresenceForOpenCycle: false,
+        recordMetrics: false
       });
       warmed += 1;
     } catch {

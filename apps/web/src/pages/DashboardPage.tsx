@@ -256,6 +256,34 @@ export const DashboardPage = ({ canManage = false }: DashboardPageProps) => {
       {canManage ? (
         <>
           <div className="card">
+            <h3>Performanta pontaje</h3>
+            <div className="stats-grid">
+              <article className="stat-card">
+                <span>Cache hit rate</span>
+                <strong>{data?.timesheetPerformance ? `${data.timesheetPerformance.hitRate}%` : '-'}</strong>
+              </article>
+              <article className="stat-card">
+                <span>Hit / Miss</span>
+                <strong>
+                  {data?.timesheetPerformance
+                    ? `${data.timesheetPerformance.cacheHits}/${data.timesheetPerformance.cacheMisses}`
+                    : '-'}
+                </strong>
+              </article>
+              <article className="stat-card">
+                <span>Timp mediu summary</span>
+                <strong>
+                  {data?.timesheetPerformance ? `${data.timesheetPerformance.averageDurationMs} ms` : '-'}
+                </strong>
+              </article>
+              <article className="stat-card">
+                <span>Intrari cache</span>
+                <strong>{data?.timesheetPerformance?.cacheEntries ?? '-'}</strong>
+              </article>
+            </div>
+          </div>
+
+          <div className="card">
             <h3>Actiuni rapide</h3>
             <div className="filters">
               <button type="button" className="btn-danger-action" onClick={() => void syncEmployeesIncremental()} disabled={maintenanceBusy}>

@@ -1,6 +1,8 @@
 import { EmployeeStatus } from '@prisma/client';
 import { Router } from 'express';
 import { prisma } from '../db/prisma';
+import { getTimesheetSummaryMetrics } from '../services/timesheetPerformanceMetrics';
+import { getTimesheetSummaryCacheStats } from '../services/timesheetSummaryCache';
 import { getCycleTotals } from '../services/timesheetService';
 import { secondsToHm } from '../utils/time';
 
@@ -53,7 +55,11 @@ dashboardRouter.get('/', async (_req, res) => {
     topEmployees: previousTotals.slice(0, 5).map((entry) => ({
       ...entry,
       totalLabel: secondsToHm(entry.totalSeconds)
-    }))
+    })),
+    timesheetPerformance: {
+      ...getTimesheetSummaryMetrics(),
+      cacheEntries: getTimesheetSummaryCacheStats().entries
+    }
   });
 });
 

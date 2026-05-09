@@ -49,6 +49,17 @@ export type DashboardResponse = {
   totalIncompleteCvs: number;
   totalWeekSeconds: number;
   totalWeekLabel: string;
+  timesheetPerformance?: {
+    requests: number;
+    cacheHits: number;
+    cacheMisses: number;
+    hitRate: number;
+    averageDurationMs: number;
+    lastDurationMs: number | null;
+    slowestDurationMs: number;
+    lastUpdatedAt: string | null;
+    cacheEntries: number;
+  };
   topEmployees: Array<{
     displayName: string;
     totalSeconds: number;

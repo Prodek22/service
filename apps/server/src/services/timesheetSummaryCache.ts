@@ -36,3 +36,6 @@ export const invalidateTimesheetSummaryCache = (cycleId?: number): void => {
   summaryCache.clear();
 };
 
+export const getTimesheetSummaryCacheStats = () => ({
+  entries: summaryCache.size
+});
