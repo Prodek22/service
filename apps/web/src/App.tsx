@@ -139,6 +139,9 @@ const PublicLayout = ({
             <NavLink to="/" end className={({ isActive }) => (isActive ? 'active' : '')}>
               Pontaj saptamanal
             </NavLink>
+            <NavLink to="/timesheet-active" className={({ isActive }) => (isActive ? 'active' : '')}>
+              Pontaje active
+            </NavLink>
           </div>
         </div>
         <button type="button" className="theme-toggle" onClick={onToggleTheme}>
