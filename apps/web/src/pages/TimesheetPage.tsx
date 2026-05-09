@@ -1,10 +1,15 @@
-import { Fragment, useEffect, useMemo, useState } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { apiBaseUrl, apiGet, apiPost } from '../api/client';
 import { EmployeeRankHistoryResponse, TimeEventHistoryResponse, TimesheetSummaryResponse, WeekCycle } from '../types';
 import { formatCurrency, formatDate, formatDateTime, formatMinutes } from '../utils/format';
 
 type TimesheetPageProps = {
   readOnly?: boolean;
+};
+
+type SummaryCacheEntry = {
+  data: TimesheetSummaryResponse;
+  fetchedAt: number;
 };
 
 const normalizeSearch = (value: string): string =>
@@ -26,6 +31,7 @@ export const TimesheetPage = ({ readOnly = false }: TimesheetPageProps) => {
   const [cycles, setCycles] = useState<WeekCycle[]>([]);
   const [selectedCycleId, setSelectedCycleId] = useState<number | null>(null);
   const [summary, setSummary] = useState<TimesheetSummaryResponse | null>(null);
+  const [summaryLoading, setSummaryLoading] = useState(false);
   const [inactiveOnly, setInactiveOnly] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<SortBy>('total');
@@ -37,6 +43,8 @@ export const TimesheetPage = ({ readOnly = false }: TimesheetPageProps) => {
   const [historyTab, setHistoryTab] = useState<'events' | 'rank'>('events');
   const [historyRows, setHistoryRows] = useState<TimeEventHistoryResponse['history']>([]);
   const [rankHistoryRows, setRankHistoryRows] = useState<EmployeeRankHistoryResponse['history']>([]);
+  const summaryCacheRef = useRef<Record<number, SummaryCacheEntry>>({});
+  const summaryRequestSeqRef = useRef(0);
 
   useEffect(() => {
     void apiGet<WeekCycle[]>('/timesheet/cycles').then((response) => {
@@ -45,13 +53,104 @@ export const TimesheetPage = ({ readOnly = false }: TimesheetPageProps) => {
     });
   }, []);
 
+  const getSummaryTtlMs = useCallback(
+    (cycleId: number): number => {
+      const cycle = cycles.find((item) => item.id === cycleId);
+      return cycle?.endedAt ? 24 * 60 * 60 * 1000 : 20 * 1000;
+    },
+    [cycles]
+  );
+
+  const fetchSummary = useCallback(
+    async (cycleId: number, options?: { background?: boolean; force?: boolean }) => {
+      const cached = summaryCacheRef.current[cycleId];
+      const ttlMs = getSummaryTtlMs(cycleId);
+      const isFresh = cached ? Date.now() - cached.fetchedAt < ttlMs : false;
+
+      if (cached && selectedCycleId === cycleId) {
+        setSummary(cached.data);
+      }
+
+      if (cached && isFresh && !options?.force) {
+        return cached.data;
+      }
+
+      if (!options?.background) {
+        setSummaryLoading(true);
+      }
+
+      try {
+        const data = await apiGet<TimesheetSummaryResponse>(`/timesheet/summary?cycleId=${cycleId}`);
+        summaryCacheRef.current[cycleId] = {
+          data,
+          fetchedAt: Date.now()
+        };
+
+        if (selectedCycleId === cycleId) {
+          setSummary(data);
+        }
+
+        return data;
+      } finally {
+        if (!options?.background) {
+          setSummaryLoading(false);
+        }
+      }
+    },
+    [getSummaryTtlMs, selectedCycleId]
+  );
+
   useEffect(() => {
     if (!selectedCycleId) {
       return;
     }
 
-    void apiGet<TimesheetSummaryResponse>(`/timesheet/summary?cycleId=${selectedCycleId}`).then(setSummary);
-  }, [selectedCycleId]);
+    const requestSeq = ++summaryRequestSeqRef.current;
+    const cached = summaryCacheRef.current[selectedCycleId];
+    if (cached) {
+      setSummary(cached.data);
+    }
+
+    void fetchSummary(selectedCycleId, {
+      background: Boolean(cached),
+      force: true
+    }).then((data) => {
+      if (!data || requestSeq !== summaryRequestSeqRef.current) {
+        return;
+      }
+
+      setSummary(data);
+    });
+  }, [fetchSummary, selectedCycleId]);
+
+  useEffect(() => {
+    const idsToPrefetch = cycles
+      .map((cycle) => cycle.id)
+      .filter((cycleId) => cycleId !== selectedCycleId && !summaryCacheRef.current[cycleId]);
+
+    if (!idsToPrefetch.length) {
+      return;
+    }
+
+    let cancelled = false;
+    void (async () => {
+      for (const cycleId of idsToPrefetch) {
+        if (cancelled) {
+          break;
+        }
+
+        try {
+          await fetchSummary(cycleId, { background: true });
+        } catch {
+          // Skip failed prefetch; selected cycle fetch remains source of truth.
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [cycles, fetchSummary, selectedCycleId]);
 
   const exportLink = useMemo(() => {
     if (!selectedCycleId) {
@@ -448,6 +547,7 @@ export const TimesheetPage = ({ readOnly = false }: TimesheetPageProps) => {
       </div>
 
       <div className="card table-wrapper timesheet-table-wrap">
+        {summaryLoading && !summary ? <p>Se incarca pontajul...</p> : null}
         <table className="timesheet-table">
           <thead>
             <tr>
