@@ -3,6 +3,7 @@ import { startDiscordBot } from './bot/discordBot';
 import { env } from './config/env';
 import { prisma } from './db/prisma';
 import { startAutoCleanupScheduler, stopAutoCleanupScheduler } from './services/autoCleanupScheduler';
+import { startTimesheetWarmCacheScheduler, stopTimesheetWarmCacheScheduler } from './services/timesheetWarmCacheScheduler';
 import { startTimesheetSyncScheduler, stopTimesheetSyncScheduler } from './services/timesheetSyncScheduler';
 
 const bootstrap = async () => {
@@ -14,11 +15,13 @@ const bootstrap = async () => {
 
   const botClient = await startDiscordBot();
   startTimesheetSyncScheduler();
+  startTimesheetWarmCacheScheduler();
   startAutoCleanupScheduler();
 
   const shutdown = async () => {
     console.log('Shutting down...');
     stopTimesheetSyncScheduler();
+    stopTimesheetWarmCacheScheduler();
     stopAutoCleanupScheduler();
     botClient.destroy();
     server.close();

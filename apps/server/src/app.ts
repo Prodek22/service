@@ -15,6 +15,7 @@ import { getIdImageStaticDirs, ID_IMAGE_PUBLIC_BASE_PATH } from './services/idIm
 
 export const createApp = () => {
   const app = express();
+  app.set('trust proxy', 1);
 
   app.use(
     cors({

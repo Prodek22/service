@@ -5,18 +5,23 @@ import { prisma } from '../db/prisma';
 import { normalizeForCompare } from '../utils/normalize';
 import { recordAuditLog } from '../services/auditLogService';
 import { resolveDiscordAvatarMap, resolveDiscordDisplayNameMap } from '../services/discordAvatarService';
-import { resolveGuildEmployeeRolePresence } from '../services/guildEmployeePresenceService';
-import {
-  getTimesheetSummaryFromCache,
-  invalidateTimesheetSummaryCache,
-  setTimesheetSummaryCache
-} from '../services/timesheetSummaryCache';
+import { invalidateTimesheetSummaryCache } from '../services/timesheetSummaryCache';
 import { buildCsv, secondsToHm } from '../utils/time';
 import { getCycleTotals, getEmployeeCycleHistory, getEmployeeCycleRankHistory, getWeekCycles } from '../services/timesheetService';
+import { buildTimesheetSummaryPayload, resolveLatestCycleId } from '../services/timesheetSummaryService';
+import { createIpRateLimiter } from '../utils/ipRateLimiter';
 
 export const timesheetRouter = Router();
-const SUMMARY_CACHE_TTL_OPEN_MS = 20 * 1000;
-const SUMMARY_CACHE_TTL_CLOSED_MS = 24 * 60 * 60 * 1000;
+const summaryRateLimiter = createIpRateLimiter({
+  keyPrefix: 'timesheet-summary',
+  windowMs: 10_000,
+  maxRequests: 50
+});
+const activeRateLimiter = createIpRateLimiter({
+  keyPrefix: 'timesheet-active',
+  windowMs: 10_000,
+  maxRequests: 40
+});
 
 timesheetRouter.get('/cycles', async (req, res) => {
   const serviceCode = typeof req.query.serviceCode === 'string' ? req.query.serviceCode : undefined;
@@ -24,39 +29,8 @@ timesheetRouter.get('/cycles', async (req, res) => {
   res.json(cycles);
 });
 
-const resolveCycleId = async (cycleIdQuery: string | undefined, serviceCodeQuery?: string): Promise<number | null> => {
-  if (cycleIdQuery) {
-    const parsed = Number.parseInt(cycleIdQuery, 10);
-    return Number.isNaN(parsed) ? null : parsed;
-  }
-
-  const cycles = await getWeekCycles(serviceCodeQuery, 4);
-  if (cycles.length) {
-    return cycles[0].id;
-  }
-
-  const latestFallback = await prisma.weekCycle.findFirst({
-    where: {
-      ...(serviceCodeQuery ? { serviceCode: serviceCodeQuery } : {}),
-      timeEvents: {
-        some: {
-          isDeleted: false,
-          eventType: {
-            in: [TimeEventType.CLOCK_IN, TimeEventType.CLOCK_OUT, TimeEventType.MANUAL_ADJUSTMENT]
-          }
-        }
-      }
-    },
-    orderBy: {
-      startedAt: 'desc'
-    }
-  });
-
-  return latestFallback?.id ?? null;
-};
-
-timesheetRouter.get('/summary', async (req, res) => {
-  const cycleId = await resolveCycleId(
+timesheetRouter.get('/summary', summaryRateLimiter, async (req, res) => {
+  const cycleId = await resolveLatestCycleId(
     typeof req.query.cycleId === 'string' ? req.query.cycleId : undefined,
     typeof req.query.serviceCode === 'string' ? req.query.serviceCode : undefined
   );
@@ -66,82 +40,11 @@ timesheetRouter.get('/summary', async (req, res) => {
     return;
   }
 
-  const cached = getTimesheetSummaryFromCache(cycleId);
-  if (cached) {
-    res.json(cached);
-    return;
-  }
-
-  const cycleMeta = await prisma.weekCycle.findUnique({
-    where: { id: cycleId },
-    select: { endedAt: true }
+  const payload = await buildTimesheetSummaryPayload(cycleId, {
+    useCache: true,
+    includeLivePresenceForOpenCycle: true
   });
-
-  const totals = await getCycleTotals(cycleId);
-  const rolePresenceByDiscordId =
-    cycleMeta?.endedAt == null
-      ? await resolveGuildEmployeeRolePresence(
-          totals
-            .map((row) => row.discordUserId)
-            .filter((value): value is string => Boolean(value))
-        )
-      : {};
-  const employeeIds = totals
-    .map((row) => row.employeeId)
-    .filter((value): value is number => typeof value === 'number');
-  const payrollStatuses =
-    employeeIds.length > 0
-      ? await prisma.timesheetPayrollStatus.findMany({
-          where: {
-            weekCycleId: cycleId,
-            employeeId: {
-              in: employeeIds
-            }
-          }
-        })
-      : [];
-  const payrollByEmployee = new Map(payrollStatuses.map((item) => [item.employeeId, item]));
-  const avatarByDiscordUserId = await resolveDiscordAvatarMap(
-    totals.map((row) => row.discordUserId).filter((value): value is string => Boolean(value))
-  );
-
-  const payload = {
-    cycleId,
-    totals: totals.map((row) => ({
-      ...row,
-      isExited:
-        cycleMeta?.endedAt == null && row.discordUserId
-          ? rolePresenceByDiscordId[row.discordUserId] === false
-          : row.isExited,
-      avatarUrl: row.discordUserId ? avatarByDiscordUserId[row.discordUserId] ?? null : null,
-      totalLabel: secondsToHm(row.totalSeconds),
-      normalLabel: secondsToHm(row.normalSeconds),
-      manualLabel: secondsToHm(row.manualAdjustmentSeconds),
-      payroll: row.employeeId
-        ? {
-            isPaid: payrollByEmployee.get(row.employeeId)?.isPaid ?? false,
-            isUp: payrollByEmployee.get(row.employeeId)?.isUp ?? false,
-            paidAt: payrollByEmployee.get(row.employeeId)?.paidAt ?? null,
-            paidBy: payrollByEmployee.get(row.employeeId)?.paidBy ?? null,
-            note: payrollByEmployee.get(row.employeeId)?.note ?? null
-          }
-        : {
-            isPaid: false,
-            isUp: false,
-            paidAt: null,
-            paidBy: null,
-            note: null
-      }
-    }))
-  };
-
-  setTimesheetSummaryCache(
-    cycleId,
-    payload as unknown as Record<string, unknown>,
-    cycleMeta?.endedAt ? SUMMARY_CACHE_TTL_CLOSED_MS : SUMMARY_CACHE_TTL_OPEN_MS
-  );
-
-  res.json(payload);
+  res.json(payload ?? { cycleId: null, totals: [] });
 });
 
 const parseCodesFromText = (rawText: string): string[] => {
@@ -149,7 +52,7 @@ const parseCodesFromText = (rawText: string): string[] => {
   return matches.map((match) => match[1]?.trim()).filter((value): value is string => Boolean(value));
 };
 
-timesheetRouter.get('/active', async (req, res) => {
+timesheetRouter.get('/active', activeRateLimiter, async (req, res) => {
   const hoursInput = Number.parseInt(String(req.query.hours ?? '24'), 10);
   const hours = Number.isNaN(hoursInput) ? 24 : Math.max(1, Math.min(hoursInput, 48));
   const since = new Date(Date.now() - hours * 60 * 60 * 1000);
@@ -589,7 +492,7 @@ timesheetRouter.get('/employee/:employeeId/history', async (req, res) => {
     return;
   }
 
-  const cycleId = await resolveCycleId(typeof req.query.cycleId === 'string' ? req.query.cycleId : undefined);
+  const cycleId = await resolveLatestCycleId(typeof req.query.cycleId === 'string' ? req.query.cycleId : undefined);
 
   if (!cycleId) {
     res.status(404).json({ error: 'Nu exista ciclu pentru istoric.' });
@@ -609,7 +512,7 @@ timesheetRouter.get('/employee/:employeeId/rank-history', async (req, res) => {
     return;
   }
 
-  const cycleId = await resolveCycleId(typeof req.query.cycleId === 'string' ? req.query.cycleId : undefined);
+  const cycleId = await resolveLatestCycleId(typeof req.query.cycleId === 'string' ? req.query.cycleId : undefined);
 
   if (!cycleId) {
     res.status(404).json({ error: 'Nu exista ciclu pentru istoric rank.' });
@@ -621,7 +524,7 @@ timesheetRouter.get('/employee/:employeeId/rank-history', async (req, res) => {
 });
 
 timesheetRouter.get('/export.csv', async (req, res) => {
-  const cycleId = await resolveCycleId(typeof req.query.cycleId === 'string' ? req.query.cycleId : undefined);
+  const cycleId = await resolveLatestCycleId(typeof req.query.cycleId === 'string' ? req.query.cycleId : undefined);
 
   if (!cycleId) {
     res.status(404).json({ error: 'Nu exista ciclu pentru export.' });
