@@ -133,10 +133,31 @@ model WeekCycle {
 
   timeEvents TimeEvent[]
   payrollStatuses TimesheetPayrollStatus[]
+  summarySnapshot TimesheetSummarySnapshot?
 
   @@index([serviceCode])
   @@index([startedAt])
   @@map("week_cycles")
+}
+
+model TimesheetSummarySnapshot {
+  id             Int      @id @default(autoincrement())
+  weekCycleId    Int      @unique @map("week_cycle_id")
+  status         String   @default("BUILDING") @db.VarChar(32)
+  payloadJson    String?  @map("payload_json") @db.LongText
+  errorText      String?  @map("error_text") @db.Text
+  requestedAt    DateTime @default(now()) @map("requested_at")
+  generatedAt    DateTime? @map("generated_at")
+  buildStartedAt DateTime? @map("build_started_at")
+  buildFinishedAt DateTime? @map("build_finished_at")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  weekCycle WeekCycle @relation(fields: [weekCycleId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@index([generatedAt])
+  @@map("timesheet_summary_snapshots")
 }
 
 model TimesheetPayrollStatus {

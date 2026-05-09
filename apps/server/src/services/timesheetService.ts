@@ -4,6 +4,7 @@ import { parseTimesheetMessage } from '../parsers/timesheetParser';
 import { MessageInput } from '../types';
 import { normalizeForCompare } from '../utils/normalize';
 import { findEmployeeBestMatch } from './employeeMatcher';
+import { invalidateTimesheetSummaryCache } from './timesheetSummaryCache';
 
 type EmployeeTotal = {
   key: string;
@@ -37,6 +38,43 @@ const TOP_BONUSES = [25000, 20000, 15000] as const;
 const NIGHT_BONUS_MULTIPLIER = 0.2;
 const NIGHT_START_HOUR = 18;
 const NIGHT_END_HOUR = 23;
+
+const markSummarySnapshotsStale = async (cycleIds: Array<number | null | undefined>): Promise<void> => {
+  const uniqueCycleIds = [...new Set(cycleIds.filter((value): value is number => typeof value === 'number'))];
+  if (!uniqueCycleIds.length) {
+    return;
+  }
+
+  uniqueCycleIds.forEach((cycleId) => invalidateTimesheetSummaryCache(cycleId));
+  await prisma.timesheetSummarySnapshot.updateMany({
+    where: {
+      weekCycleId: {
+        in: uniqueCycleIds
+      }
+    },
+    data: {
+      status: 'BUILDING',
+      requestedAt: new Date(),
+      errorText: null
+    }
+  });
+};
+
+const markServiceSummarySnapshotsStale = async (serviceCode: string): Promise<void> => {
+  invalidateTimesheetSummaryCache();
+  await prisma.timesheetSummarySnapshot.updateMany({
+    where: {
+      weekCycle: {
+        serviceCode
+      }
+    },
+    data: {
+      status: 'BUILDING',
+      requestedAt: new Date(),
+      errorText: null
+    }
+  });
+};
 
 const RANK_PAY_PER_7H: Record<'ucenic' | 'mecanic_junior' | 'mecanic' | 'mecanic_senior', number> = {
   ucenic: 45000,
@@ -424,10 +462,25 @@ export const processTimesheetMessage = async (message: MessageInput) => {
     }
   });
 
+  if (parsed.eventType === 'WEEKLY_RESET') {
+    await markServiceSummarySnapshotsStale(serviceCode);
+  } else {
+    await markSummarySnapshotsStale([existingEvent?.weekCycleId, weekCycleId]);
+  }
+
   return event;
 };
 
 export const markTimesheetMessageDeleted = async (messageId: string): Promise<void> => {
+  const events = await prisma.timeEvent.findMany({
+    where: {
+      discordMessageId: messageId
+    },
+    select: {
+      weekCycleId: true
+    }
+  });
+
   await prisma.timeEvent.updateMany({
     where: {
       discordMessageId: messageId
@@ -436,6 +489,8 @@ export const markTimesheetMessageDeleted = async (messageId: string): Promise<vo
       isDeleted: true
     }
   });
+
+  await markSummarySnapshotsStale(events.map((event) => event.weekCycleId));
 };
 
 export const getWeekCycles = async (serviceCode?: string, limit = 4) =>

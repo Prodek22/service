@@ -3,6 +3,7 @@ import path from 'path';
 import { fork } from 'child_process';
 import { env } from '../config/env';
 import { invalidateTimesheetSummaryCache } from './timesheetSummaryCache';
+import { invalidateTimesheetSummarySnapshots } from './timesheetSummaryService';
 
 export type MaintenanceJobType =
   | 'sync-new'
@@ -108,6 +109,7 @@ export const startMaintenanceJob = (type: MaintenanceJobType, payload: Maintenan
         type === 'recalculate-timesheets'
       ) {
         invalidateTimesheetSummaryCache();
+        void invalidateTimesheetSummarySnapshots();
       }
 
       status.state = 'success';

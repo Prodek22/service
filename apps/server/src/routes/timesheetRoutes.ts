@@ -5,10 +5,13 @@ import { prisma } from '../db/prisma';
 import { normalizeForCompare } from '../utils/normalize';
 import { recordAuditLog } from '../services/auditLogService';
 import { resolveDiscordAvatarMap, resolveDiscordDisplayNameMap } from '../services/discordAvatarService';
-import { invalidateTimesheetSummaryCache } from '../services/timesheetSummaryCache';
 import { buildCsv, secondsToHm } from '../utils/time';
 import { getCycleTotals, getEmployeeCycleHistory, getEmployeeCycleRankHistory, getWeekCycles } from '../services/timesheetService';
-import { buildTimesheetSummaryPayload, resolveLatestCycleId } from '../services/timesheetSummaryService';
+import {
+  buildTimesheetSummaryPayload,
+  markTimesheetSummarySnapshotStale,
+  resolveLatestCycleId
+} from '../services/timesheetSummaryService';
 import { createIpRateLimiter } from '../utils/ipRateLimiter';
 
 export const timesheetRouter = Router();
@@ -339,7 +342,7 @@ timesheetRouter.post('/payroll-status', requireAdmin, async (req, res) => {
     }
   });
 
-  invalidateTimesheetSummaryCache(cycleId);
+  void markTimesheetSummarySnapshotStale(cycleId);
 });
 
 timesheetRouter.post('/up-status', requireAdmin, async (req, res) => {
@@ -407,7 +410,7 @@ timesheetRouter.post('/up-status', requireAdmin, async (req, res) => {
     }
   });
 
-  invalidateTimesheetSummaryCache(cycleId);
+  void markTimesheetSummarySnapshotStale(cycleId);
 });
 
 timesheetRouter.post('/months-status', requireAdmin, async (req, res) => {
@@ -481,7 +484,7 @@ timesheetRouter.post('/months-status', requireAdmin, async (req, res) => {
     }
   });
 
-  invalidateTimesheetSummaryCache(cycleId);
+  void markTimesheetSummarySnapshotStale(cycleId);
 });
 
 timesheetRouter.get('/employee/:employeeId/history', async (req, res) => {

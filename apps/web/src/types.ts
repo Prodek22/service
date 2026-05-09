@@ -77,6 +77,13 @@ export type WeekCycle = {
 
 export type TimesheetSummaryResponse = {
   cycleId: number | null;
+  snapshot?: {
+    status: 'ready' | 'building' | 'refreshing' | 'failed';
+    generatedAt: string | null;
+    isStale: boolean;
+    source: 'memory' | 'snapshot' | 'empty';
+    error: string | null;
+  };
   totals: Array<{
     key: string;
     employeeId: number | null;

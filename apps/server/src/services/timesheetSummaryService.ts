@@ -4,6 +4,7 @@ import { resolveDiscordAvatarMap } from './discordAvatarService';
 import { resolveGuildEmployeeRolePresence } from './guildEmployeePresenceService';
 import {
   getTimesheetSummaryFromCache,
+  invalidateTimesheetSummaryCache,
   setTimesheetSummaryCache
 } from './timesheetSummaryCache';
 import { recordTimesheetSummaryMetric } from './timesheetPerformanceMetrics';
@@ -12,6 +13,7 @@ import { secondsToHm } from '../utils/time';
 
 export const SUMMARY_CACHE_TTL_OPEN_MS = 20 * 1000;
 export const SUMMARY_CACHE_TTL_CLOSED_MS = 24 * 60 * 60 * 1000;
+const SUMMARY_SNAPSHOT_OPEN_STALE_MS = 30 * 1000;
 
 type BuildSummaryOptions = {
   useCache?: boolean;
@@ -19,40 +21,60 @@ type BuildSummaryOptions = {
   recordMetrics?: boolean;
 };
 
-export const buildTimesheetSummaryPayload = async (
-  cycleId: number,
-  options?: BuildSummaryOptions
-): Promise<Record<string, unknown> | null> => {
-  const useCache = options?.useCache ?? true;
-  const includeLivePresenceForOpenCycle = options?.includeLivePresenceForOpenCycle ?? true;
-  const shouldRecordMetrics = options?.recordMetrics ?? true;
-  const startedAtMs = Date.now();
+type SummaryPayload = Record<string, unknown> & {
+  cycleId: number | null;
+  totals: unknown[];
+};
 
-  if (useCache) {
-    const cached = getTimesheetSummaryFromCache(cycleId);
-    if (cached) {
-      if (shouldRecordMetrics) {
-        recordTimesheetSummaryMetric({
-          cacheHit: true,
-          durationMs: Date.now() - startedAtMs
-        });
-      }
-      return cached;
-    }
+const rebuildsInFlight = new Set<number>();
+
+const withSnapshotMeta = (
+  payload: SummaryPayload,
+  input: {
+    status: 'ready' | 'building' | 'refreshing' | 'failed';
+    generatedAt: Date | null;
+    isStale: boolean;
+    source: 'memory' | 'snapshot' | 'empty';
+    error: string | null;
+  }
+): SummaryPayload => ({
+  ...payload,
+  snapshot: {
+    status: input.status,
+    generatedAt: input.generatedAt,
+    isStale: input.isStale,
+    source: input.source,
+    error: input.error
+  }
+});
+
+const parseSnapshotPayload = (raw: string | null): SummaryPayload | null => {
+  if (!raw) {
+    return null;
   }
 
+  try {
+    const parsed = JSON.parse(raw) as SummaryPayload;
+    if (!parsed || typeof parsed !== 'object' || !Array.isArray(parsed.totals)) {
+      return null;
+    }
+
+    return parsed;
+  } catch {
+    return null;
+  }
+};
+
+const computeTimesheetSummaryPayload = async (
+  cycleId: number,
+  includeLivePresenceForOpenCycle: boolean
+): Promise<SummaryPayload | null> => {
   const cycleMeta = await prisma.weekCycle.findUnique({
     where: { id: cycleId },
     select: { endedAt: true }
   });
 
   if (!cycleMeta) {
-    if (shouldRecordMetrics) {
-      recordTimesheetSummaryMetric({
-        cacheHit: false,
-        durationMs: Date.now() - startedAtMs
-      });
-    }
     return null;
   }
 
@@ -87,7 +109,7 @@ export const buildTimesheetSummaryPayload = async (
     totals.map((row) => row.discordUserId).filter((value): value is string => Boolean(value))
   );
 
-  const payload = {
+  return {
     cycleId,
     totals: totals.map((row) => ({
       ...row,
@@ -116,12 +138,216 @@ export const buildTimesheetSummaryPayload = async (
           }
     }))
   };
+};
 
-  setTimesheetSummaryCache(
-    cycleId,
-    payload as unknown as Record<string, unknown>,
-    cycleMeta.endedAt ? SUMMARY_CACHE_TTL_CLOSED_MS : SUMMARY_CACHE_TTL_OPEN_MS
-  );
+export const rebuildTimesheetSummarySnapshot = async (
+  cycleId: number,
+  input?: { includeLivePresenceForOpenCycle?: boolean }
+): Promise<SummaryPayload | null> => {
+  const now = new Date();
+  const includeLivePresenceForOpenCycle = input?.includeLivePresenceForOpenCycle ?? true;
+
+  await prisma.timesheetSummarySnapshot.upsert({
+    where: { weekCycleId: cycleId },
+    create: {
+      weekCycleId: cycleId,
+      status: 'BUILDING',
+      requestedAt: now,
+      buildStartedAt: now,
+      errorText: null
+    },
+    update: {
+      status: 'BUILDING',
+      requestedAt: now,
+      buildStartedAt: now,
+      errorText: null
+    }
+  });
+
+  try {
+    const payload = await computeTimesheetSummaryPayload(cycleId, includeLivePresenceForOpenCycle);
+    const finishedAt = new Date();
+
+    if (!payload) {
+      await prisma.timesheetSummarySnapshot.update({
+        where: { weekCycleId: cycleId },
+        data: {
+          status: 'FAILED',
+          errorText: 'Cycle not found',
+          buildFinishedAt: finishedAt
+        }
+      });
+      return null;
+    }
+
+    await prisma.timesheetSummarySnapshot.update({
+      where: { weekCycleId: cycleId },
+      data: {
+        status: 'READY',
+        payloadJson: JSON.stringify(payload),
+        errorText: null,
+        generatedAt: finishedAt,
+        buildFinishedAt: finishedAt
+      }
+    });
+
+    const responsePayload = withSnapshotMeta(payload, {
+      status: 'ready',
+      generatedAt: finishedAt,
+      isStale: false,
+      source: 'snapshot',
+      error: null
+    });
+
+    const cycleMeta = await prisma.weekCycle.findUnique({
+      where: { id: cycleId },
+      select: { endedAt: true }
+    });
+    setTimesheetSummaryCache(
+      cycleId,
+      responsePayload as Record<string, unknown>,
+      cycleMeta?.endedAt ? SUMMARY_CACHE_TTL_CLOSED_MS : SUMMARY_CACHE_TTL_OPEN_MS
+    );
+
+    return responsePayload;
+  } catch (error) {
+    await prisma.timesheetSummarySnapshot.update({
+      where: { weekCycleId: cycleId },
+      data: {
+        status: 'FAILED',
+        errorText: error instanceof Error ? error.message.slice(0, 1000) : 'Unknown error',
+        buildFinishedAt: new Date()
+      }
+    });
+    return null;
+  }
+};
+
+export const queueTimesheetSummarySnapshotRebuild = (
+  cycleId: number,
+  input?: { includeLivePresenceForOpenCycle?: boolean }
+): void => {
+  if (rebuildsInFlight.has(cycleId)) {
+    return;
+  }
+
+  rebuildsInFlight.add(cycleId);
+  void rebuildTimesheetSummarySnapshot(cycleId, input).finally(() => {
+    rebuildsInFlight.delete(cycleId);
+  });
+};
+
+export const markTimesheetSummarySnapshotStale = async (cycleId: number): Promise<void> => {
+  invalidateTimesheetSummaryCache(cycleId);
+
+  await prisma.timesheetSummarySnapshot.upsert({
+    where: { weekCycleId: cycleId },
+    create: {
+      weekCycleId: cycleId,
+      status: 'BUILDING',
+      requestedAt: new Date()
+    },
+    update: {
+      status: 'BUILDING',
+      requestedAt: new Date(),
+      errorText: null
+    }
+  });
+
+  queueTimesheetSummarySnapshotRebuild(cycleId);
+};
+
+export const invalidateTimesheetSummarySnapshots = async (cycleId?: number): Promise<void> => {
+  invalidateTimesheetSummaryCache(cycleId);
+
+  if (typeof cycleId === 'number') {
+    await prisma.timesheetSummarySnapshot.deleteMany({
+      where: { weekCycleId: cycleId }
+    });
+    return;
+  }
+
+  await prisma.timesheetSummarySnapshot.deleteMany({});
+};
+
+export const buildTimesheetSummaryPayload = async (
+  cycleId: number,
+  options?: BuildSummaryOptions
+): Promise<SummaryPayload | null> => {
+  const useCache = options?.useCache ?? true;
+  const includeLivePresenceForOpenCycle = options?.includeLivePresenceForOpenCycle ?? true;
+  const shouldRecordMetrics = options?.recordMetrics ?? true;
+  const startedAtMs = Date.now();
+
+  if (useCache) {
+    const cached = getTimesheetSummaryFromCache(cycleId);
+    if (cached) {
+      if (shouldRecordMetrics) {
+        recordTimesheetSummaryMetric({
+          cacheHit: true,
+          durationMs: Date.now() - startedAtMs
+        });
+      }
+      return cached as SummaryPayload;
+    }
+  }
+
+  const cycleMeta = await prisma.weekCycle.findUnique({
+    where: { id: cycleId },
+    select: { endedAt: true }
+  });
+
+  if (!cycleMeta) {
+    if (shouldRecordMetrics) {
+      recordTimesheetSummaryMetric({
+        cacheHit: false,
+        durationMs: Date.now() - startedAtMs
+      });
+    }
+    return null;
+  }
+
+  const snapshot = await prisma.timesheetSummarySnapshot.findUnique({
+    where: { weekCycleId: cycleId }
+  });
+  const snapshotPayload = parseSnapshotPayload(snapshot?.payloadJson ?? null);
+  const generatedAt = snapshot?.generatedAt ?? null;
+  const openSnapshotIsStale =
+    cycleMeta.endedAt == null && (!generatedAt || Date.now() - generatedAt.getTime() > SUMMARY_SNAPSHOT_OPEN_STALE_MS);
+  const snapshotIsStale = !snapshot || snapshot.status !== 'READY' || openSnapshotIsStale;
+
+  if (snapshotPayload) {
+    if (snapshotIsStale) {
+      queueTimesheetSummarySnapshotRebuild(cycleId, { includeLivePresenceForOpenCycle });
+    }
+
+    const payload = withSnapshotMeta(snapshotPayload, {
+      status: snapshotIsStale ? (snapshot?.status === 'FAILED' ? 'failed' : 'refreshing') : 'ready',
+      generatedAt,
+      isStale: snapshotIsStale,
+      source: 'snapshot',
+      error: snapshot?.errorText ?? null
+    });
+
+    setTimesheetSummaryCache(
+      cycleId,
+      payload as Record<string, unknown>,
+      snapshotIsStale ? 2_000 : cycleMeta.endedAt ? SUMMARY_CACHE_TTL_CLOSED_MS : SUMMARY_CACHE_TTL_OPEN_MS
+    );
+
+    if (shouldRecordMetrics) {
+      recordTimesheetSummaryMetric({
+        cacheHit: true,
+        durationMs: Date.now() - startedAtMs
+      });
+    }
+
+    return payload;
+  }
+
+  if (!snapshot || snapshot.status !== 'BUILDING') {
+    queueTimesheetSummarySnapshotRebuild(cycleId, { includeLivePresenceForOpenCycle });
+  }
 
   if (shouldRecordMetrics) {
     recordTimesheetSummaryMetric({
@@ -130,7 +356,19 @@ export const buildTimesheetSummaryPayload = async (
     });
   }
 
-  return payload as unknown as Record<string, unknown>;
+  return withSnapshotMeta(
+    {
+      cycleId,
+      totals: []
+    },
+    {
+      status: snapshot?.status === 'FAILED' ? 'failed' : 'building',
+      generatedAt,
+      isStale: true,
+      source: 'empty',
+      error: snapshot?.errorText ?? null
+    }
+  );
 };
 
 export const warmTimesheetSummaryCache = async (
@@ -149,12 +387,14 @@ export const warmTimesheetSummaryCache = async (
     }
 
     try {
-      await buildTimesheetSummaryPayload(cycle.id, {
-        useCache: false,
-        includeLivePresenceForOpenCycle: false,
-        recordMetrics: false
+      const result = await rebuildTimesheetSummarySnapshot(cycle.id, {
+        includeLivePresenceForOpenCycle: false
       });
-      warmed += 1;
+      if (result) {
+        warmed += 1;
+      } else {
+        failed += 1;
+      }
     } catch {
       failed += 1;
     }

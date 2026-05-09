@@ -246,6 +246,29 @@ export const TimesheetPage = ({ readOnly = false }: TimesheetPageProps) => {
     () => (summary?.totals ?? []).reduce((sum, row) => sum + row.salaryTotal, 0),
     [summary]
   );
+  const snapshotStatus = summary?.snapshot?.status ?? null;
+  const summaryRowsCount = summary?.totals.length ?? 0;
+  const isSummaryCalculating =
+    summaryLoading || snapshotStatus === 'building' || snapshotStatus === 'refreshing';
+  const loadingMessage =
+    snapshotStatus === 'refreshing' && summaryRowsCount > 0
+      ? 'Actualizam pontajul in fundal. Datele afisate sunt ultima varianta salvata.'
+      : 'Se calculeaza pontajul. Rezultatele apar automat imediat ce sunt gata.';
+
+  useEffect(() => {
+    if (!selectedCycleId || (snapshotStatus !== 'building' && snapshotStatus !== 'refreshing')) {
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      void fetchSummary(selectedCycleId, {
+        background: summaryRowsCount > 0,
+        force: true
+      });
+    }, snapshotStatus === 'building' ? 2500 : 4000);
+
+    return () => window.clearTimeout(timer);
+  }, [fetchSummary, selectedCycleId, snapshotStatus, summaryRowsCount]);
 
   const openHistoryModal = async (employeeId: number | null, label: string) => {
     if (!employeeId || !selectedCycleId) {
@@ -547,7 +570,17 @@ export const TimesheetPage = ({ readOnly = false }: TimesheetPageProps) => {
       </div>
 
       <div className="card table-wrapper timesheet-table-wrap">
-        {summaryLoading && !summary ? <p>Se incarca pontajul...</p> : null}
+        {isSummaryCalculating ? (
+          <div className="timesheet-loading-banner" role="status" aria-live="polite">
+            <span className="loading-spinner" aria-hidden="true" />
+            <span>{loadingMessage}</span>
+          </div>
+        ) : null}
+        {summary?.snapshot?.status === 'failed' ? (
+          <div className="timesheet-loading-banner is-error" role="alert">
+            Nu am putut genera sumarul acestui ciclu: {summary.snapshot.error ?? 'eroare necunoscuta'}.
+          </div>
+        ) : null}
         <table className="timesheet-table">
           <thead>
             <tr>
@@ -718,7 +751,9 @@ export const TimesheetPage = ({ readOnly = false }: TimesheetPageProps) => {
             {!visibleRows.length ? (
               <tr>
                 <td colSpan={12}>
-                  {inactiveOnly
+                  {isSummaryCalculating
+                    ? 'Se calculeaza rezultatele pentru acest ciclu...'
+                    : inactiveOnly
                     ? 'Nu exista angajati marcati ca inactivi pentru acest ciclu.'
                     : 'Nu exista pontaje in ciclul selectat.'}
                 </td>

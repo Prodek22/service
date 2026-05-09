@@ -536,6 +536,58 @@ th {
   background: linear-gradient(160deg, var(--timesheet-wrap-start) 0%, var(--timesheet-wrap-end) 100%);
 }
 
+.timesheet-loading-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding: 11px 13px;
+  border: 1px solid color-mix(in srgb, var(--cycle-border) 72%, #ffffff 28%);
+  border-radius: 12px;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--card) 80%, #8a5a36 20%) 0%,
+    color-mix(in srgb, var(--card) 88%, #2f2c4d 12%) 100%
+  );
+  color: var(--ink);
+  font-weight: 700;
+  box-shadow: 0 8px 18px rgba(29, 24, 18, 0.1);
+}
+
+.timesheet-loading-banner.is-error {
+  border-color: #c25151;
+  background: color-mix(in srgb, var(--card) 75%, #d94b4b 25%);
+  color: #7d1717;
+}
+
+.loading-spinner {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  border: 3px solid color-mix(in srgb, var(--cycle-border) 25%, transparent);
+  border-top-color: #9b643c;
+  border-radius: 999px;
+  animation: loadingSpin 0.8s linear infinite;
+}
+
+html[data-theme='dark'] .timesheet-loading-banner {
+  border-color: #496582;
+  background: linear-gradient(135deg, #26394f 0%, #182637 100%);
+  color: #edf4ff;
+  box-shadow: 0 10px 22px rgba(3, 8, 16, 0.28);
+}
+
+html[data-theme='dark'] .timesheet-loading-banner.is-error {
+  border-color: #8f5050;
+  background: linear-gradient(135deg, #4c2830 0%, #2d1f26 100%);
+  color: #ffe4e4;
+}
+
+html[data-theme='dark'] .loading-spinner {
+  border-color: rgba(237, 244, 255, 0.24);
+  border-top-color: #d89b68;
+}
+
 .timesheet-table {
   width: 100%;
   border-collapse: separate;
@@ -692,6 +744,12 @@ html[data-theme='dark'] .timesheet-table tbody tr.is-inactive:hover td {
   background: color-mix(in srgb, var(--card) 86%, #8a5a36 14%);
   font-size: 0.9rem;
   color: var(--ink);
+}
+
+@keyframes loadingSpin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .muted-line {
