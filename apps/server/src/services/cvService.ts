@@ -123,6 +123,57 @@ const persistIdImageWithFallback = async (
   }
 };
 
+const logIbanConflict = async (input: {
+  message: MessageInput;
+  parsedIban?: string;
+  matchedEmployeeId?: number;
+  matchedEmployeeIban?: string | null;
+  matchedEmployeeFullName?: string | null;
+  matchedEmployeeNickname?: string | null;
+  nextFullName?: string | null;
+  nextNickname?: string | null;
+}): Promise<void> => {
+  const conflictingOwner = input.parsedIban
+    ? await prisma.employee.findFirst({
+        where: {
+          iban: input.parsedIban
+        },
+        select: {
+          id: true,
+          iban: true,
+          fullName: true,
+          nickname: true,
+          discordUserId: true,
+          cvMessageId: true,
+          deletedAt: true
+        }
+      })
+    : null;
+
+  console.error('[cv] IBAN conflict while saving CV', {
+    messageId: input.message.id,
+    channelId: input.message.channelId,
+    authorId: input.message.authorId ?? null,
+    createdAt: input.message.createdAt.toISOString(),
+    updatedAt: input.message.updatedAt?.toISOString() ?? null,
+    parsedIban: input.parsedIban ?? null,
+    matchedEmployee: input.matchedEmployeeId
+      ? {
+          id: input.matchedEmployeeId,
+          iban: input.matchedEmployeeIban ?? null,
+          fullName: input.matchedEmployeeFullName ?? null,
+          nickname: input.matchedEmployeeNickname ?? null
+        }
+      : null,
+    conflictingOwner,
+    parsedIdentity: {
+      fullName: input.nextFullName ?? null,
+      nickname: input.nextNickname ?? null
+    },
+    preview: input.message.content.slice(0, 400)
+  });
+};
+
 const attachImageToExistingCv = async (
   message: MessageInput,
   imageSource: IdImageSource
@@ -287,20 +338,39 @@ export const processCvMessage = async (
 
   const status = evaluateStatus(mergedForStatus);
 
-  const saved = employee
-    ? await prisma.employee.update({
-        where: { id: employee.id },
-        data: {
-          ...nextData,
-          status
-        }
-      })
-    : await prisma.employee.create({
-        data: {
-          ...nextData,
-          status
-        }
+  let saved;
+  try {
+    saved = employee
+      ? await prisma.employee.update({
+          where: { id: employee.id },
+          data: {
+            ...nextData,
+            status
+          }
+        })
+      : await prisma.employee.create({
+          data: {
+            ...nextData,
+            status
+          }
+        });
+  } catch (error) {
+    const details = error instanceof Error ? error.message : String(error);
+    if (details.includes('employees_iban_key')) {
+      await logIbanConflict({
+        message,
+        parsedIban: nextData.iban ?? undefined,
+        matchedEmployeeId: employee?.id,
+        matchedEmployeeIban: employee?.iban,
+        matchedEmployeeFullName: employee?.fullName,
+        matchedEmployeeNickname: employee?.nickname,
+        nextFullName: nextData.fullName ?? undefined,
+        nextNickname: nextData.nickname ?? undefined
       });
+    }
+
+    throw error;
+  }
 
   if (employee) {
     await recordEmployeeRankChangeIfDifferent({
