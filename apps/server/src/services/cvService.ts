@@ -14,6 +14,13 @@ type IdImageSource = {
   contentType?: string | null;
 };
 
+class CvIbanConflictError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'CvIbanConflictError';
+  }
+}
+
 const IMAGE_FOLLOW_UP_WINDOW_MS = 45 * 60 * 1000;
 
 const isImageAttachment = (name?: string, contentType?: string | null): boolean => {
@@ -172,6 +179,43 @@ const logIbanConflict = async (input: {
     },
     preview: input.message.content.slice(0, 400)
   });
+};
+
+const buildIbanConflictMessage = (input: {
+  message: MessageInput;
+  parsedIban?: string;
+  matchedEmployeeId?: number;
+  matchedEmployeeIban?: string | null;
+  matchedEmployeeFullName?: string | null;
+  matchedEmployeeNickname?: string | null;
+  conflictingOwner?: {
+    id: number;
+    iban: string | null;
+    fullName: string | null;
+    nickname: string | null;
+    discordUserId: string | null;
+    cvMessageId: string | null;
+    deletedAt: Date | null;
+  } | null;
+}): string => {
+  const parts = [
+    `IBAN conflict la procesarea CV`,
+    `messageId=${input.message.id}`,
+    `authorId=${input.message.authorId ?? '-'}`,
+    `parsedIban=${input.parsedIban ?? '-'}`,
+    `matchedEmployeeId=${input.matchedEmployeeId ?? '-'}`,
+    `matchedEmployeeIban=${input.matchedEmployeeIban ?? '-'}`,
+    `matchedEmployeeName=${input.matchedEmployeeFullName ?? '-'}`,
+    `matchedEmployeeNickname=${input.matchedEmployeeNickname ?? '-'}`,
+    `ownerEmployeeId=${input.conflictingOwner?.id ?? '-'}`,
+    `ownerEmployeeName=${input.conflictingOwner?.fullName ?? '-'}`,
+    `ownerEmployeeNickname=${input.conflictingOwner?.nickname ?? '-'}`,
+    `ownerDiscordUserId=${input.conflictingOwner?.discordUserId ?? '-'}`,
+    `ownerCvMessageId=${input.conflictingOwner?.cvMessageId ?? '-'}`,
+    `preview=${JSON.stringify(input.message.content.slice(0, 180))}`
+  ];
+
+  return parts.join(' | ');
 };
 
 const attachImageToExistingCv = async (
@@ -357,7 +401,7 @@ export const processCvMessage = async (
   } catch (error) {
     const details = error instanceof Error ? error.message : String(error);
     if (details.includes('employees_iban_key')) {
-      await logIbanConflict({
+      const conflictInput = {
         message,
         parsedIban: nextData.iban ?? undefined,
         matchedEmployeeId: employee?.id,
@@ -366,7 +410,38 @@ export const processCvMessage = async (
         matchedEmployeeNickname: employee?.nickname,
         nextFullName: nextData.fullName ?? undefined,
         nextNickname: nextData.nickname ?? undefined
-      });
+      };
+
+      await logIbanConflict(conflictInput);
+
+      const conflictingOwner = nextData.iban
+        ? await prisma.employee.findFirst({
+            where: {
+              iban: nextData.iban
+            },
+            select: {
+              id: true,
+              iban: true,
+              fullName: true,
+              nickname: true,
+              discordUserId: true,
+              cvMessageId: true,
+              deletedAt: true
+            }
+          })
+        : null;
+
+      throw new CvIbanConflictError(
+        buildIbanConflictMessage({
+          message,
+          parsedIban: nextData.iban ?? undefined,
+          matchedEmployeeId: employee?.id,
+          matchedEmployeeIban: employee?.iban,
+          matchedEmployeeFullName: employee?.fullName,
+          matchedEmployeeNickname: employee?.nickname,
+          conflictingOwner
+        })
+      );
     }
 
     throw error;
