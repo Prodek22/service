@@ -138,7 +138,7 @@ export const exportEmployeesToGoogleSheets = async (): Promise<{
               },
               textFormat: {
                 bold: true,
-                fontFamily: 'Arial',
+                fontFamily: 'Verdana',
                 fontSize: 16,
                 foregroundColor: {
                   red: 1,
@@ -172,7 +172,7 @@ export const exportEmployeesToGoogleSheets = async (): Promise<{
           cell: {
             userEnteredFormat: {
               textFormat: {
-                fontFamily: 'Arial',
+                fontFamily: 'Verdana',
                 fontSize: 16,
                 bold: true
               },
