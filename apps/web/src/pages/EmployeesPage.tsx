@@ -283,6 +283,13 @@ export const EmployeesPage = ({ readOnly = false }: EmployeesPageProps) => {
             {exportBusy ? 'Actualizare Google Sheets...' : 'Update Google Sheets'}
           </button>
         ) : null}
+        <a
+          href="https://docs.google.com/spreadsheets/d/1X2vLn8e98DNurVKnvOVaTALnCJgrMbfHwA_5LKTxQl0/edit?usp=sharing"
+          target="_blank"
+          rel="noreferrer"
+        >
+          <button type="button">Docs</button>
+        </a>
       </div>
 
       {!readOnly && exportMessage ? <div className="card"><strong>{exportMessage}</strong></div> : null}
