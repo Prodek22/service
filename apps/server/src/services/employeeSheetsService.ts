@@ -178,7 +178,7 @@ export const exportEmployeesToGoogleSheets = async (): Promise<{
               },
               horizontalAlignment: 'CENTER',
               verticalAlignment: 'MIDDLE',
-              wrapStrategy: 'WRAP',
+              wrapStrategy: 'CLIP',
               borders: {
                 bottom: {
                   style: 'SOLID',
@@ -244,6 +244,16 @@ export const exportEmployeesToGoogleSheets = async (): Promise<{
             dimension: 'COLUMNS',
             startIndex: 0,
             endIndex: EMPLOYEE_SHEET_HEADERS.length
+          }
+        }
+      },
+      {
+        autoResizeDimensions: {
+          dimensions: {
+            sheetId,
+            dimension: 'ROWS',
+            startIndex: 0,
+            endIndex: values.length
           }
         }
       }
