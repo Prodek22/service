@@ -239,7 +239,7 @@ export const exportEmployeesToGoogleSheets = async (): Promise<{
       },
       {
         autoResizeDimensions: {
-          range: {
+          dimensions: {
             sheetId,
             dimension: 'COLUMNS',
             startIndex: 0,
