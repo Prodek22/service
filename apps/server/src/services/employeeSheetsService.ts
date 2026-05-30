@@ -4,7 +4,6 @@ import { env } from '../config/env';
 import { prisma } from '../db/prisma';
 
 const EMPLOYEE_SHEET_HEADERS = [
-  'Status',
   'IBAN',
   'Luni in oras',
   'Porecla',
@@ -14,7 +13,7 @@ const EMPLOYEE_SHEET_HEADERS = [
   'Rank'
 ];
 
-const COLUMN_WIDTHS = [110, 190, 110, 170, 220, 140, 130, 130];
+const COLUMN_WIDTHS = [210, 120, 190, 240, 150, 150, 140];
 
 const requireSheetsConfig = () => {
   if (!env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !env.GOOGLE_PRIVATE_KEY || !env.GOOGLE_SHEETS_SPREADSHEET_ID) {
@@ -72,7 +71,6 @@ export const exportEmployeesToGoogleSheets = async (): Promise<{
   const values = [
     EMPLOYEE_SHEET_HEADERS,
     ...employees.map((employee) => [
-      formatCell(employee.status),
       formatCell(employee.iban),
       formatCell(employee.monthsInCity),
       formatCell(employee.nickname),
@@ -137,6 +135,8 @@ export const exportEmployeesToGoogleSheets = async (): Promise<{
                   },
                   textFormat: {
                     bold: true,
+                    fontFamily: 'Arial',
+                    fontSize: 11,
                     foregroundColor: {
                       red: 1,
                       green: 1,
@@ -144,10 +144,20 @@ export const exportEmployeesToGoogleSheets = async (): Promise<{
                     }
                   },
                   horizontalAlignment: 'CENTER',
-                  verticalAlignment: 'MIDDLE'
+                  verticalAlignment: 'MIDDLE',
+                  borders: {
+                    bottom: {
+                      style: 'SOLID',
+                      color: {
+                        red: 0.04,
+                        green: 0.19,
+                        blue: 0.23
+                      }
+                    }
+                  }
                 }
               },
-              fields: 'userEnteredFormat(backgroundColor,textFormat,horizontalAlignment,verticalAlignment)'
+              fields: 'userEnteredFormat(backgroundColor,textFormat,horizontalAlignment,verticalAlignment,borders)'
             }
           },
           {
@@ -158,11 +168,71 @@ export const exportEmployeesToGoogleSheets = async (): Promise<{
               },
               cell: {
                 userEnteredFormat: {
+                  textFormat: {
+                    fontFamily: 'Arial',
+                    fontSize: 10
+                  },
                   verticalAlignment: 'MIDDLE',
-                  wrapStrategy: 'WRAP'
+                  wrapStrategy: 'WRAP',
+                  borders: {
+                    bottom: {
+                      style: 'SOLID',
+                      color: {
+                        red: 0.89,
+                        green: 0.92,
+                        blue: 0.95
+                      }
+                    }
+                  }
                 }
               },
-              fields: 'userEnteredFormat(verticalAlignment,wrapStrategy)'
+              fields: 'userEnteredFormat(textFormat,verticalAlignment,wrapStrategy,borders)'
+            }
+          },
+          {
+            repeatCell: {
+              range: {
+                sheetId,
+                startRowIndex: 1,
+                startColumnIndex: 1,
+                endColumnIndex: 2
+              },
+              cell: {
+                userEnteredFormat: {
+                  horizontalAlignment: 'CENTER'
+                }
+              },
+              fields: 'userEnteredFormat(horizontalAlignment)'
+            }
+          },
+          {
+            addBanding: {
+              bandedRange: {
+                range: {
+                  sheetId,
+                  startRowIndex: 0,
+                  endRowIndex: values.length,
+                  startColumnIndex: 0,
+                  endColumnIndex: EMPLOYEE_SHEET_HEADERS.length
+                },
+                rowProperties: {
+                  headerColor: {
+                    red: 0.07,
+                    green: 0.31,
+                    blue: 0.38
+                  },
+                  firstBandColor: {
+                    red: 0.98,
+                    green: 0.99,
+                    blue: 1
+                  },
+                  secondBandColor: {
+                    red: 0.94,
+                    green: 0.97,
+                    blue: 0.99
+                  }
+                }
+              }
             }
           },
           {
