@@ -15,14 +15,11 @@ const EMPLOYEE_SHEET_HEADERS = [
   'Angajator',
   'Recomandare',
   'Rank',
-  'Discord User ID',
-  'CV Message ID',
-  'CV Channel ID',
-  'CV Posted At',
   'Updated At',
-  'Created At',
   'Poza buletin'
 ];
+
+const COLUMN_WIDTHS = [70, 110, 190, 110, 170, 220, 140, 130, 170, 180, 130, 170, 320];
 
 const requireSheetsConfig = () => {
   if (!env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !env.GOOGLE_PRIVATE_KEY || !env.GOOGLE_SHEETS_SPREADSHEET_ID) {
@@ -91,12 +88,7 @@ export const exportEmployeesToGoogleSheets = async (): Promise<{
       formatCell(employee.employerName),
       formatCell(employee.recommendation),
       formatCell(employee.rank),
-      formatCell(employee.discordUserId),
-      formatCell(employee.cvMessageId),
-      formatCell(employee.cvChannelId),
-      formatCell(employee.cvPostedAt),
       formatCell(employee.updatedAt),
-      formatCell(employee.createdAt),
       formatCell(employee.idImageUrl)
     ])
   ];
@@ -114,6 +106,106 @@ export const exportEmployeesToGoogleSheets = async (): Promise<{
       values
     }
   });
+
+  const spreadsheet = await sheets.spreadsheets.get({
+    spreadsheetId,
+    fields: 'sheets.properties'
+  });
+
+  const targetSheet = spreadsheet.data.sheets?.find((sheet) => sheet.properties?.title === sheetName);
+  const sheetId = targetSheet?.properties?.sheetId;
+
+  if (sheetId != null) {
+    await sheets.spreadsheets.batchUpdate({
+      spreadsheetId,
+      requestBody: {
+        requests: [
+          {
+            updateSheetProperties: {
+              properties: {
+                sheetId,
+                gridProperties: {
+                  frozenRowCount: 1
+                }
+              },
+              fields: 'gridProperties.frozenRowCount'
+            }
+          },
+          {
+            repeatCell: {
+              range: {
+                sheetId,
+                startRowIndex: 0,
+                endRowIndex: 1
+              },
+              cell: {
+                userEnteredFormat: {
+                  backgroundColor: {
+                    red: 0.07,
+                    green: 0.31,
+                    blue: 0.38
+                  },
+                  textFormat: {
+                    bold: true,
+                    foregroundColor: {
+                      red: 1,
+                      green: 1,
+                      blue: 1
+                    }
+                  },
+                  horizontalAlignment: 'CENTER',
+                  verticalAlignment: 'MIDDLE'
+                }
+              },
+              fields: 'userEnteredFormat(backgroundColor,textFormat,horizontalAlignment,verticalAlignment)'
+            }
+          },
+          {
+            repeatCell: {
+              range: {
+                sheetId,
+                startRowIndex: 1
+              },
+              cell: {
+                userEnteredFormat: {
+                  verticalAlignment: 'MIDDLE',
+                  wrapStrategy: 'WRAP'
+                }
+              },
+              fields: 'userEnteredFormat(verticalAlignment,wrapStrategy)'
+            }
+          },
+          {
+            setBasicFilter: {
+              filter: {
+                range: {
+                  sheetId,
+                  startRowIndex: 0,
+                  endRowIndex: values.length,
+                  startColumnIndex: 0,
+                  endColumnIndex: EMPLOYEE_SHEET_HEADERS.length
+                }
+              }
+            }
+          },
+          ...COLUMN_WIDTHS.map((pixelSize, index) => ({
+            updateDimensionProperties: {
+              range: {
+                sheetId,
+                dimension: 'COLUMNS',
+                startIndex: index,
+                endIndex: index + 1
+              },
+              properties: {
+                pixelSize
+              },
+              fields: 'pixelSize'
+            }
+          }))
+        ]
+      }
+    });
+  }
 
   return {
     spreadsheetId,
