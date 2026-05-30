@@ -4,7 +4,6 @@ import { env } from '../config/env';
 import { prisma } from '../db/prisma';
 
 const EMPLOYEE_SHEET_HEADERS = [
-  'ID',
   'Status',
   'IBAN',
   'Luni in oras',
@@ -12,14 +11,10 @@ const EMPLOYEE_SHEET_HEADERS = [
   'Nume complet',
   'Telefon',
   'Numar masina',
-  'Angajator',
-  'Recomandare',
-  'Rank',
-  'Updated At',
-  'Poza buletin'
+  'Rank'
 ];
 
-const COLUMN_WIDTHS = [70, 110, 190, 110, 170, 220, 140, 130, 170, 180, 130, 170, 320];
+const COLUMN_WIDTHS = [110, 190, 110, 170, 220, 140, 130, 130];
 
 const requireSheetsConfig = () => {
   if (!env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !env.GOOGLE_PRIVATE_KEY || !env.GOOGLE_SHEETS_SPREADSHEET_ID) {
@@ -77,7 +72,6 @@ export const exportEmployeesToGoogleSheets = async (): Promise<{
   const values = [
     EMPLOYEE_SHEET_HEADERS,
     ...employees.map((employee) => [
-      formatCell(employee.id),
       formatCell(employee.status),
       formatCell(employee.iban),
       formatCell(employee.monthsInCity),
@@ -85,11 +79,7 @@ export const exportEmployeesToGoogleSheets = async (): Promise<{
       formatCell(employee.fullName),
       formatCell(employee.phone),
       formatCell(employee.plateNumber),
-      formatCell(employee.employerName),
-      formatCell(employee.recommendation),
-      formatCell(employee.rank),
-      formatCell(employee.updatedAt),
-      formatCell(employee.idImageUrl)
+      formatCell(employee.rank)
     ])
   ];
 
