@@ -2,9 +2,11 @@ import { useEffect, useRef, useState } from 'react';
 import { apiGet, apiPost } from '../api/client';
 import {
   DashboardResponse,
+  InactiveReportResponse,
   MaintenanceJobStatus,
   MaintenanceStartResponse
 } from '../types';
+import { formatDate, formatDateTime } from '../utils/format';
 
 type DashboardPageProps = {
   canManage?: boolean;
@@ -12,6 +14,9 @@ type DashboardPageProps = {
 
 export const DashboardPage = ({ canManage = false }: DashboardPageProps) => {
   const [data, setData] = useState<DashboardResponse | null>(null);
+  const [inactiveReport, setInactiveReport] = useState<InactiveReportResponse | null>(null);
+  const [inactiveLoading, setInactiveLoading] = useState(false);
+  const [inactiveError, setInactiveError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [maintenanceMessage, setMaintenanceMessage] = useState<string | null>(null);
   const [maintenanceBusy, setMaintenanceBusy] = useState(false);
@@ -32,6 +37,20 @@ export const DashboardPage = ({ canManage = false }: DashboardPageProps) => {
     void apiGet<DashboardResponse>('/dashboard')
       .then(setData)
       .catch((loadError) => setError(loadError instanceof Error ? loadError.message : 'Eroare dashboard'));
+  };
+
+  const loadInactiveReport = async () => {
+    setInactiveLoading(true);
+    setInactiveError(null);
+
+    try {
+      const response = await apiGet<InactiveReportResponse>('/dashboard/inactive-report');
+      setInactiveReport(response);
+    } catch (loadError) {
+      setInactiveError(loadError instanceof Error ? loadError.message : 'Nu am putut genera raportul de inactivi.');
+    } finally {
+      setInactiveLoading(false);
+    }
   };
 
   const pollJobStatus = async () => {
@@ -169,6 +188,9 @@ export const DashboardPage = ({ canManage = false }: DashboardPageProps) => {
     await startBackgroundJob('/maintenance/rebuild-all', {}, 'Reset complet + reimport pornit.');
   };
 
+  const formatCycleRange = (startedAt: string, endedAt: string): string =>
+    `${formatDate(startedAt)} - ${formatDate(endedAt)}`;
+
   return (
     <section>
       <h2>Dashboard</h2>
@@ -190,6 +212,124 @@ export const DashboardPage = ({ canManage = false }: DashboardPageProps) => {
           <span>ID ciclu curent</span>
           <strong>{data?.currentCycleId ?? '-'}</strong>
         </article>
+      </div>
+
+      <div className="card">
+        <h3>Verificare Inactivi</h3>
+        <div className="filters">
+          <button type="button" onClick={() => void loadInactiveReport()} disabled={inactiveLoading}>
+            {inactiveLoading ? 'Se verifica...' : 'Verificare Inactivi'}
+          </button>
+        </div>
+        <p className="muted-line">
+          Raportul verifica doar saptamanile inchise, de la data angajarii, si separa pontajele `0 min` de cele sub `60 min`.
+        </p>
+        {inactiveError ? <p className="error">{inactiveError}</p> : null}
+        {inactiveReport ? (
+          <>
+            <div className="stats-grid">
+              <article className="stat-card">
+                <span>Angajati verificati</span>
+                <strong>{inactiveReport.totalEmployeesChecked}</strong>
+              </article>
+              <article className="stat-card">
+                <span>Saptamani inchise</span>
+                <strong>{inactiveReport.totalCompletedCycles}</strong>
+              </article>
+              <article className="stat-card">
+                <span>Saptamani cu 0 min</span>
+                <strong>{inactiveReport.zeroMinuteWeeks}</strong>
+              </article>
+              <article className="stat-card">
+                <span>Saptamani sub 60 min</span>
+                <strong>{inactiveReport.underSixtyMinuteWeeks}</strong>
+              </article>
+            </div>
+            <p className="muted-line">Generat la: {formatDateTime(inactiveReport.generatedAt)}</p>
+
+            <div className="card table-wrapper">
+              <h3>Fara pontaj</h3>
+              {inactiveReport.zeroMinuteEmployees.length ? (
+                <table className="timesheet-table">
+                  <thead>
+                    <tr>
+                      <th>Angajat</th>
+                      <th>Rank</th>
+                      <th>Intrat</th>
+                      <th>Saptamani cu 0 min</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {inactiveReport.zeroMinuteEmployees.map((employee) => (
+                      <tr key={`zero-${employee.employeeId}`} className="is-inactive">
+                        <td>
+                          <strong>{employee.displayName}</strong>
+                          <div className="muted-line">{employee.employeeCode ?? '-'}</div>
+                        </td>
+                        <td>{employee.rank ?? '-'}</td>
+                        <td>{formatDate(employee.joinedAt)}</td>
+                        <td>
+                          <div className="inactive-report-weeks">
+                            {employee.zeroWeeks.map((week) => (
+                              <div key={`zero-${employee.employeeId}-${week.cycleId}`} className="inactive-report-week">
+                                <span className="badge danger">0 min</span>
+                                <span>{formatCycleRange(week.startedAt, week.endedAt)}</span>
+                                <span className="muted-line">Ciclu #{week.cycleId}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <p>Nu exista membri cu saptamani de 0 minute in ciclurile inchise.</p>
+              )}
+            </div>
+
+            <div className="card table-wrapper">
+              <h3>Sub 60 minute</h3>
+              {inactiveReport.underSixtyMinuteEmployees.length ? (
+                <table className="timesheet-table">
+                  <thead>
+                    <tr>
+                      <th>Angajat</th>
+                      <th>Rank</th>
+                      <th>Intrat</th>
+                      <th>Saptamani sub 60 min</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {inactiveReport.underSixtyMinuteEmployees.map((employee) => (
+                      <tr key={`low-${employee.employeeId}`}>
+                        <td>
+                          <strong>{employee.displayName}</strong>
+                          <div className="muted-line">{employee.employeeCode ?? '-'}</div>
+                        </td>
+                        <td>{employee.rank ?? '-'}</td>
+                        <td>{formatDate(employee.joinedAt)}</td>
+                        <td>
+                          <div className="inactive-report-weeks">
+                            {employee.lowWeeks.map((week) => (
+                              <div key={`low-${employee.employeeId}-${week.cycleId}`} className="inactive-report-week">
+                                <span className="badge warning">{week.totalLabel}</span>
+                                <span>{formatCycleRange(week.startedAt, week.endedAt)}</span>
+                                <span className="muted-line">Ciclu #{week.cycleId}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <p>Nu exista membri cu saptamani sub 60 minute in ciclurile inchise.</p>
+              )}
+            </div>
+          </>
+        ) : null}
       </div>
 
       {canManage ? (

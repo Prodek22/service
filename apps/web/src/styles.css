@@ -936,6 +936,18 @@ html[data-theme='dark'] .timesheet-week-salary-total {
   color: var(--muted);
 }
 
+.inactive-report-weeks {
+  display: grid;
+  gap: 8px;
+}
+
+.inactive-report-week {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
 .reaction-emoji-cell {
   display: inline-flex;
   align-items: center;

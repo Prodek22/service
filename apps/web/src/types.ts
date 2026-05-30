@@ -62,6 +62,42 @@ export type DashboardResponse = {
   };
 };
 
+export type InactiveReportResponse = {
+  generatedAt: string;
+  totalEmployeesChecked: number;
+  totalCompletedCycles: number;
+  zeroMinuteWeeks: number;
+  underSixtyMinuteWeeks: number;
+  zeroMinuteEmployees: Array<{
+    employeeId: number;
+    employeeCode: string | null;
+    displayName: string;
+    rank: string | null;
+    joinedAt: string;
+    zeroWeeks: Array<{
+      cycleId: number;
+      startedAt: string;
+      endedAt: string;
+      totalSeconds: number;
+      totalLabel: string;
+    }>;
+  }>;
+  underSixtyMinuteEmployees: Array<{
+    employeeId: number;
+    employeeCode: string | null;
+    displayName: string;
+    rank: string | null;
+    joinedAt: string;
+    lowWeeks: Array<{
+      cycleId: number;
+      startedAt: string;
+      endedAt: string;
+      totalSeconds: number;
+      totalLabel: string;
+    }>;
+  }>;
+};
+
 export type WeekCycle = {
   id: number;
   serviceCode: string;
