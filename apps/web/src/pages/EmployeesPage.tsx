@@ -32,6 +32,8 @@ export const EmployeesPage = ({ readOnly = false }: EmployeesPageProps) => {
   const [rawEntries, setRawEntries] = useState<EmployeeCvRawEntry[]>([]);
   const [verifyBusy, setVerifyBusy] = useState(false);
   const [verifyResult, setVerifyResult] = useState<VerifyIdImagesResponse | null>(null);
+  const [exportBusy, setExportBusy] = useState(false);
+  const [exportMessage, setExportMessage] = useState<string | null>(null);
   const [previewImage, setPreviewImage] = useState<{ employeeId: number; label: string; cacheKey: number } | null>(null);
 
   const query = useMemo(() => {
@@ -131,6 +133,24 @@ export const EmployeesPage = ({ readOnly = false }: EmployeesPageProps) => {
       setVerifyResult(response);
     } finally {
       setVerifyBusy(false);
+    }
+  };
+
+  const exportGoogleSheets = async () => {
+    if (readOnly) {
+      return;
+    }
+
+    setExportBusy(true);
+    setExportMessage(null);
+
+    try {
+      const response = await apiPost<{ ok: boolean; rowsWritten: number; sheetName: string }>('/employees/export-google-sheets', {});
+      setExportMessage(`Google Sheets actualizat: ${response.rowsWritten} angajati in tab-ul ${response.sheetName}.`);
+    } catch (exportError) {
+      setExportMessage(exportError instanceof Error ? exportError.message : 'Nu am putut actualiza Google Sheets.');
+    } finally {
+      setExportBusy(false);
     }
   };
 
@@ -258,7 +278,14 @@ export const EmployeesPage = ({ readOnly = false }: EmployeesPageProps) => {
             {verifyBusy ? 'Verificare linkuri buletin...' : 'Verifica linkuri buletin'}
           </button>
         ) : null}
+        {!readOnly ? (
+          <button type="button" onClick={() => void exportGoogleSheets()} disabled={exportBusy}>
+            {exportBusy ? 'Actualizare Google Sheets...' : 'Update Google Sheets'}
+          </button>
+        ) : null}
       </div>
+
+      {!readOnly && exportMessage ? <div className="card"><strong>{exportMessage}</strong></div> : null}
 
       {!readOnly && verifyResult ? (
         <div className="card">

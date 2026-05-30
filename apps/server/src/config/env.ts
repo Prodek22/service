@@ -26,6 +26,10 @@ const envSchema = z.object({
   AUTO_CLEANUP_RUN_ON_START: z.enum(['true', 'false']).default('false'),
   BACKFILL_BATCH_DELAY_MS: z.string().default('120'),
   MAINTENANCE_WORKER_MAX_OLD_SPACE_MB: z.string().default('256'),
+  GOOGLE_SERVICE_ACCOUNT_EMAIL: z.string().optional(),
+  GOOGLE_PRIVATE_KEY: z.string().optional(),
+  GOOGLE_SHEETS_SPREADSHEET_ID: z.string().optional(),
+  GOOGLE_SHEETS_EMPLOYEES_TAB: z.string().default('Angajati'),
   DATABASE_URL: z.string().min(1),
   PORT: z.string().default('3001')
 });

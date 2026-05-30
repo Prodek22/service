@@ -23,6 +23,7 @@
     "discord.js": "^14.17.3",
     "dotenv": "^16.4.5",
     "express": "^4.21.1",
+    "googleapis": "^173.0.0",
     "jsonwebtoken": "^9.0.2",
     "mysql2": "^3.11.3",
     "zod": "^3.23.8"
@@ -39,4 +40,3 @@
     "typescript": "^5.7.2"
   }
 }
-

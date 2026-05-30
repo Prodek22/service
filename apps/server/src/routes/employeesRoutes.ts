@@ -7,6 +7,7 @@ import { getDiscordClient } from '../bot/clientStore';
 import { env } from '../config/env';
 import { prisma } from '../db/prisma';
 import { recordAuditLog } from '../services/auditLogService';
+import { exportEmployeesToGoogleSheets } from '../services/employeeSheetsService';
 import { recordEmployeeRankChangeIfDifferent } from '../services/rankHistoryService';
 import {
   deleteLocalIdImage,
@@ -529,6 +530,29 @@ employeesRouter.post('/verify-id-images', requireAdmin, async (req, res) => {
     invalid: invalid.length,
     invalidItems: invalid
   });
+});
+
+employeesRouter.post('/export-google-sheets', requireAdmin, async (req, res) => {
+  try {
+    const result = await exportEmployeesToGoogleSheets();
+
+    await recordAuditLog({
+      req,
+      res,
+      action: 'EMPLOYEES_EXPORTED_TO_GOOGLE_SHEETS',
+      entityType: 'employee',
+      metadata: result
+    });
+
+    res.json({
+      ok: true,
+      ...result
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: error instanceof Error ? error.message : 'Nu am putut exporta angajatii in Google Sheets.'
+    });
+  }
 });
 
 employeesRouter.get('/:id/id-image', async (req, res) => {
