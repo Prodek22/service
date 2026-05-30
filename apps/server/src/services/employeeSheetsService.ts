@@ -14,6 +14,8 @@ const EMPLOYEE_SHEET_HEADERS = [
   'Rank'
 ];
 
+const COLUMN_WIDTHS = [260, 160, 220, 300, 210, 230, 240];
+
 const requireSheetsConfig = () => {
   if (!env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !env.GOOGLE_PRIVATE_KEY || !env.GOOGLE_SHEETS_SPREADSHEET_ID) {
     throw new Error(
@@ -176,7 +178,7 @@ export const exportEmployeesToGoogleSheets = async (): Promise<{
                 fontSize: 16,
                 bold: true
               },
-              horizontalAlignment: 'CENTER',
+              horizontalAlignment: 'LEFT',
               verticalAlignment: 'MIDDLE',
               wrapStrategy: 'CLIP',
               borders: {
@@ -192,6 +194,22 @@ export const exportEmployeesToGoogleSheets = async (): Promise<{
             }
           },
           fields: 'userEnteredFormat(textFormat,horizontalAlignment,verticalAlignment,wrapStrategy,borders)'
+        }
+      },
+      {
+        repeatCell: {
+          range: {
+            sheetId,
+            startRowIndex: 1,
+            startColumnIndex: 1,
+            endColumnIndex: 2
+          },
+          cell: {
+            userEnteredFormat: {
+              horizontalAlignment: 'CENTER'
+            }
+          },
+          fields: 'userEnteredFormat(horizontalAlignment)'
         }
       },
       {
@@ -238,13 +256,101 @@ export const exportEmployeesToGoogleSheets = async (): Promise<{
         }
       },
       {
-        autoResizeDimensions: {
-          dimensions: {
+        updateDimensionProperties: {
+          range: {
             sheetId,
             dimension: 'COLUMNS',
             startIndex: 0,
-            endIndex: EMPLOYEE_SHEET_HEADERS.length
-          }
+            endIndex: 1
+          },
+          properties: {
+            pixelSize: COLUMN_WIDTHS[0]
+          },
+          fields: 'pixelSize'
+        }
+      },
+      {
+        updateDimensionProperties: {
+          range: {
+            sheetId,
+            dimension: 'COLUMNS',
+            startIndex: 1,
+            endIndex: 2
+          },
+          properties: {
+            pixelSize: COLUMN_WIDTHS[1]
+          },
+          fields: 'pixelSize'
+        }
+      },
+      {
+        updateDimensionProperties: {
+          range: {
+            sheetId,
+            dimension: 'COLUMNS',
+            startIndex: 2,
+            endIndex: 3
+          },
+          properties: {
+            pixelSize: COLUMN_WIDTHS[2]
+          },
+          fields: 'pixelSize'
+        }
+      },
+      {
+        updateDimensionProperties: {
+          range: {
+            sheetId,
+            dimension: 'COLUMNS',
+            startIndex: 3,
+            endIndex: 4
+          },
+          properties: {
+            pixelSize: COLUMN_WIDTHS[3]
+          },
+          fields: 'pixelSize'
+        }
+      },
+      {
+        updateDimensionProperties: {
+          range: {
+            sheetId,
+            dimension: 'COLUMNS',
+            startIndex: 4,
+            endIndex: 5
+          },
+          properties: {
+            pixelSize: COLUMN_WIDTHS[4]
+          },
+          fields: 'pixelSize'
+        }
+      },
+      {
+        updateDimensionProperties: {
+          range: {
+            sheetId,
+            dimension: 'COLUMNS',
+            startIndex: 5,
+            endIndex: 6
+          },
+          properties: {
+            pixelSize: COLUMN_WIDTHS[5]
+          },
+          fields: 'pixelSize'
+        }
+      },
+      {
+        updateDimensionProperties: {
+          range: {
+            sheetId,
+            dimension: 'COLUMNS',
+            startIndex: 6,
+            endIndex: 7
+          },
+          properties: {
+            pixelSize: COLUMN_WIDTHS[6]
+          },
+          fields: 'pixelSize'
         }
       },
       {
