@@ -373,6 +373,9 @@ export const TimesheetPage = ({ readOnly = false }: TimesheetPageProps) => {
     };
   };
 
+  const publicColumnCount = 9;
+  const adminColumnCount = 13;
+
   const togglePayrollStatus = async (employeeId: number | null, isPaid: boolean) => {
     if (readOnly || !employeeId || !selectedCycleId || !summary) {
       return;
@@ -651,11 +654,11 @@ export const TimesheetPage = ({ readOnly = false }: TimesheetPageProps) => {
               <th>Data intrare</th>
               <th>Total timp (min)</th>
               <th>Total ajustari (min)</th>
-              <th>Bonus noapte</th>
-              <th>Salariu</th>
-              <th>Platit</th>
-              <th>Up</th>
-              <th>Istoric</th>
+              {!readOnly ? <th>Bonus noapte</th> : null}
+              {!readOnly ? <th>Salariu</th> : null}
+              {!readOnly ? <th>Platit</th> : null}
+              {!readOnly ? <th>Up</th> : null}
+              {!readOnly ? <th>Istoric</th> : null}
             </tr>
           </thead>
           <tbody>
@@ -667,7 +670,7 @@ export const TimesheetPage = ({ readOnly = false }: TimesheetPageProps) => {
                 <Fragment key={row.key}>
                   {showExitedSeparator ? (
                     <tr className="timesheet-separator-row">
-                      <td colSpan={13}>Angajati iesiti din service</td>
+                      <td colSpan={readOnly ? publicColumnCount : adminColumnCount}>Angajati iesiti din service</td>
                     </tr>
                   ) : null}
                   <tr
@@ -751,20 +754,22 @@ export const TimesheetPage = ({ readOnly = false }: TimesheetPageProps) => {
                     >
                       {formatMinutes(getTotalAdjustmentsSeconds(row))}
                     </td>
-                    <td title={`18:00-23:00 | ${formatMinutes(row.nightSeconds)} | ${formatCurrency(row.nightBonus)}`}>
-                      {formatCurrency(row.nightBonus)}
-                    </td>
-                    <td
-                      title={`Baza: ${formatCurrency(row.baseSalary)} | Bonus noapte: ${formatCurrency(
-                        row.nightBonus
-                      )} | Bonus top: ${formatCurrency(row.topBonus)}`}
-                    >
-                      {formatCurrency(row.salaryTotal)}
-                    </td>
-                    <td>
-                      {readOnly ? (
-                        <span className={`badge ${row.payroll.isPaid ? 'ok' : 'muted'}`}>{row.payroll.isPaid ? 'DA' : 'NU'}</span>
-                      ) : (
+                    {!readOnly ? (
+                      <td title={`18:00-23:00 | ${formatMinutes(row.nightSeconds)} | ${formatCurrency(row.nightBonus)}`}>
+                        {formatCurrency(row.nightBonus)}
+                      </td>
+                    ) : null}
+                    {!readOnly ? (
+                      <td
+                        title={`Baza: ${formatCurrency(row.baseSalary)} | Bonus noapte: ${formatCurrency(
+                          row.nightBonus
+                        )} | Bonus top: ${formatCurrency(row.topBonus)}`}
+                      >
+                        {formatCurrency(row.salaryTotal)}
+                      </td>
+                    ) : null}
+                    {!readOnly ? (
+                      <td>
                         <label>
                           <input
                             type="checkbox"
@@ -774,17 +779,13 @@ export const TimesheetPage = ({ readOnly = false }: TimesheetPageProps) => {
                           />{' '}
                           {row.payroll.isPaid ? 'DA' : 'NU'}
                         </label>
-                      )}
-                    </td>
-                    <td
-                      className={`up-cell ${upState.colorClass}`.trim()}
-                      title={upState.title}
-                    >
-                      {readOnly ? (
-                        <span className={`badge ${row.payroll.isUp ? 'ok' : 'muted'} ${upState.colorClass}`.trim()}>
-                          {row.payroll.isUp ? 'DA' : 'NU'}
-                        </span>
-                      ) : (
+                      </td>
+                    ) : null}
+                    {!readOnly ? (
+                      <td
+                        className={`up-cell ${upState.colorClass}`.trim()}
+                        title={upState.title}
+                      >
                         <label>
                           <input
                             type="checkbox"
@@ -794,24 +795,26 @@ export const TimesheetPage = ({ readOnly = false }: TimesheetPageProps) => {
                           />{' '}
                           {row.payroll.isUp ? 'DA' : 'NU'}
                         </label>
-                      )}
-                    </td>
-                    <td>
-                      <button
-                        className="btn-history"
-                        onClick={() => void openHistoryModal(row.employeeId, row.displayName)}
-                        disabled={!row.employeeId}
-                      >
-                        Istoric
-                      </button>
-                    </td>
+                      </td>
+                    ) : null}
+                    {!readOnly ? (
+                      <td>
+                        <button
+                          className="btn-history"
+                          onClick={() => void openHistoryModal(row.employeeId, row.displayName)}
+                          disabled={!row.employeeId}
+                        >
+                          Istoric
+                        </button>
+                      </td>
+                    ) : null}
                   </tr>
                 </Fragment>
               );
             })}
             {!visibleRows.length ? (
               <tr>
-                <td colSpan={13}>
+                <td colSpan={readOnly ? publicColumnCount : adminColumnCount}>
                   {isSummaryCalculating
                     ? 'Se calculeaza rezultatele pentru acest ciclu...'
                     : inactiveOnly

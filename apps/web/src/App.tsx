@@ -125,9 +125,11 @@ const AdminLayout = ({ username, role, canViewAudit, theme, onToggleTheme, onLog
             <NavLink to="/admin/employees" className={({ isActive }) => (isActive ? 'active' : '')}>
               Angajati
             </NavLink>
-            <NavLink to="/" end className={({ isActive }) => (isActive ? 'active' : '')}>
-              Pontaj saptamanal
-            </NavLink>
+            {role === 'ADMIN' ? (
+              <NavLink to="/" end className={({ isActive }) => (isActive ? 'active' : '')}>
+                Pontaj saptamanal
+              </NavLink>
+            ) : null}
             {role === 'ADMIN' ? (
               <NavLink to="/admin/reactions" className={({ isActive }) => (isActive ? 'active' : '')}>
                 Reacturi mesaje
@@ -373,8 +375,11 @@ export const App = () => {
       />
       <Route path="/admin" element={renderAdminPage(<DashboardPage canManage={auth.role === 'ADMIN'} />)} />
       <Route path="/admin/employees" element={renderAdminPage(<EmployeesPage readOnly={auth.role !== 'ADMIN'} />)} />
-      <Route path="/admin/timesheet" element={<Navigate to="/" replace />} />
-      <Route path="/admin/timesheet-active" element={<Navigate to="/timesheet-active" replace />} />
+      <Route path="/admin/timesheet" element={renderAdminPage(auth.role === 'ADMIN' ? <Navigate to="/" replace /> : <Navigate to="/admin" replace />)} />
+      <Route
+        path="/admin/timesheet-active"
+        element={renderAdminPage(auth.role === 'ADMIN' ? <Navigate to="/timesheet-active" replace /> : <Navigate to="/admin" replace />)}
+      />
       <Route
         path="/admin/reactions"
         element={renderAdminPage(auth.role === 'ADMIN' ? <ReactionTrackingPage /> : <Navigate to="/admin" replace />)}
