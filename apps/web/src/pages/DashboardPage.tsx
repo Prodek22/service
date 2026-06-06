@@ -410,13 +410,22 @@ export const DashboardPage = ({ canManage = false }: DashboardPageProps) => {
               <h3>Actiuni rapide</h3>
             </div>
             <div className="filters dashboard-action-grid">
-              <button type="button" className="btn-danger-action" onClick={() => void syncEmployeesIncremental()} disabled={maintenanceBusy}>
-                <span className="dashboard-action-icon">{renderIcon('sync')}</span>
-                <span>Sync incremental angajati</span>
-                <span className="warning-triangle" aria-hidden="true">
-                  <span>!</span>
-                </span>
-              </button>
+              <div className="dashboard-action-stack">
+                <button type="button" className="btn-danger-action" onClick={() => void syncEmployeesIncremental()} disabled={maintenanceBusy}>
+                  <span className="dashboard-action-icon">{renderIcon('sync')}</span>
+                  <span>Sync incremental angajati</span>
+                  <span className="warning-triangle" aria-hidden="true">
+                    <span>!</span>
+                  </span>
+                </button>
+                <button type="button" className="btn-danger-action" onClick={() => void rebuildAllData()} disabled={maintenanceBusy}>
+                  <span className="dashboard-action-icon">{renderIcon('stack')}</span>
+                  <span>Reset complet + reimport</span>
+                  <span className="warning-triangle" aria-hidden="true">
+                    <span>!</span>
+                  </span>
+                </button>
+              </div>
               <button type="button" className="btn-danger-action" onClick={() => void syncCurrentWeekTimesheets()} disabled={maintenanceBusy}>
                 <span className="dashboard-action-icon">{renderIcon('calendar')}</span>
                 <span>Sincronizeaza pontaj saptamana in curs</span>
@@ -434,13 +443,6 @@ export const DashboardPage = ({ canManage = false }: DashboardPageProps) => {
               <button type="button" className="btn-danger-action" onClick={() => void recalculateTimesheets()} disabled={maintenanceBusy}>
                 <span className="dashboard-action-icon">{renderIcon('clock')}</span>
                 <span>Recalculeaza timpii (toate saptamanile)</span>
-                <span className="warning-triangle" aria-hidden="true">
-                  <span>!</span>
-                </span>
-              </button>
-              <button type="button" className="btn-danger-action" onClick={() => void rebuildAllData()} disabled={maintenanceBusy}>
-                <span className="dashboard-action-icon">{renderIcon('stack')}</span>
-                <span>Reset complet + reimport</span>
                 <span className="warning-triangle" aria-hidden="true">
                   <span>!</span>
                 </span>
