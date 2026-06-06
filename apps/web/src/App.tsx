@@ -288,7 +288,7 @@ const AdminLayout = ({ username, role, canViewAudit, theme, onToggleTheme, onLog
             </div>
             <div className="admin-topbar-user">
               <div className="admin-avatar-ring">
-                <span>{String(username ?? 'A').slice(0, 1).toUpperCase()}</span>
+                <img src="/paradise-logo.png" alt="Paradise logo" className="admin-avatar-image" />
               </div>
               <div>
                 <strong>{username}</strong>

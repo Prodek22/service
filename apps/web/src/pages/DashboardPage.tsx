@@ -192,63 +192,71 @@ export const DashboardPage = ({ canManage = false }: DashboardPageProps) => {
     `${formatDate(startedAt)} - ${formatDate(endedAt)}`;
 
   return (
-    <section>
-      <h2>Dashboard</h2>
+    <section className="dashboard-page">
+      <div className="dashboard-section-heading">
+        <h2>Dashboard</h2>
+      </div>
       {error && <p className="error">{error}</p>}
-      <div className="stats-grid">
-        <article className="stat-card">
+      <div className="stats-grid dashboard-stats-grid">
+        <article className="stat-card dashboard-stat-card">
+          <div className="dashboard-stat-icon">👥</div>
           <span>Angajati activi</span>
           <strong>{data?.totalActiveEmployees ?? '-'}</strong>
         </article>
-        <article className="stat-card">
+        <article className="stat-card dashboard-stat-card">
+          <div className="dashboard-stat-icon">📄</div>
           <span>CV-uri incomplete</span>
           <strong>{data?.totalIncompleteCvs ?? '-'}</strong>
         </article>
-        <article className="stat-card">
+        <article className="stat-card dashboard-stat-card">
+          <div className="dashboard-stat-icon">🕒</div>
           <span>Total ore ciclu curent</span>
           <strong>{data?.totalWeekLabel ?? '-'}</strong>
         </article>
-        <article className="stat-card">
+        <article className="stat-card dashboard-stat-card">
+          <div className="dashboard-stat-icon">#</div>
           <span>ID ciclu curent</span>
           <strong>{data?.currentCycleId ?? '-'}</strong>
         </article>
       </div>
 
       {canManage ? (
-        <div className="card">
-          <h3>Verificare Inactivi</h3>
-          <div className="filters">
+        <div className="card dashboard-panel dashboard-inactive-panel">
+          <div className="dashboard-panel-header">
+            <h3>Verificare Inactivi</h3>
+          </div>
+          <div className="filters dashboard-panel-actions">
             <button type="button" onClick={() => void loadInactiveReport()} disabled={inactiveLoading}>
               {inactiveLoading ? 'Se verifica...' : 'Verificare Inactivi'}
             </button>
           </div>
-          <p className="muted-line">
+          <p className="muted-line dashboard-panel-copy">
             Raportul verifica doar saptamanile inchise, de la data angajarii, si separa pontajele `0 min` de cele sub `60 min`.
           </p>
           {inactiveError ? <p className="error">{inactiveError}</p> : null}
           {inactiveReport ? (
             <>
-              <div className="stats-grid">
-                <article className="stat-card">
+              <div className="stats-grid dashboard-mini-stats">
+                <article className="stat-card dashboard-mini-stat">
                   <span>Angajati verificati</span>
                   <strong>{inactiveReport.totalEmployeesChecked}</strong>
                 </article>
-                <article className="stat-card">
+                <article className="stat-card dashboard-mini-stat">
                   <span>Saptamani inchise</span>
                   <strong>{inactiveReport.totalCompletedCycles}</strong>
                 </article>
-                <article className="stat-card">
+                <article className="stat-card dashboard-mini-stat">
                   <span>Saptamani cu 0 min</span>
                   <strong>{inactiveReport.zeroMinuteWeeks}</strong>
                 </article>
-                <article className="stat-card">
+                <article className="stat-card dashboard-mini-stat">
                   <span>Saptamani sub 60 min</span>
                   <strong>{inactiveReport.underSixtyMinuteWeeks}</strong>
                 </article>
               </div>
               <p className="muted-line">Generat la: {formatDateTime(inactiveReport.generatedAt)}</p>
 
-              <div className="card table-wrapper">
+              <div className="card table-wrapper dashboard-subpanel">
                 <h3>Fara pontaj</h3>
                 {inactiveReport.zeroMinuteEmployees.length ? (
                   <table className="timesheet-table">
@@ -289,7 +297,7 @@ export const DashboardPage = ({ canManage = false }: DashboardPageProps) => {
                 )}
               </div>
 
-              <div className="card table-wrapper">
+              <div className="card table-wrapper dashboard-subpanel">
                 <h3>Sub 60 minute</h3>
                 {inactiveReport.underSixtyMinuteEmployees.length ? (
                   <table className="timesheet-table">
@@ -336,14 +344,16 @@ export const DashboardPage = ({ canManage = false }: DashboardPageProps) => {
 
       {canManage ? (
         <>
-          <div className="card">
-            <h3>Performanta pontaje</h3>
-            <div className="stats-grid">
-              <article className="stat-card">
+          <div className="card dashboard-panel">
+            <div className="dashboard-panel-header">
+              <h3>Performanta pontaje</h3>
+            </div>
+            <div className="stats-grid dashboard-mini-stats">
+              <article className="stat-card dashboard-mini-stat">
                 <span>Cache hit rate</span>
                 <strong>{data?.timesheetPerformance ? `${data.timesheetPerformance.hitRate}%` : '-'}</strong>
               </article>
-              <article className="stat-card">
+              <article className="stat-card dashboard-mini-stat">
                 <span>Hit / Miss</span>
                 <strong>
                   {data?.timesheetPerformance
@@ -351,22 +361,24 @@ export const DashboardPage = ({ canManage = false }: DashboardPageProps) => {
                     : '-'}
                 </strong>
               </article>
-              <article className="stat-card">
+              <article className="stat-card dashboard-mini-stat">
                 <span>Timp mediu summary</span>
                 <strong>
                   {data?.timesheetPerformance ? `${data.timesheetPerformance.averageDurationMs} ms` : '-'}
                 </strong>
               </article>
-              <article className="stat-card">
+              <article className="stat-card dashboard-mini-stat">
                 <span>Intrari cache</span>
                 <strong>{data?.timesheetPerformance?.cacheEntries ?? '-'}</strong>
               </article>
             </div>
           </div>
 
-          <div className="card">
-            <h3>Actiuni rapide</h3>
-            <div className="filters">
+          <div className="card dashboard-panel">
+            <div className="dashboard-panel-header">
+              <h3>Actiuni rapide</h3>
+            </div>
+            <div className="filters dashboard-action-grid">
               <button type="button" className="btn-danger-action" onClick={() => void syncEmployeesIncremental()} disabled={maintenanceBusy}>
                 <span>Sync incremental angajati</span>
                 <span className="warning-triangle" aria-hidden="true">
@@ -398,16 +410,16 @@ export const DashboardPage = ({ canManage = false }: DashboardPageProps) => {
                 </span>
               </button>
             </div>
-            {jobStatus?.state === 'running' ? <p>Job in desfasurare: {jobStatus.type} (ID: {jobStatus.id})</p> : null}
+            {jobStatus?.state === 'running' ? <p className="dashboard-job-line">Job in desfasurare: {jobStatus.type} (ID: {jobStatus.id})</p> : null}
             {jobStatus?.state === 'running' ? (
-              <div>
+              <div className="dashboard-job-progress">
                 <p>
                   Progres: {Math.round(displayedProgress)}% {jobStatus.progressMessage ? `- ${jobStatus.progressMessage}` : ''}
                 </p>
                 <progress value={displayedProgress} max={100} style={{ width: '100%' }} />
               </div>
             ) : null}
-            {maintenanceMessage ? <p>{maintenanceMessage}</p> : null}
+            {maintenanceMessage ? <p className="dashboard-job-line">{maintenanceMessage}</p> : null}
           </div>
 
         </>

@@ -576,6 +576,16 @@ html[data-theme='copper'] .sidebar a:hover {
   font-weight: 800;
 }
 
+.admin-avatar-image {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  object-position: center;
+  border-radius: 14px;
+  background: #f3efe8;
+}
+
 .personnel-page {
   display: grid;
   gap: 16px;
@@ -687,6 +697,120 @@ html[data-theme='copper'] .sidebar a:hover {
 .personnel-pagination {
   justify-content: space-between;
   flex-wrap: wrap;
+}
+
+.dashboard-page {
+  display: grid;
+  gap: 14px;
+}
+
+.dashboard-section-heading h2 {
+  margin: 0;
+}
+
+.dashboard-stats-grid {
+  margin-bottom: 0;
+}
+
+.dashboard-stat-card {
+  position: relative;
+  min-height: 120px;
+  display: grid;
+  align-content: end;
+  overflow: hidden;
+}
+
+.dashboard-stat-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(120deg, transparent 0%, transparent 62%, color-mix(in srgb, var(--accent) 10%, transparent) 100%);
+}
+
+.dashboard-stat-icon {
+  width: 50px;
+  height: 50px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 14px;
+  border-radius: 16px;
+  border: 1px solid color-mix(in srgb, var(--accent) 48%, transparent);
+  background: color-mix(in srgb, var(--accent-soft) 46%, transparent);
+  box-shadow: 0 0 20px color-mix(in srgb, var(--accent) 14%, transparent);
+  font-size: 1.2rem;
+}
+
+.dashboard-panel {
+  position: relative;
+  overflow: hidden;
+}
+
+.dashboard-panel::after {
+  content: '';
+  position: absolute;
+  right: 16px;
+  bottom: 14px;
+  width: 200px;
+  height: 92px;
+  opacity: 0.28;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, transparent 0 12%, color-mix(in srgb, var(--accent) 44%, transparent) 12% 14%, transparent 14% 38%, color-mix(in srgb, var(--accent) 44%, transparent) 38% 40%, transparent 40%),
+    linear-gradient(180deg, transparent 0 24%, color-mix(in srgb, var(--accent) 30%, transparent) 24% 26%, transparent 26% 58%, color-mix(in srgb, var(--accent) 30%, transparent) 58% 60%, transparent 60%);
+}
+
+.dashboard-panel-header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.dashboard-panel-header h3,
+.dashboard-subpanel h3 {
+  margin: 0;
+}
+
+.dashboard-panel-actions {
+  margin-bottom: 10px;
+}
+
+.dashboard-panel-copy {
+  max-width: 760px;
+  margin-bottom: 14px;
+}
+
+.dashboard-mini-stats {
+  margin-bottom: 0;
+}
+
+.dashboard-mini-stat {
+  min-height: 92px;
+}
+
+.dashboard-subpanel {
+  position: relative;
+  padding: 16px;
+}
+
+.dashboard-action-grid {
+  gap: 12px;
+}
+
+.dashboard-action-grid > button {
+  flex: 1 1 240px;
+}
+
+.dashboard-job-line {
+  margin: 12px 0 0;
+}
+
+.dashboard-job-progress {
+  margin-top: 10px;
 }
 
 .public-shell {
