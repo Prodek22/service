@@ -3100,6 +3100,54 @@ html[data-theme='copper'] .layout-dashboard .warning-triangle {
 }
 
 html[data-theme='copper'] .layout-dashboard {
+  align-items: start;
+}
+
+html[data-theme='copper'] .layout-dashboard > .sidebar-toggle {
+  position: absolute;
+  top: 18px;
+  left: 16px;
+  margin-bottom: 0;
+  z-index: 12;
+}
+
+html[data-theme='copper'] .layout-dashboard > .sidebar {
+  grid-column: 1;
+  grid-row: 1;
+  padding-top: 82px;
+  z-index: 4;
+}
+
+html[data-theme='copper'] .layout-dashboard > .layout-main {
+  grid-column: 2;
+  grid-row: 1;
+  min-width: 0;
+  overflow-x: hidden;
+  z-index: 1;
+}
+
+html[data-theme='copper'] .layout-dashboard.sidebar-collapsed > .layout-main {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 1024px) {
+  html[data-theme='copper'] .layout-dashboard > .sidebar-toggle {
+    position: fixed;
+  }
+
+  html[data-theme='copper'] .layout-dashboard > .sidebar {
+    grid-column: 1;
+    grid-row: 1;
+    padding-top: 82px;
+  }
+
+  html[data-theme='copper'] .layout-dashboard > .layout-main {
+    grid-column: 1;
+    grid-row: 2;
+  }
+}
+
+html[data-theme='copper'] .layout-dashboard {
   --bg-main: #070402;
   --bg-sidebar: rgba(12, 7, 3, 0.92);
   --bg-panel: rgba(24, 15, 8, 0.72);
