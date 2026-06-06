@@ -170,7 +170,7 @@ const AdminLayout = ({ username, role, canViewAudit, theme, onToggleTheme, onLog
           <div className="sidebar-brand">
             <div className="sidebar-brand-badge">NX</div>
             <div>
-              <h1>Nexus Staff Hub</h1>
+              <h1>Paradise</h1>
               <p>Monitorizare operativa</p>
             </div>
           </div>
