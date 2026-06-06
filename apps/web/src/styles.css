@@ -3104,7 +3104,7 @@ html[data-theme='copper'] .layout-dashboard {
 }
 
 html[data-theme='copper'] .layout-dashboard > .sidebar-toggle {
-  position: absolute;
+  position: fixed;
   top: 18px;
   left: 16px;
   margin-bottom: 0;
