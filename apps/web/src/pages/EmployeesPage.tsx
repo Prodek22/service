@@ -36,6 +36,17 @@ export const EmployeesPage = ({ readOnly = false }: EmployeesPageProps) => {
   const [exportMessage, setExportMessage] = useState<string | null>(null);
   const [previewImage, setPreviewImage] = useState<{ employeeId: number; label: string; cacheKey: number } | null>(null);
 
+  const visibleStats = useMemo(() => {
+    const items = data?.items ?? [];
+
+    return {
+      total: data?.pagination.total ?? 0,
+      visible: items.length,
+      active: items.filter((item) => item.status === 'ACTIVE' && !item.isIncomplete).length,
+      flagged: items.filter((item) => item.isIncomplete || item.missingIdImage).length
+    };
+  }, [data]);
+
   const query = useMemo(() => {
     const params = new URLSearchParams({
       page: String(page),
@@ -164,8 +175,47 @@ export const EmployeesPage = ({ readOnly = false }: EmployeesPageProps) => {
   };
 
   return (
-    <section>
-      <h2>Angajati</h2>
+    <section className="personnel-page">
+      <div className="page-hero">
+        <div className="page-hero-copy">
+          <span className="page-hero-eyebrow">Monitorizare si control</span>
+          <h2>Gestionare personal</h2>
+          <p>Pastrezi aceleasi date si actiuni, dar intr-un layout compact, clar si mai aproape de interfata din referinta.</p>
+        </div>
+        <div className="page-hero-actions">
+          {!readOnly ? (
+            <button type="button" className="btn-table-action secondary" onClick={() => void exportGoogleSheets()} disabled={exportBusy}>
+              {exportBusy ? 'Actualizare...' : 'Exporta'}
+            </button>
+          ) : null}
+          <a
+            className="btn-table-action"
+            href="https://docs.google.com/spreadsheets/d/1X2vLn8e98DNurVKnvOVaTALnCJgrMbfHwA_5LKTxQl0/edit?usp=sharing"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Docs
+          </a>
+        </div>
+      </div>
+
+      <div className="stats-grid personnel-stats-grid">
+        <article className="stat-card personnel-stat-card">
+          <span>Total membri</span>
+          <strong>{visibleStats.total}</strong>
+          <p>{visibleStats.visible} afisati in pagina curenta</p>
+        </article>
+        <article className="stat-card personnel-stat-card">
+          <span>Membri activi vizibili</span>
+          <strong>{visibleStats.active}</strong>
+          <p>Conform filtrelor active</p>
+        </article>
+        <article className="stat-card personnel-stat-card">
+          <span>Cazuri de verificat</span>
+          <strong>{visibleStats.flagged}</strong>
+          <p>Incomplet sau fara buletin</p>
+        </article>
+      </div>
 
       <div className="rank-tabs">
         <button
@@ -220,76 +270,66 @@ export const EmployeesPage = ({ readOnly = false }: EmployeesPageProps) => {
         </button>
       </div>
 
-      <div className="card filters">
-        <input
-          placeholder="Cauta dupa nume, iban, telefon, rank..."
-          value={search}
-          onChange={(event) => {
-            setPage(1);
-            setSearch(event.target.value);
-          }}
-        />
-        <select
-          value={status}
-          onChange={(event) => {
-            setPage(1);
-            setStatus(event.target.value);
-          }}
-        >
-          <option value="">Active + Incomplete</option>
-          <option value="ACTIVE">Active</option>
-          <option value="INCOMPLETE">Incomplete</option>
-          <option value="DELETED">Sterse (soft)</option>
-        </select>
-        <label>
+      <div className="card personnel-filter-panel">
+        <div className="filters personnel-filters">
           <input
-            type="checkbox"
-            checked={missingImage}
+            placeholder="Cauta dupa nume, iban, telefon, rank..."
+            value={search}
             onChange={(event) => {
               setPage(1);
-              setMissingImage(event.target.checked);
+              setSearch(event.target.value);
             }}
           />
-          Doar fara poza buletin
-        </label>
-        <label>
-          <input
-            type="checkbox"
-            checked={incompleteOnly}
+          <select
+            value={status}
             onChange={(event) => {
               setPage(1);
-              setIncompleteOnly(event.target.checked);
+              setStatus(event.target.value);
             }}
-          />
-          Doar CV incomplete
-        </label>
-        <select value={sortBy} onChange={(event) => setSortBy(event.target.value)}>
-          <option value="created_at">Sortare: Data intrare</option>
-          <option value="updated_at">Sortare: Ultima actualizare</option>
-          <option value="months">Sortare: Luni in oras</option>
-          <option value="full_name">Sortare: Nume</option>
-          <option value="rank">Sortare: Rank</option>
-        </select>
-        <button onClick={() => setSortDir((current) => (current === 'asc' ? 'desc' : 'asc'))}>
-          Directie: {sortDir === 'asc' ? 'Asc' : 'Desc'}
-        </button>
-        {!readOnly ? (
-          <button type="button" className="btn-danger-action" onClick={() => void verifyIdImages()} disabled={verifyBusy}>
-            {verifyBusy ? 'Verificare linkuri buletin...' : 'Verifica linkuri buletin'}
+          >
+            <option value="">Active + Incomplete</option>
+            <option value="ACTIVE">Active</option>
+            <option value="INCOMPLETE">Incomplete</option>
+            <option value="DELETED">Sterse (soft)</option>
+          </select>
+          <select value={sortBy} onChange={(event) => setSortBy(event.target.value)}>
+            <option value="created_at">Sortare: Data intrare</option>
+            <option value="updated_at">Sortare: Ultima actualizare</option>
+            <option value="months">Sortare: Luni in oras</option>
+            <option value="full_name">Sortare: Nume</option>
+            <option value="rank">Sortare: Rank</option>
+          </select>
+          <button onClick={() => setSortDir((current) => (current === 'asc' ? 'desc' : 'asc'))}>
+            Directie: {sortDir === 'asc' ? 'Asc' : 'Desc'}
           </button>
-        ) : null}
-        {!readOnly ? (
-          <button type="button" onClick={() => void exportGoogleSheets()} disabled={exportBusy}>
-            {exportBusy ? 'Actualizare Google Sheets...' : 'Update Google Sheets'}
-          </button>
-        ) : null}
-        <a
-          href="https://docs.google.com/spreadsheets/d/1X2vLn8e98DNurVKnvOVaTALnCJgrMbfHwA_5LKTxQl0/edit?usp=sharing"
-          target="_blank"
-          rel="noreferrer"
-        >
-          <button type="button">Docs</button>
-        </a>
+          <label>
+            <input
+              type="checkbox"
+              checked={missingImage}
+              onChange={(event) => {
+                setPage(1);
+                setMissingImage(event.target.checked);
+              }}
+            />
+            Doar fara poza buletin
+          </label>
+          <label>
+            <input
+              type="checkbox"
+              checked={incompleteOnly}
+              onChange={(event) => {
+                setPage(1);
+                setIncompleteOnly(event.target.checked);
+              }}
+            />
+            Doar CV incomplete
+          </label>
+          {!readOnly ? (
+            <button type="button" className="btn-danger-action" onClick={() => void verifyIdImages()} disabled={verifyBusy}>
+              {verifyBusy ? 'Verificare linkuri buletin...' : 'Verifica linkuri buletin'}
+            </button>
+          ) : null}
+        </div>
       </div>
 
       {!readOnly && exportMessage ? <div className="card"><strong>{exportMessage}</strong></div> : null}
@@ -326,8 +366,15 @@ export const EmployeesPage = ({ readOnly = false }: EmployeesPageProps) => {
       {loading && <p>Se incarca...</p>}
       {error && <p className="error">{error}</p>}
 
-      <div className="card table-wrapper">
-        <table>
+      <div className="card table-wrapper personnel-table-shell">
+        <div className="personnel-table-header">
+          <div>
+            <span className="page-hero-eyebrow">Lista personal</span>
+            <h3>{data?.pagination.total ?? 0} inregistrari</h3>
+          </div>
+          <span className="muted-line">Pagina {data?.pagination.page ?? 1} din {data?.pagination.totalPages ?? 1}</span>
+        </div>
+        <table className="timesheet-table personnel-table">
           <thead>
             <tr>
               <th>IBAN</th>
@@ -345,12 +392,19 @@ export const EmployeesPage = ({ readOnly = false }: EmployeesPageProps) => {
           <tbody>
             {data?.items.map((employee) => (
               <tr key={employee.id}>
-                <td>{employee.iban ?? '-'}</td>
+                <td className="personnel-primary-cell">
+                  <span className={`status-orb ${employee.status === 'ACTIVE' ? 'online' : employee.isIncomplete ? 'warning' : 'muted'}`} />
+                  {employee.iban ?? '-'}
+                </td>
                 <td>{employee.monthsInCity ?? '-'}</td>
                 <td>{employee.nickname ?? '-'}</td>
                 <td>{employee.fullName ?? '-'}</td>
                 <td>{employee.phone ?? '-'}</td>
-                <td>{employee.rank ?? '-'}</td>
+                <td>
+                  <span className={`badge ${employee.rank?.toLowerCase().includes('junior') ? 'up-next-senior' : 'ok'}`}>
+                    {employee.rank ?? '-'}
+                  </span>
+                </td>
                 <td>{formatDate(employee.cvPostedAt)}</td>
                 <td>
                   {employee.idImageUrl ? (
@@ -389,7 +443,7 @@ export const EmployeesPage = ({ readOnly = false }: EmployeesPageProps) => {
         </table>
       </div>
 
-      <div className="pagination">
+      <div className="pagination personnel-pagination">
         <button className="btn-pagination" disabled={page <= 1} onClick={() => setPage((current) => Math.max(1, current - 1))}>
           Pagina anterioara
         </button>

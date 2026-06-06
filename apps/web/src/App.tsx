@@ -1,5 +1,5 @@
 ﻿import { ReactNode, useEffect, useMemo, useState } from 'react';
-import { Link, NavLink, Navigate, Route, Routes } from 'react-router-dom';
+import { Link, NavLink, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { ApiError, apiGet, apiPost } from './api/client';
 import { ActiveTimesheetsPage } from './pages/ActiveTimesheetsPage';
 import { AuditLogsPage } from './pages/AuditLogsPage';
@@ -94,6 +94,38 @@ const getNextTheme = (current: ThemeMode): ThemeMode => {
   return 'light';
 };
 
+const getSectionMeta = (pathname: string): { eyebrow: string; title: string; subtitle: string } => {
+  if (pathname.startsWith('/admin/employees')) {
+    return {
+      eyebrow: 'Monitorizare si control',
+      title: 'Gestionare personal',
+      subtitle: 'Monitorizeaza si administreaza toti membrii echipei.'
+    };
+  }
+
+  if (pathname.startsWith('/admin/reactions')) {
+    return {
+      eyebrow: 'Flux monitorizat',
+      title: 'Reacturi mesaje',
+      subtitle: 'Urmareste mesajele si istoricul de reactii din sistem.'
+    };
+  }
+
+  if (pathname.startsWith('/admin/audit')) {
+    return {
+      eyebrow: 'Control intern',
+      title: 'Audit actiuni',
+      subtitle: 'Vezi cine a modificat datele si cand.'
+    };
+  }
+
+  return {
+    eyebrow: 'Monitorizare si control',
+    title: 'Panou personal',
+    subtitle: 'Ai control total asupra echipei si operatiunilor.'
+  };
+};
+
 type AdminLayoutProps = {
   username: string;
   role: AdminRole;
@@ -105,6 +137,7 @@ type AdminLayoutProps = {
 };
 
 const AdminLayout = ({ username, role, canViewAudit, theme, onToggleTheme, onLogout, children }: AdminLayoutProps) => {
+  const location = useLocation();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
     if (typeof window === 'undefined') {
       return false;
@@ -112,6 +145,8 @@ const AdminLayout = ({ username, role, canViewAudit, theme, onToggleTheme, onLog
 
     return window.localStorage.getItem('service-sidebar-collapsed') === 'true';
   });
+  const [globalSearch, setGlobalSearch] = useState('');
+  const sectionMeta = useMemo(() => getSectionMeta(location.pathname), [location.pathname]);
 
   useEffect(() => {
     window.localStorage.setItem('service-sidebar-collapsed', String(isSidebarCollapsed));
@@ -132,34 +167,53 @@ const AdminLayout = ({ username, role, canViewAudit, theme, onToggleTheme, onLog
       </button>
       {!isSidebarCollapsed ? (
         <aside className="sidebar">
-          <h1>Service Admin</h1>
-          <button type="button" className="theme-toggle" onClick={onToggleTheme}>
-            Tema: {THEME_LABELS[theme]}
-          </button>
+          <div className="sidebar-brand">
+            <div className="sidebar-brand-badge">NX</div>
+            <div>
+              <h1>Nexus Staff Hub</h1>
+              <p>Monitorizare operativa</p>
+            </div>
+          </div>
+          <div className="sidebar-meta-card">
+            <span className="sidebar-meta-label">Tema activa</span>
+            <button type="button" className="theme-toggle sidebar-theme-toggle" onClick={onToggleTheme}>
+              Tema: {THEME_LABELS[theme]}
+            </button>
+          </div>
           <nav>
             <NavLink to="/admin" end className={({ isActive }) => (isActive ? 'active' : '')}>
-              Dashboard
+              <span className="sidebar-nav-icon">DB</span>
+              <span>Dashboard</span>
             </NavLink>
             <NavLink to="/admin/employees" className={({ isActive }) => (isActive ? 'active' : '')}>
-              Angajati
+              <span className="sidebar-nav-icon">PS</span>
+              <span>Personal</span>
             </NavLink>
             {role === 'ADMIN' ? (
               <NavLink to="/" end className={({ isActive }) => (isActive ? 'active' : '')}>
-                Pontaj saptamanal
+                <span className="sidebar-nav-icon">PJ</span>
+                <span>Program</span>
               </NavLink>
             ) : null}
             {role === 'ADMIN' ? (
               <NavLink to="/admin/reactions" className={({ isActive }) => (isActive ? 'active' : '')}>
-                Reacturi mesaje
+                <span className="sidebar-nav-icon">RM</span>
+                <span>Rapoarte</span>
               </NavLink>
             ) : null}
             {canViewAudit ? (
               <NavLink to="/admin/audit" className={({ isActive }) => (isActive ? 'active' : '')}>
-                Loguri actiuni
+                <span className="sidebar-nav-icon">LG</span>
+                <span>Disciplina</span>
               </NavLink>
             ) : null}
           </nav>
           <div className="sidebar-footer">
+            <div className="sidebar-status-card">
+              <span className="sidebar-meta-label">Server status</span>
+              <strong>Online</strong>
+              <span className="sidebar-status-dot" />
+            </div>
             <span>
               Logat ca: {username} ({role})
             </span>
@@ -170,6 +224,37 @@ const AdminLayout = ({ username, role, canViewAudit, theme, onToggleTheme, onLog
         </aside>
       ) : null}
       <div className="layout-main">
+        <header className="admin-topbar">
+          <div className="admin-topbar-copy">
+            <span className="admin-topbar-eyebrow">{sectionMeta.eyebrow}</span>
+            <strong>{sectionMeta.title}</strong>
+            <p>{sectionMeta.subtitle}</p>
+          </div>
+          <div className="admin-topbar-search">
+            <input
+              type="search"
+              value={globalSearch}
+              onChange={(event) => setGlobalSearch(event.target.value)}
+              placeholder="Cauta dupa nume, porecla, IBAN..."
+            />
+            <span className="admin-topbar-shortcut">CTRL</span>
+          </div>
+          <div className="admin-topbar-profile">
+            <div className="admin-topbar-alerts">
+              <span className="admin-signal-dot" />
+              <span className="admin-signal-dot" />
+            </div>
+            <div className="admin-topbar-user">
+              <div className="admin-avatar-ring">
+                <span>{String(username ?? 'A').slice(0, 1).toUpperCase()}</span>
+              </div>
+              <div>
+                <strong>{username}</strong>
+                <p>{role === 'ADMIN' ? 'Online' : 'Vizualizare'}</p>
+              </div>
+            </div>
+          </div>
+        </header>
         <main className="content">{children}</main>
         <SiteFooter />
       </div>
