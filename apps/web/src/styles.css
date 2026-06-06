@@ -230,18 +230,23 @@ html[data-theme='copper'] .sidebar {
 }
 
 .sidebar-brand-badge {
-  width: 46px;
-  height: 46px;
+  width: 56px;
+  height: 56px;
   display: grid;
   place-items: center;
-  border-radius: 14px;
+  border-radius: 18px;
   border: 1px solid color-mix(in srgb, var(--accent) 55%, transparent);
   background: radial-gradient(circle at 30% 20%, color-mix(in srgb, var(--accent) 48%, white 10%), transparent 54%),
     linear-gradient(145deg, color-mix(in srgb, var(--accent-strong) 86%, black 14%), color-mix(in srgb, var(--accent) 40%, black 60%));
-  color: #fff6ee;
-  font-weight: 800;
-  letter-spacing: 0.08em;
+  color: #f6d0ac;
   box-shadow: 0 0 24px color-mix(in srgb, var(--accent) 28%, transparent);
+}
+
+.sidebar-brand-logo {
+  width: 40px;
+  height: 40px;
+  display: block;
+  filter: drop-shadow(0 0 8px color-mix(in srgb, var(--accent) 30%, transparent));
 }
 
 .sidebar-toggle {
