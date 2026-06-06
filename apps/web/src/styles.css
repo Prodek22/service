@@ -4393,7 +4393,6 @@ html[data-theme='copper'] .layout-dashboard .dashboard-circuit {
   opacity: 0.72;
   z-index: 0;
   background:
-    linear-gradient(90deg, transparent 0 24%, rgba(231, 139, 53, 0.18) 24% 25%, transparent 25% 100%),
     linear-gradient(180deg, transparent 0 42%, rgba(231, 139, 53, 0.14) 42% 43%, transparent 43% 100%),
     radial-gradient(circle at 75% 18%, rgba(231, 139, 53, 0.75) 0 1px, transparent 2px),
     radial-gradient(circle at 88% 26%, rgba(231, 139, 53, 0.8) 0 1px, transparent 2px);
