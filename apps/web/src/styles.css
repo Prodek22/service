@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Rajdhani:wght@500;600;700&display=swap');
 
 :root {
   --bg: #f2ece5;
@@ -96,7 +96,7 @@ html[data-theme='copper'] {
 
 body {
   margin: 0;
-  font-family: 'Outfit', 'Trebuchet MS', sans-serif;
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   letter-spacing: 0.01em;
   font-size: 20px;
   font-weight: 500;
@@ -127,7 +127,7 @@ html[data-theme='copper'] body {
 h1,
 h2,
 h3 {
-  font-family: 'Outfit', 'Trebuchet MS', sans-serif;
+  font-family: 'Rajdhani', 'Inter', system-ui, sans-serif;
   letter-spacing: 0.02em;
   font-weight: 800;
 }
@@ -2395,9 +2395,43 @@ html[data-theme='copper'] .layout-dashboard {
 
 html[data-theme='copper'] .layout-dashboard .layout-main {
   background:
-    radial-gradient(circle at top left, rgba(217, 130, 50, 0.08), transparent 30%),
-    radial-gradient(circle at top right, rgba(92, 52, 26, 0.12), transparent 26%),
-    linear-gradient(180deg, rgba(8, 5, 3, 0.98), rgba(7, 4, 2, 1));
+    linear-gradient(rgba(255, 189, 116, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 189, 116, 0.018) 1px, transparent 1px),
+    radial-gradient(circle at 20% 0%, rgba(217, 130, 50, 0.18), transparent 32%),
+    radial-gradient(circle at 80% 10%, rgba(255, 170, 80, 0.1), transparent 35%),
+    linear-gradient(180deg, #0a0502 0%, #050302 100%);
+  background-size: 42px 42px, 42px 42px, auto, auto, auto;
+  position: relative;
+  isolation: isolate;
+}
+
+html[data-theme='copper'] .layout-dashboard .layout-main::before,
+html[data-theme='copper'] .layout-dashboard .layout-main::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+html[data-theme='copper'] .layout-dashboard .layout-main::before {
+  opacity: 0.18;
+  background:
+    radial-gradient(circle at 12% 16%, rgba(255, 226, 193, 0.08) 0 1px, transparent 1.5px),
+    radial-gradient(circle at 74% 28%, rgba(255, 226, 193, 0.07) 0 1px, transparent 1.5px),
+    radial-gradient(circle at 26% 72%, rgba(255, 226, 193, 0.06) 0 1px, transparent 1.5px);
+  background-size: 24px 24px, 30px 30px, 36px 36px;
+  mix-blend-mode: screen;
+}
+
+html[data-theme='copper'] .layout-dashboard .layout-main::after {
+  opacity: 0.18;
+  background:
+    linear-gradient(90deg, transparent 0 68%, rgba(217, 130, 50, 0.12) 68% 68.4%, transparent 68.4% 100%),
+    linear-gradient(180deg, transparent 0 24%, rgba(217, 130, 50, 0.12) 24% 24.4%, transparent 24.4% 100%),
+    linear-gradient(135deg, transparent 0 82%, rgba(255, 187, 120, 0.08) 82% 82.4%, transparent 82.4% 100%);
+  background-size: 280px 160px, 320px 180px, 420px 220px;
+  background-position: right 2rem top 10rem, right 8rem top 18rem, right 0 top 0;
 }
 
 html[data-theme='copper'] .layout-dashboard .sidebar {
@@ -2410,7 +2444,8 @@ html[data-theme='copper'] .layout-dashboard .sidebar {
   border-right: 1px solid var(--border-soft);
   box-shadow:
     18px 0 42px rgba(0, 0, 0, 0.38),
-    inset -1px 0 0 rgba(230, 139, 52, 0.08);
+    inset -1px 0 0 rgba(230, 139, 52, 0.12),
+    inset 0 1px 0 rgba(255, 220, 170, 0.05);
 }
 
 html[data-theme='copper'] .layout-dashboard .sidebar-toggle {
@@ -2436,12 +2471,36 @@ html[data-theme='copper'] .layout-dashboard .dashboard-stat-card,
 html[data-theme='copper'] .layout-dashboard .dashboard-mini-stat,
 html[data-theme='copper'] .layout-dashboard .dashboard-subpanel {
   background:
-    linear-gradient(180deg, rgba(33, 19, 10, 0.64), rgba(18, 11, 6, 0.84));
-  border-color: var(--border-soft);
+    linear-gradient(180deg, rgba(38, 24, 13, 0.78), rgba(20, 12, 7, 0.88));
+  border: 1px solid rgba(217, 130, 50, 0.28);
   box-shadow:
-    inset 0 0 0 1px rgba(230, 139, 52, 0.08),
-    0 18px 44px rgba(0, 0, 0, 0.25);
+    0 0 0 1px rgba(217, 130, 50, 0.12),
+    0 0 24px rgba(217, 130, 50, 0.12),
+    0 18px 44px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(255, 220, 170, 0.08);
   backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  transition:
+    box-shadow 0.18s ease,
+    border-color 0.18s ease,
+    transform 0.18s ease,
+    background 0.18s ease;
+}
+
+html[data-theme='copper'] .layout-dashboard .sidebar-brand:hover,
+html[data-theme='copper'] .layout-dashboard .sidebar-meta-card:hover,
+html[data-theme='copper'] .layout-dashboard .sidebar-status-card:hover,
+html[data-theme='copper'] .layout-dashboard .admin-topbar-search input:hover,
+html[data-theme='copper'] .layout-dashboard .admin-topbar-user:hover,
+html[data-theme='copper'] .layout-dashboard .dashboard-panel:hover,
+html[data-theme='copper'] .layout-dashboard .dashboard-stat-card:hover,
+html[data-theme='copper'] .layout-dashboard .dashboard-mini-stat:hover,
+html[data-theme='copper'] .layout-dashboard .dashboard-subpanel:hover {
+  box-shadow:
+    0 0 0 1px rgba(240, 177, 95, 0.35),
+    0 0 30px rgba(217, 130, 50, 0.24),
+    0 20px 48px rgba(0, 0, 0, 0.34),
+    inset 0 1px 0 rgba(255, 220, 170, 0.12);
 }
 
 html[data-theme='copper'] .layout-dashboard .sidebar-brand {
@@ -2492,10 +2551,11 @@ html[data-theme='copper'] .layout-dashboard .sidebar a.active,
 html[data-theme='copper'] .layout-dashboard .sidebar a:hover {
   border-color: var(--border-strong);
   background:
-    linear-gradient(180deg, rgba(103, 58, 29, 0.46), rgba(58, 32, 16, 0.96));
+    linear-gradient(180deg, rgba(143, 80, 37, 0.42), rgba(74, 41, 21, 0.96));
   box-shadow:
-    inset 0 0 0 1px rgba(255, 205, 152, 0.08),
-    0 0 24px rgba(217, 130, 50, 0.2);
+    0 0 0 1px rgba(240, 177, 95, 0.28),
+    0 0 24px rgba(217, 130, 50, 0.24),
+    inset 0 1px 0 rgba(255, 220, 170, 0.12);
 }
 
 html[data-theme='copper'] .layout-dashboard .sidebar-nav-icon {
@@ -2594,6 +2654,8 @@ html[data-theme='copper'] .layout-dashboard .admin-topbar-user {
   gap: 10px;
   border-radius: 20px;
   padding: 10px 14px;
+  position: relative;
+  overflow: hidden;
 }
 
 html[data-theme='copper'] .layout-dashboard .admin-avatar-ring {
@@ -2865,6 +2927,8 @@ html[data-theme='copper'] .layout-dashboard .dashboard-mini-icon {
 html[data-theme='copper'] .layout-dashboard .dashboard-panel {
   border-radius: 28px;
   padding: 22px 22px 20px;
+  position: relative;
+  overflow: hidden;
 }
 
 html[data-theme='copper'] .layout-dashboard .dashboard-panel::after {
@@ -2872,10 +2936,23 @@ html[data-theme='copper'] .layout-dashboard .dashboard-panel::after {
   height: 120px;
   right: 20px;
   bottom: 18px;
-  opacity: 0.34;
+  opacity: 0.28;
   background:
     linear-gradient(90deg, transparent 0 6%, rgba(240, 177, 95, 0.48) 6% 7%, transparent 7% 24%, rgba(240, 177, 95, 0.36) 24% 25%, transparent 25% 48%, rgba(240, 177, 95, 0.44) 48% 49%, transparent 49% 100%),
     linear-gradient(180deg, transparent 0 18%, rgba(240, 177, 95, 0.28) 18% 19%, transparent 19% 38%, rgba(240, 177, 95, 0.24) 38% 39%, transparent 39% 62%, rgba(240, 177, 95, 0.2) 62% 63%, transparent 63% 100%);
+}
+
+html[data-theme='copper'] .layout-dashboard .dashboard-panel::before,
+html[data-theme='copper'] .layout-dashboard .dashboard-stat-card::before,
+html[data-theme='copper'] .layout-dashboard .dashboard-mini-stat::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  background:
+    linear-gradient(135deg, rgba(255, 230, 205, 0.08), transparent 24%),
+    linear-gradient(0deg, transparent 0 72%, rgba(255, 198, 140, 0.04) 72% 73%, transparent 73% 100%);
 }
 
 html[data-theme='copper'] .layout-dashboard .dashboard-panel-header {
@@ -2899,15 +2976,22 @@ html[data-theme='copper'] .layout-dashboard .btn-danger-action {
   gap: 12px;
   border: 1px solid var(--border-strong);
   border-radius: 16px;
-  background: linear-gradient(180deg, rgba(83, 46, 22, 0.7), rgba(39, 22, 12, 0.96));
+  background:
+    linear-gradient(180deg, rgba(84, 49, 27, 0.36), rgba(34, 20, 10, 0.82));
   color: var(--text-main);
-  box-shadow: 0 0 18px rgba(217, 130, 50, 0.12), inset 0 0 0 1px rgba(255, 230, 205, 0.04);
+  box-shadow:
+    0 0 0 1px rgba(217, 130, 50, 0.12),
+    0 0 24px rgba(217, 130, 50, 0.12),
+    inset 0 1px 0 rgba(255, 220, 170, 0.08);
 }
 
 html[data-theme='copper'] .layout-dashboard .dashboard-primary-action:hover,
 html[data-theme='copper'] .layout-dashboard .btn-danger-action:hover:not(:disabled) {
-  filter: brightness(1.04);
-  box-shadow: 0 0 24px rgba(217, 130, 50, 0.2), inset 0 0 0 1px rgba(255, 230, 205, 0.06);
+  filter: brightness(1.06);
+  box-shadow:
+    0 0 0 1px rgba(240, 177, 95, 0.35),
+    0 0 30px rgba(217, 130, 50, 0.24),
+    inset 0 1px 0 rgba(255, 220, 170, 0.12);
 }
 
 html[data-theme='copper'] .layout-dashboard .dashboard-action-icon {
