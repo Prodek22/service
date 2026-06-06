@@ -12,6 +12,24 @@ type DashboardPageProps = {
   canManage?: boolean;
 };
 
+type IconName =
+  | 'people'
+  | 'document'
+  | 'clock'
+  | 'hash'
+  | 'gauge'
+  | 'target'
+  | 'pulse'
+  | 'stack'
+  | 'calendar'
+  | 'search'
+  | 'alert'
+  | 'sync';
+
+const renderIcon = (name: IconName) => (
+  <span className={`dashboard-icon-glyph ${name}`} aria-hidden="true" />
+);
+
 export const DashboardPage = ({ canManage = false }: DashboardPageProps) => {
   const [data, setData] = useState<DashboardResponse | null>(null);
   const [inactiveReport, setInactiveReport] = useState<InactiveReportResponse | null>(null);
@@ -192,29 +210,30 @@ export const DashboardPage = ({ canManage = false }: DashboardPageProps) => {
     `${formatDate(startedAt)} - ${formatDate(endedAt)}`;
 
   return (
-    <section className="dashboard-page">
+    <section className="dashboard-page dashboard-futuristic">
       <div className="dashboard-section-heading">
         <h2>Dashboard</h2>
       </div>
-      {error && <p className="error">{error}</p>}
+      {error ? <p className="error">{error}</p> : null}
+
       <div className="stats-grid dashboard-stats-grid">
         <article className="stat-card dashboard-stat-card">
-          <div className="dashboard-stat-icon">👥</div>
+          <div className="dashboard-stat-icon">{renderIcon('people')}</div>
           <span>Angajati activi</span>
           <strong>{data?.totalActiveEmployees ?? '-'}</strong>
         </article>
         <article className="stat-card dashboard-stat-card">
-          <div className="dashboard-stat-icon">📄</div>
+          <div className="dashboard-stat-icon">{renderIcon('document')}</div>
           <span>CV-uri incomplete</span>
           <strong>{data?.totalIncompleteCvs ?? '-'}</strong>
         </article>
         <article className="stat-card dashboard-stat-card">
-          <div className="dashboard-stat-icon">🕒</div>
+          <div className="dashboard-stat-icon">{renderIcon('clock')}</div>
           <span>Total ore ciclu curent</span>
           <strong>{data?.totalWeekLabel ?? '-'}</strong>
         </article>
         <article className="stat-card dashboard-stat-card">
-          <div className="dashboard-stat-icon">#</div>
+          <div className="dashboard-stat-icon">{renderIcon('hash')}</div>
           <span>ID ciclu curent</span>
           <strong>{data?.currentCycleId ?? '-'}</strong>
         </article>
@@ -226,30 +245,40 @@ export const DashboardPage = ({ canManage = false }: DashboardPageProps) => {
             <h3>Verificare Inactivi</h3>
           </div>
           <div className="filters dashboard-panel-actions">
-            <button type="button" onClick={() => void loadInactiveReport()} disabled={inactiveLoading}>
-              {inactiveLoading ? 'Se verifica...' : 'Verificare Inactivi'}
+            <button
+              type="button"
+              className="dashboard-primary-action"
+              onClick={() => void loadInactiveReport()}
+              disabled={inactiveLoading}
+            >
+              <span className="dashboard-action-icon">{renderIcon('search')}</span>
+              <span>{inactiveLoading ? 'Se verifica...' : 'Verificare Inactivi'}</span>
             </button>
           </div>
           <p className="muted-line dashboard-panel-copy">
-            Raportul verifica doar saptamanile inchise, de la data angajarii, si separa pontajele `0 min` de cele sub `60 min`.
+            Raportul verifica doar saptamanile inchise, de la data angajarii, si separa pontajele 0 min de cele sub 60 min.
           </p>
           {inactiveError ? <p className="error">{inactiveError}</p> : null}
           {inactiveReport ? (
             <>
               <div className="stats-grid dashboard-mini-stats">
                 <article className="stat-card dashboard-mini-stat">
+                  <div className="dashboard-mini-icon">{renderIcon('people')}</div>
                   <span>Angajati verificati</span>
                   <strong>{inactiveReport.totalEmployeesChecked}</strong>
                 </article>
                 <article className="stat-card dashboard-mini-stat">
+                  <div className="dashboard-mini-icon">{renderIcon('calendar')}</div>
                   <span>Saptamani inchise</span>
                   <strong>{inactiveReport.totalCompletedCycles}</strong>
                 </article>
                 <article className="stat-card dashboard-mini-stat">
+                  <div className="dashboard-mini-icon">{renderIcon('alert')}</div>
                   <span>Saptamani cu 0 min</span>
                   <strong>{inactiveReport.zeroMinuteWeeks}</strong>
                 </article>
                 <article className="stat-card dashboard-mini-stat">
+                  <div className="dashboard-mini-icon">{renderIcon('pulse')}</div>
                   <span>Saptamani sub 60 min</span>
                   <strong>{inactiveReport.underSixtyMinuteWeeks}</strong>
                 </article>
@@ -350,10 +379,12 @@ export const DashboardPage = ({ canManage = false }: DashboardPageProps) => {
             </div>
             <div className="stats-grid dashboard-mini-stats">
               <article className="stat-card dashboard-mini-stat">
+                <div className="dashboard-mini-icon">{renderIcon('gauge')}</div>
                 <span>Cache hit rate</span>
                 <strong>{data?.timesheetPerformance ? `${data.timesheetPerformance.hitRate}%` : '-'}</strong>
               </article>
               <article className="stat-card dashboard-mini-stat">
+                <div className="dashboard-mini-icon">{renderIcon('target')}</div>
                 <span>Hit / Miss</span>
                 <strong>
                   {data?.timesheetPerformance
@@ -362,12 +393,12 @@ export const DashboardPage = ({ canManage = false }: DashboardPageProps) => {
                 </strong>
               </article>
               <article className="stat-card dashboard-mini-stat">
+                <div className="dashboard-mini-icon">{renderIcon('pulse')}</div>
                 <span>Timp mediu summary</span>
-                <strong>
-                  {data?.timesheetPerformance ? `${data.timesheetPerformance.averageDurationMs} ms` : '-'}
-                </strong>
+                <strong>{data?.timesheetPerformance ? `${data.timesheetPerformance.averageDurationMs} ms` : '-'}</strong>
               </article>
               <article className="stat-card dashboard-mini-stat">
+                <div className="dashboard-mini-icon">{renderIcon('stack')}</div>
                 <span>Intrari cache</span>
                 <strong>{data?.timesheetPerformance?.cacheEntries ?? '-'}</strong>
               </article>
@@ -380,30 +411,35 @@ export const DashboardPage = ({ canManage = false }: DashboardPageProps) => {
             </div>
             <div className="filters dashboard-action-grid">
               <button type="button" className="btn-danger-action" onClick={() => void syncEmployeesIncremental()} disabled={maintenanceBusy}>
+                <span className="dashboard-action-icon">{renderIcon('sync')}</span>
                 <span>Sync incremental angajati</span>
                 <span className="warning-triangle" aria-hidden="true">
                   <span>!</span>
                 </span>
               </button>
               <button type="button" className="btn-danger-action" onClick={() => void syncCurrentWeekTimesheets()} disabled={maintenanceBusy}>
+                <span className="dashboard-action-icon">{renderIcon('calendar')}</span>
                 <span>Sincronizeaza pontaj saptamana in curs</span>
                 <span className="warning-triangle" aria-hidden="true">
                   <span>!</span>
                 </span>
               </button>
               <button type="button" className="btn-danger-action" onClick={() => void rebuildAllCvData()} disabled={maintenanceBusy}>
+                <span className="dashboard-action-icon">{renderIcon('document')}</span>
                 <span>Rebuild complet CV-uri</span>
                 <span className="warning-triangle" aria-hidden="true">
                   <span>!</span>
                 </span>
               </button>
               <button type="button" className="btn-danger-action" onClick={() => void recalculateTimesheets()} disabled={maintenanceBusy}>
+                <span className="dashboard-action-icon">{renderIcon('clock')}</span>
                 <span>Recalculeaza timpii (toate saptamanile)</span>
                 <span className="warning-triangle" aria-hidden="true">
                   <span>!</span>
                 </span>
               </button>
               <button type="button" className="btn-danger-action" onClick={() => void rebuildAllData()} disabled={maintenanceBusy}>
+                <span className="dashboard-action-icon">{renderIcon('stack')}</span>
                 <span>Reset complet + reimport</span>
                 <span className="warning-triangle" aria-hidden="true">
                   <span>!</span>
@@ -421,12 +457,13 @@ export const DashboardPage = ({ canManage = false }: DashboardPageProps) => {
             ) : null}
             {maintenanceMessage ? <p className="dashboard-job-line">{maintenanceMessage}</p> : null}
           </div>
-
         </>
       ) : (
-        <div className="card">
-          <h3>Acces viewer</h3>
-          <p>Acest cont este read-only: poate vedea dashboard-ul, fara actiuni de modificare.</p>
+        <div className="card dashboard-panel">
+          <div className="dashboard-panel-header">
+            <h3>Acces viewer</h3>
+          </div>
+          <p className="dashboard-panel-copy">Acest cont este read-only: poate vedea dashboard-ul, fara actiuni de modificare.</p>
         </div>
       )}
     </section>

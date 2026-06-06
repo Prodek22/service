@@ -126,46 +126,6 @@ const getSectionMeta = (pathname: string): { eyebrow: string; title: string; sub
   };
 };
 
-const ParadiseLogo = () => (
-  <svg viewBox="0 0 64 64" aria-hidden="true" focusable="false" className="sidebar-brand-logo">
-    <defs>
-      <linearGradient id="paradise-logo-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stopColor="currentColor" stopOpacity="0.95" />
-        <stop offset="100%" stopColor="currentColor" stopOpacity="0.58" />
-      </linearGradient>
-    </defs>
-    <path
-      d="M32 11c2.9 5.4 7.5 9.9 13.6 13.4-1.8.8-3.7 1.6-5.7 2.2-3.2-2.4-5.9-5.1-7.9-8.3-2 3.1-4.7 5.9-7.9 8.3-2-.6-3.9-1.4-5.7-2.2C24.5 20.9 29.1 16.4 32 11Z"
-      fill="url(#paradise-logo-gradient)"
-    />
-    <path
-      d="M15 24.8c4.8 2.7 9.4 4.6 13.8 5.6-2.2 1.9-4.8 3.6-7.7 5-2.9-.9-5.9-2.2-9-4.1 1.1-2.1 2.1-4.3 2.9-6.5Z"
-      fill="url(#paradise-logo-gradient)"
-    />
-    <path
-      d="M49 24.8c.8 2.2 1.8 4.4 2.9 6.5-3.1 1.9-6.1 3.2-9 4.1-2.9-1.4-5.5-3.1-7.7-5 4.4-1 9-2.9 13.8-5.6Z"
-      fill="url(#paradise-logo-gradient)"
-    />
-    <path
-      d="M22 38.6c3.2 1.8 6.6 2.9 10 3.5 3.4-.6 6.8-1.8 10-3.5-.7 4.8-4.4 8.9-10 11.9-5.6-3-9.3-7.1-10-11.9Z"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="3.2"
-      strokeLinejoin="round"
-      strokeLinecap="round"
-    />
-    <path
-      d="M24.2 29.6 32 35l7.8-5.4"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="3.2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <circle cx="32" cy="36.2" r="3.2" fill="currentColor" />
-  </svg>
-);
-
 type AdminLayoutProps = {
   username: string;
   role: AdminRole;
@@ -178,6 +138,7 @@ type AdminLayoutProps = {
 
 const AdminLayout = ({ username, role, canViewAudit, theme, onToggleTheme, onLogout, children }: AdminLayoutProps) => {
   const location = useLocation();
+  const isDashboardRoute = location.pathname === '/admin';
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
     if (typeof window === 'undefined') {
       return false;
@@ -193,7 +154,7 @@ const AdminLayout = ({ username, role, canViewAudit, theme, onToggleTheme, onLog
   }, [isSidebarCollapsed]);
 
   return (
-    <div className={`layout ${isSidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
+    <div className={`layout ${isSidebarCollapsed ? 'sidebar-collapsed' : ''} ${isDashboardRoute ? 'layout-dashboard' : ''}`}>
       <button
         type="button"
         className="sidebar-toggle"
@@ -209,7 +170,7 @@ const AdminLayout = ({ username, role, canViewAudit, theme, onToggleTheme, onLog
         <aside className="sidebar">
           <div className="sidebar-brand">
             <div className="sidebar-brand-badge">
-              <ParadiseLogo />
+              <img src="/paradise-logo.png" alt="Paradise logo" className="sidebar-brand-image" />
             </div>
             <div>
               <h1>Paradise</h1>
@@ -282,10 +243,6 @@ const AdminLayout = ({ username, role, canViewAudit, theme, onToggleTheme, onLog
             <span className="admin-topbar-shortcut">CTRL</span>
           </div>
           <div className="admin-topbar-profile">
-            <div className="admin-topbar-alerts">
-              <span className="admin-signal-dot" />
-              <span className="admin-signal-dot" />
-            </div>
             <div className="admin-topbar-user">
               <div className="admin-avatar-ring">
                 <img src="/paradise-logo.png" alt="Paradise logo" className="admin-avatar-image" />
