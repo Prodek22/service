@@ -180,32 +180,33 @@ const AdminLayout = ({ username, role, canViewAudit, theme, onToggleTheme, onLog
           <div className="sidebar-meta-card">
             <span className="sidebar-meta-label">Tema activa</span>
             <button type="button" className="theme-toggle sidebar-theme-toggle" onClick={onToggleTheme}>
+              <span className="sidebar-theme-dot" aria-hidden="true" />
               Tema: {THEME_LABELS[theme]}
             </button>
           </div>
           <nav>
-            <NavLink to="/admin" end className={({ isActive }) => (isActive ? 'active' : '')}>
+            <NavLink to="/admin" end className={({ isActive }) => `sidebar-nav-item${isActive ? ' active' : ''}`}>
               <span className="sidebar-nav-icon">DB</span>
               <span>Dashboard</span>
             </NavLink>
-            <NavLink to="/admin/employees" className={({ isActive }) => (isActive ? 'active' : '')}>
+            <NavLink to="/admin/employees" className={({ isActive }) => `sidebar-nav-item${isActive ? ' active' : ''}`}>
               <span className="sidebar-nav-icon">PS</span>
               <span>Personal</span>
             </NavLink>
             {role === 'ADMIN' ? (
-              <NavLink to="/" end className={({ isActive }) => (isActive ? 'active' : '')}>
+              <NavLink to="/" end className={({ isActive }) => `sidebar-nav-item${isActive ? ' active' : ''}`}>
                 <span className="sidebar-nav-icon">PJ</span>
                 <span>Program</span>
               </NavLink>
             ) : null}
             {role === 'ADMIN' ? (
-              <NavLink to="/admin/reactions" className={({ isActive }) => (isActive ? 'active' : '')}>
+              <NavLink to="/admin/reactions" className={({ isActive }) => `sidebar-nav-item${isActive ? ' active' : ''}`}>
                 <span className="sidebar-nav-icon">RM</span>
                 <span>Rapoarte</span>
               </NavLink>
             ) : null}
             {canViewAudit ? (
-              <NavLink to="/admin/audit" className={({ isActive }) => (isActive ? 'active' : '')}>
+              <NavLink to="/admin/audit" className={({ isActive }) => `sidebar-nav-item${isActive ? ' active' : ''}`}>
                 <span className="sidebar-nav-icon">LG</span>
                 <span>Disciplina</span>
               </NavLink>
@@ -213,9 +214,19 @@ const AdminLayout = ({ username, role, canViewAudit, theme, onToggleTheme, onLog
           </nav>
           <div className="sidebar-footer">
             <div className="sidebar-status-card">
-              <span className="sidebar-meta-label">Server status</span>
-              <strong>Online</strong>
-              <span className="sidebar-status-dot" />
+              <div className="server-card">
+                <div className="server-info">
+                  <span className="sidebar-meta-label server-card-label">Server status</span>
+                  <div className="server-row">
+                    <span className="green-dot" aria-hidden="true" />
+                    <strong>Online</strong>
+                  </div>
+                </div>
+                <div className="core" aria-hidden="true">
+                  <span className="core-line" />
+                  <span className="core-inner" />
+                </div>
+              </div>
             </div>
             <span>
               Logat ca: {username} ({role})

@@ -216,7 +216,7 @@ export const DashboardPage = ({ canManage = false }: DashboardPageProps) => {
       </div>
       {error ? <p className="error">{error}</p> : null}
 
-      <div className="stats-grid dashboard-stats-grid">
+      <div className="stats-grid dashboard-stats-grid dashboard-card-grid">
         <article className="stat-card dashboard-stat-card">
           <div className="dashboard-stat-icon">{renderIcon('people')}</div>
           <span>Angajati activi</span>
@@ -240,7 +240,7 @@ export const DashboardPage = ({ canManage = false }: DashboardPageProps) => {
       </div>
 
       {canManage ? (
-        <div className="card dashboard-panel dashboard-inactive-panel">
+        <div className="card dashboard-panel dashboard-inactive-panel dashboard-card">
           <div className="dashboard-panel-header">
             <h3>Verificare Inactivi</h3>
           </div>
@@ -373,7 +373,7 @@ export const DashboardPage = ({ canManage = false }: DashboardPageProps) => {
 
       {canManage ? (
         <>
-          <div className="card dashboard-panel">
+          <div className="card dashboard-panel dashboard-performance-panel dashboard-card">
             <div className="dashboard-panel-header">
               <h3>Performanta pontaje</h3>
             </div>
@@ -405,7 +405,7 @@ export const DashboardPage = ({ canManage = false }: DashboardPageProps) => {
             </div>
           </div>
 
-          <div className="card dashboard-panel">
+          <div className="card dashboard-panel dashboard-actions-panel dashboard-card action-panel">
             <div className="dashboard-panel-header">
               <h3>Actiuni rapide</h3>
             </div>
