@@ -258,6 +258,20 @@ export const DashboardPage = ({ canManage = false }: DashboardPageProps) => {
           <p className="muted-line dashboard-panel-copy">
             Raportul verifica doar saptamanile inchise, de la data angajarii, si separa pontajele 0 min de cele sub 60 min.
           </p>
+          <div className="dashboard-circuit" aria-hidden="true">
+            <svg viewBox="0 0 560 160" fill="none">
+              <path d="M0 95H120L150 65H230L260 35H350L380 18H515" stroke="rgba(231,139,53,.42)" />
+              <path d="M10 118H150L180 90H265L300 60H420L445 35H535" stroke="rgba(231,139,53,.35)" />
+              <path d="M60 68H210L240 43H345L370 25H500" stroke="rgba(231,139,53,.25)" />
+              <path d="M120 135H250L280 108H390L420 80H550" stroke="rgba(231,139,53,.25)" />
+              <path d="M210 92H300L320 75H410L435 55H535" stroke="rgba(231,139,53,.2)" />
+              <circle cx="230" cy="43" r="2" fill="#e78b35" />
+              <circle cx="300" cy="60" r="2" fill="#e78b35" />
+              <circle cx="390" cy="108" r="2" fill="#e78b35" />
+              <circle cx="445" cy="35" r="2" fill="#e78b35" />
+              <circle cx="500" cy="25" r="2" fill="#e78b35" />
+            </svg>
+          </div>
           {inactiveError ? <p className="error">{inactiveError}</p> : null}
           {inactiveReport ? (
             <>
