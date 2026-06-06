@@ -2440,7 +2440,10 @@ html[data-theme='copper'] .layout-dashboard .sidebar {
   min-height: 100vh;
   padding: 72px 14px 20px;
   background:
+    linear-gradient(rgba(240, 177, 95, 0.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(240, 177, 95, 0.014) 1px, transparent 1px),
     linear-gradient(180deg, rgba(14, 8, 4, 0.98) 0%, rgba(10, 6, 3, 0.98) 100%);
+  background-size: 30px 30px, 30px 30px, auto;
   border-right: 1px solid var(--border-soft);
   box-shadow:
     18px 0 42px rgba(0, 0, 0, 0.38),
@@ -2503,6 +2506,28 @@ html[data-theme='copper'] .layout-dashboard .dashboard-subpanel:hover {
     inset 0 1px 0 rgba(255, 220, 170, 0.12);
 }
 
+html[data-theme='copper'] .layout-dashboard .sidebar-brand,
+html[data-theme='copper'] .layout-dashboard .sidebar-meta-card,
+html[data-theme='copper'] .layout-dashboard .sidebar-status-card,
+html[data-theme='copper'] .layout-dashboard .dashboard-panel,
+html[data-theme='copper'] .layout-dashboard .dashboard-subpanel {
+  position: relative;
+}
+
+html[data-theme='copper'] .layout-dashboard .sidebar-brand::after,
+html[data-theme='copper'] .layout-dashboard .sidebar-meta-card::after,
+html[data-theme='copper'] .layout-dashboard .sidebar-status-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background:
+    linear-gradient(135deg, rgba(255, 214, 168, 0.08), transparent 30%),
+    linear-gradient(90deg, transparent 0 82%, rgba(217, 130, 50, 0.08) 82% 82.6%, transparent 82.6% 100%);
+  opacity: 0.7;
+}
+
 html[data-theme='copper'] .layout-dashboard .sidebar-brand {
   border-radius: 22px;
   padding: 16px;
@@ -2556,6 +2581,15 @@ html[data-theme='copper'] .layout-dashboard .sidebar a:hover {
     0 0 0 1px rgba(240, 177, 95, 0.28),
     0 0 24px rgba(217, 130, 50, 0.24),
     inset 0 1px 0 rgba(255, 220, 170, 0.12);
+}
+
+html[data-theme='copper'] .layout-dashboard .sidebar a.active .sidebar-nav-icon,
+html[data-theme='copper'] .layout-dashboard .sidebar a:hover .sidebar-nav-icon {
+  box-shadow:
+    0 0 0 1px rgba(240, 177, 95, 0.22),
+    0 0 18px rgba(217, 130, 50, 0.22),
+    inset 0 1px 0 rgba(255, 224, 180, 0.1);
+  background: rgba(217, 130, 50, 0.1);
 }
 
 html[data-theme='copper'] .layout-dashboard .sidebar-nav-icon {
@@ -2623,6 +2657,14 @@ html[data-theme='copper'] .layout-dashboard .admin-topbar-search input {
   border-radius: 20px;
 }
 
+html[data-theme='copper'] .layout-dashboard .admin-topbar-search:focus-within input {
+  border-color: rgba(240, 177, 95, 0.65);
+  box-shadow:
+    0 0 0 3px rgba(217, 130, 50, 0.1),
+    0 0 28px rgba(217, 130, 50, 0.18),
+    inset 0 1px 0 rgba(255, 220, 170, 0.12);
+}
+
 html[data-theme='copper'] .layout-dashboard .admin-topbar-search::before {
   content: '';
   position: absolute;
@@ -2666,6 +2708,24 @@ html[data-theme='copper'] .layout-dashboard .admin-avatar-ring {
 
 html[data-theme='copper'] .layout-dashboard .dashboard-page {
   gap: 18px;
+  position: relative;
+  z-index: 1;
+}
+
+html[data-theme='copper'] .layout-dashboard .dashboard-page::after {
+  content: '';
+  position: absolute;
+  top: 12rem;
+  right: 0;
+  width: min(28vw, 360px);
+  height: 60vh;
+  pointer-events: none;
+  opacity: 0.14;
+  background:
+    linear-gradient(180deg, transparent 0 12%, rgba(217, 130, 50, 0.18) 12% 12.6%, transparent 12.6% 100%),
+    linear-gradient(90deg, transparent 0 34%, rgba(217, 130, 50, 0.18) 34% 34.6%, transparent 34.6% 100%),
+    linear-gradient(135deg, transparent 0 74%, rgba(255, 187, 120, 0.12) 74% 74.6%, transparent 74.6% 100%);
+  background-size: 100% 80px, 100px 100%, 100% 100%;
 }
 
 html[data-theme='copper'] .layout-dashboard .dashboard-stats-grid {
@@ -2955,6 +3015,19 @@ html[data-theme='copper'] .layout-dashboard .dashboard-mini-stat::before {
     linear-gradient(0deg, transparent 0 72%, rgba(255, 198, 140, 0.04) 72% 73%, transparent 73% 100%);
 }
 
+html[data-theme='copper'] .layout-dashboard .dashboard-subpanel::after {
+  content: '';
+  position: absolute;
+  inset: auto 18px 18px auto;
+  width: 220px;
+  height: 90px;
+  pointer-events: none;
+  opacity: 0.18;
+  background:
+    linear-gradient(90deg, transparent 0 14%, rgba(217, 130, 50, 0.32) 14% 15%, transparent 15% 40%, rgba(217, 130, 50, 0.22) 40% 41%, transparent 41% 100%),
+    linear-gradient(180deg, transparent 0 28%, rgba(217, 130, 50, 0.24) 28% 29%, transparent 29% 58%, rgba(217, 130, 50, 0.2) 58% 59%, transparent 59% 100%);
+}
+
 html[data-theme='copper'] .layout-dashboard .dashboard-panel-header {
   margin-bottom: 14px;
 }
@@ -2983,11 +3056,17 @@ html[data-theme='copper'] .layout-dashboard .btn-danger-action {
     0 0 0 1px rgba(217, 130, 50, 0.12),
     0 0 24px rgba(217, 130, 50, 0.12),
     inset 0 1px 0 rgba(255, 220, 170, 0.08);
+  transition:
+    box-shadow 0.16s ease,
+    border-color 0.16s ease,
+    transform 0.16s ease,
+    filter 0.16s ease;
 }
 
 html[data-theme='copper'] .layout-dashboard .dashboard-primary-action:hover,
 html[data-theme='copper'] .layout-dashboard .btn-danger-action:hover:not(:disabled) {
   filter: brightness(1.06);
+  transform: translateY(-1px);
   box-shadow:
     0 0 0 1px rgba(240, 177, 95, 0.35),
     0 0 30px rgba(217, 130, 50, 0.24),
