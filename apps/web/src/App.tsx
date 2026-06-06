@@ -10,7 +10,7 @@ import { ReactionTrackingPage } from './pages/ReactionTrackingPage';
 import { TimesheetPage } from './pages/TimesheetPage';
 import { AdminRole, AuthMeResponse } from './types';
 
-type ThemeMode = 'light' | 'dark';
+type ThemeMode = 'light' | 'dark' | 'copper';
 
 type AuthState = {
   checked: boolean;
@@ -76,6 +76,24 @@ const SiteFooter = ({ isAuthenticated = false, username = null, onLogout, showAd
   );
 };
 
+const THEME_LABELS: Record<ThemeMode, string> = {
+  light: 'Light',
+  dark: 'Dark',
+  copper: 'Copper'
+};
+
+const getNextTheme = (current: ThemeMode): ThemeMode => {
+  if (current === 'light') {
+    return 'dark';
+  }
+
+  if (current === 'dark') {
+    return 'copper';
+  }
+
+  return 'light';
+};
+
 type AdminLayoutProps = {
   username: string;
   role: AdminRole;
@@ -116,7 +134,7 @@ const AdminLayout = ({ username, role, canViewAudit, theme, onToggleTheme, onLog
         <aside className="sidebar">
           <h1>Service Admin</h1>
           <button type="button" className="theme-toggle" onClick={onToggleTheme}>
-            {theme === 'dark' ? 'Tema light' : 'Tema dark'}
+            Tema: {THEME_LABELS[theme]}
           </button>
           <nav>
             <NavLink to="/admin" end className={({ isActive }) => (isActive ? 'active' : '')}>
@@ -200,7 +218,7 @@ const PublicLayout = ({
           </div>
         </div>
         <button type="button" className="theme-toggle" onClick={onToggleTheme}>
-          {theme === 'dark' ? 'Tema light' : 'Tema dark'}
+          Tema: {THEME_LABELS[theme]}
         </button>
       </header>
       <main className="content">
@@ -229,7 +247,7 @@ export const App = () => {
     }
 
     const savedTheme = window.localStorage.getItem('service-theme');
-    if (savedTheme === 'dark' || savedTheme === 'light') {
+    if (savedTheme === 'dark' || savedTheme === 'light' || savedTheme === 'copper') {
       return savedTheme;
     }
 
@@ -298,7 +316,7 @@ export const App = () => {
     () => auth.role === 'ADMIN' && String(auth.username ?? '').trim().toLowerCase() === 'pdk',
     [auth.role, auth.username]
   );
-  const toggleTheme = () => setTheme((current) => (current === 'dark' ? 'light' : 'dark'));
+  const toggleTheme = () => setTheme((current) => getNextTheme(current));
 
   const renderAdminPage = (content: ReactNode) => {
     if (!auth.checked) {
