@@ -32,7 +32,7 @@ export const requireAdmin = (req: Request, res: Response, next: NextFunction): v
 
 export const requirePdkAuditAccess = (req: Request, res: Response, next: NextFunction): void => {
   requireAdmin(req, res, () => {
-    const username = String(res.locals.authUser?.username ?? '').trim().toLowerCase();
+    const username = String(res.locals.authUser?.username ?? '').trim();
     if (username !== 'pdk') {
       res.status(403).json({ error: 'Forbidden' });
       return;

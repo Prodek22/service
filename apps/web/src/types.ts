@@ -192,6 +192,23 @@ export type AuthMeResponse = {
   role?: AdminRole;
 };
 
+export type AdminUserAccount = {
+  id: number;
+  username: string;
+  role: AdminRole;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type AdminUsersResponse = {
+  items: AdminUserAccount[];
+};
+
+export type CreateAdminUserResponse = {
+  item: AdminUserAccount;
+};
+
 export type AuditLog = {
   id: number;
   actorUsername: string | null;

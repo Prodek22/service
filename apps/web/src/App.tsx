@@ -2,6 +2,7 @@
 import { Link, NavLink, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { ApiError, apiGet, apiPost } from './api/client';
 import { ActiveTimesheetsPage } from './pages/ActiveTimesheetsPage';
+import { AdminUsersPage } from './pages/AdminUsersPage';
 import { AuditLogsPage } from './pages/AuditLogsPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { EmployeesPage } from './pages/EmployeesPage';
@@ -119,6 +120,14 @@ const getSectionMeta = (pathname: string): { eyebrow: string; title: string; sub
     };
   }
 
+  if (pathname.startsWith('/admin/users')) {
+    return {
+      eyebrow: 'Acces pdk',
+      title: 'Utilizatori admin',
+      subtitle: 'Creeaza conturi ADMIN sau VIEWER pentru panou.'
+    };
+  }
+
   return {
     eyebrow: 'Monitorizare si control',
     title: 'Panou personal',
@@ -218,6 +227,14 @@ const AdminLayout = ({ username, role, canViewAudit, theme, onToggleTheme, onLog
                   LG
                 </span>
                 <span>Disciplina</span>
+              </NavLink>
+            ) : null}
+            {canViewAudit ? (
+              <NavLink to="/admin/users" className={({ isActive }) => `sidebar-nav-item${isActive ? ' active' : ''}`}>
+                <span className="sidebar-nav-icon sidebar-nav-icon-users" aria-hidden="true">
+                  US
+                </span>
+                <span>Utilizatori</span>
               </NavLink>
             ) : null}
           </nav>
@@ -509,6 +526,10 @@ export const App = () => {
       <Route
         path="/admin/audit"
         element={renderAdminPage(canViewAudit ? <AuditLogsPage /> : <Navigate to="/admin" replace />)}
+      />
+      <Route
+        path="/admin/users"
+        element={renderAdminPage(canViewAudit ? <AdminUsersPage /> : <Navigate to="/admin" replace />)}
       />
       <Route path="/dashboard" element={<Navigate to="/admin" replace />} />
       <Route path="/employees" element={<Navigate to="/admin/employees" replace />} />
