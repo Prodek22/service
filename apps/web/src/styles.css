@@ -4378,6 +4378,751 @@ html[data-theme='copper'] .layout-dashboard .dashboard-inactive-panel::after {
   display: none !important;
 }
 
+/* Light/Dark futuristic shell pass: texture, glass depth and CSS-drawn sidebar icons. */
+:root {
+  --shell-bg: #f6ede4;
+  --shell-bg-deep: #ead8c5;
+  --shell-sidebar: rgba(42, 27, 17, 0.88);
+  --shell-panel: rgba(255, 250, 244, 0.76);
+  --shell-panel-strong: rgba(255, 246, 236, 0.92);
+  --shell-border: rgba(138, 90, 54, 0.26);
+  --shell-border-strong: rgba(138, 90, 54, 0.54);
+  --shell-accent: #8a5a36;
+  --shell-accent-light: #c98445;
+  --shell-glow: rgba(138, 90, 54, 0.18);
+  --shell-grid: rgba(138, 90, 54, 0.1);
+  --shell-text: #2f2218;
+  --shell-muted: #7b6757;
+}
+
+html[data-theme='dark'] {
+  --shell-bg: #061027;
+  --shell-bg-deep: #030712;
+  --shell-sidebar: rgba(5, 11, 25, 0.92);
+  --shell-panel: rgba(16, 28, 58, 0.74);
+  --shell-panel-strong: rgba(24, 43, 84, 0.86);
+  --shell-border: rgba(132, 166, 236, 0.24);
+  --shell-border-strong: rgba(255, 155, 34, 0.5);
+  --shell-accent: #ff9b22;
+  --shell-accent-light: #ffc36f;
+  --shell-glow: rgba(255, 155, 34, 0.2);
+  --shell-grid: rgba(154, 184, 245, 0.08);
+  --shell-text: #f4f8ff;
+  --shell-muted: #c0cbea;
+}
+
+.layout-dashboard .sidebar-nav-icon {
+  position: relative;
+  overflow: hidden;
+  font-size: 0 !important;
+  line-height: 0;
+}
+
+.layout-dashboard .sidebar-nav-icon::before,
+.layout-dashboard .sidebar-nav-icon::after {
+  content: '';
+  position: absolute;
+  box-sizing: border-box;
+  pointer-events: none;
+}
+
+.layout-dashboard .sidebar-nav-icon-dashboard::before {
+  left: 8px;
+  top: 8px;
+  width: 7px;
+  height: 7px;
+  border-radius: 2px;
+  background: currentColor;
+  box-shadow:
+    11px 0 0 currentColor,
+    0 11px 0 currentColor,
+    11px 11px 0 currentColor;
+}
+
+.layout-dashboard .sidebar-nav-icon-personal::before {
+  left: 12px;
+  top: 7px;
+  width: 10px;
+  height: 10px;
+  border: 2px solid currentColor;
+  border-radius: 999px;
+}
+
+.layout-dashboard .sidebar-nav-icon-personal::after {
+  left: 7px;
+  bottom: 6px;
+  width: 20px;
+  height: 11px;
+  border: 2px solid currentColor;
+  border-bottom: none;
+  border-radius: 14px 14px 0 0;
+}
+
+.layout-dashboard .sidebar-nav-icon-program::before {
+  left: 7px;
+  top: 9px;
+  width: 20px;
+  height: 17px;
+  border: 2px solid currentColor;
+  border-radius: 4px;
+}
+
+.layout-dashboard .sidebar-nav-icon-program::after {
+  left: 10px;
+  top: 6px;
+  width: 14px;
+  height: 7px;
+  border-left: 2px solid currentColor;
+  border-right: 2px solid currentColor;
+  box-shadow: 0 9px 0 -1px currentColor;
+}
+
+.layout-dashboard .sidebar-nav-icon-reports::before {
+  left: 7px;
+  bottom: 8px;
+  width: 20px;
+  height: 14px;
+  border-left: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+}
+
+.layout-dashboard .sidebar-nav-icon-reports::after {
+  left: 9px;
+  bottom: 10px;
+  width: 19px;
+  height: 14px;
+  border-left: 2px solid currentColor;
+  border-top: 2px solid currentColor;
+  transform: skewY(-28deg) rotate(-8deg);
+  transform-origin: left bottom;
+}
+
+.layout-dashboard .sidebar-nav-icon-audit::before {
+  left: 8px;
+  top: 6px;
+  width: 18px;
+  height: 22px;
+  border: 2px solid currentColor;
+  clip-path: polygon(50% 0, 100% 17%, 88% 76%, 50% 100%, 12% 76%, 0 17%);
+}
+
+.layout-dashboard .sidebar-nav-icon-audit::after {
+  left: 13px;
+  top: 14px;
+  width: 9px;
+  height: 5px;
+  border-left: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(-45deg);
+}
+
+html:not([data-theme='copper']) .layout-dashboard {
+  grid-template-columns: 270px minmax(0, 1fr);
+  position: relative;
+  align-items: start;
+  min-height: 100vh;
+  background: var(--shell-bg-deep);
+}
+
+html:not([data-theme='copper']) .layout-dashboard.sidebar-collapsed {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+html:not([data-theme='copper']) .layout-dashboard > .layout-main {
+  position: relative;
+  min-width: 0;
+  min-height: 100vh;
+  overflow-x: hidden;
+  isolation: isolate;
+  background:
+    radial-gradient(circle at 14% 0%, color-mix(in srgb, var(--shell-accent) 20%, transparent), transparent 30%),
+    radial-gradient(circle at 86% 8%, color-mix(in srgb, var(--shell-accent-light) 16%, transparent), transparent 34%),
+    linear-gradient(180deg, var(--shell-bg) 0%, var(--shell-bg-deep) 100%);
+}
+
+html[data-theme='dark'] .layout-dashboard > .layout-main {
+  background:
+    radial-gradient(circle at 16% 0%, rgba(255, 155, 34, 0.16), transparent 31%),
+    radial-gradient(circle at 80% 9%, rgba(73, 126, 241, 0.22), transparent 36%),
+    linear-gradient(180deg, #071225 0%, #030711 100%);
+}
+
+html:not([data-theme='copper']) .layout-dashboard > .layout-main::before,
+html:not([data-theme='copper']) .layout-dashboard > .layout-main::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+html:not([data-theme='copper']) .layout-dashboard > .layout-main::before {
+  opacity: 0.72;
+  background-image:
+    linear-gradient(var(--shell-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--shell-grid) 1px, transparent 1px);
+  background-size: 42px 42px;
+  mask-image: radial-gradient(circle at center, black, transparent 82%);
+}
+
+html:not([data-theme='copper']) .layout-dashboard > .layout-main::after {
+  opacity: 0.18;
+  background:
+    radial-gradient(circle at 12% 22%, color-mix(in srgb, var(--shell-accent-light) 36%, transparent) 0 1px, transparent 2px),
+    radial-gradient(circle at 74% 32%, color-mix(in srgb, var(--shell-accent) 34%, transparent) 0 1px, transparent 2px),
+    linear-gradient(135deg, transparent 0 74%, color-mix(in srgb, var(--shell-accent) 24%, transparent) 74% 74.5%, transparent 74.5% 100%),
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.04) 0 1px, transparent 1px 4px);
+  background-size: 28px 28px, 36px 36px, 360px 220px, auto;
+  mix-blend-mode: overlay;
+}
+
+html:not([data-theme='copper']) .layout-dashboard > .content,
+html:not([data-theme='copper']) .layout-dashboard .content,
+html:not([data-theme='copper']) .layout-dashboard .admin-topbar {
+  position: relative;
+  z-index: 1;
+}
+
+html:not([data-theme='copper']) .layout-dashboard .admin-topbar {
+  max-width: 1440px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 24px 26px 0;
+}
+
+html:not([data-theme='copper']) .layout-dashboard .content {
+  max-width: 1440px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 24px 26px 28px;
+}
+
+html:not([data-theme='copper']) .layout-dashboard .sidebar {
+  position: sticky;
+  top: 0;
+  min-height: 100vh;
+  max-height: 100vh;
+  overflow-y: auto;
+  scrollbar-width: none;
+  padding: 72px 14px 18px;
+  border-right: 1px solid var(--shell-border);
+  background:
+    linear-gradient(var(--shell-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--shell-grid) 1px, transparent 1px),
+    radial-gradient(circle at 50% 100%, color-mix(in srgb, var(--shell-accent) 18%, transparent), transparent 44%),
+    linear-gradient(180deg, var(--shell-sidebar), color-mix(in srgb, var(--shell-sidebar) 88%, black 12%));
+  background-size: 32px 32px, 32px 32px, auto, auto;
+  box-shadow:
+    18px 0 44px rgba(0, 0, 0, 0.18),
+    inset -1px 0 0 color-mix(in srgb, var(--shell-accent) 18%, transparent);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+html:not([data-theme='copper']) .layout-dashboard .sidebar::-webkit-scrollbar {
+  display: none;
+}
+
+html:not([data-theme='copper']) .layout-dashboard .sidebar::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(120deg, transparent 0 48%, color-mix(in srgb, var(--shell-accent) 12%, transparent) 49%, transparent 50%),
+    linear-gradient(60deg, transparent 0 52%, color-mix(in srgb, var(--shell-accent-light) 10%, transparent) 53%, transparent 54%);
+  background-size: 112px 112px;
+  opacity: 0.34;
+}
+
+html:not([data-theme='copper']) .layout-dashboard .sidebar > * {
+  position: relative;
+  z-index: 1;
+}
+
+html:not([data-theme='copper']) .layout-dashboard .sidebar-toggle {
+  border-color: var(--shell-border-strong);
+  color: #fff7ed;
+  background:
+    radial-gradient(circle at 18% 0, color-mix(in srgb, var(--shell-accent-light) 26%, transparent), transparent 42%),
+    linear-gradient(180deg, color-mix(in srgb, var(--shell-accent) 68%, #1b1008 32%), color-mix(in srgb, var(--shell-accent) 32%, #0b0704 68%));
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--shell-accent) 12%, transparent),
+    0 12px 28px rgba(0, 0, 0, 0.26),
+    0 0 18px var(--shell-glow),
+    inset 0 1px 0 rgba(255, 235, 210, 0.12);
+}
+
+html:not([data-theme='copper']) .layout-dashboard .sidebar-brand,
+html:not([data-theme='copper']) .layout-dashboard .sidebar-meta-card,
+html:not([data-theme='copper']) .layout-dashboard .sidebar-status-card,
+html:not([data-theme='copper']) .layout-dashboard .admin-topbar-search input,
+html:not([data-theme='copper']) .layout-dashboard .admin-topbar-user,
+html:not([data-theme='copper']) .layout-dashboard .page-hero,
+html:not([data-theme='copper']) .layout-dashboard .public-header,
+html:not([data-theme='copper']) .layout-dashboard .card,
+html:not([data-theme='copper']) .layout-dashboard .personnel-stat-card,
+html:not([data-theme='copper']) .layout-dashboard .modal,
+html:not([data-theme='copper']) .layout-dashboard .raw-item,
+html:not([data-theme='copper']) .layout-dashboard .verify-id-links-item {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--shell-border);
+  background:
+    linear-gradient(135deg, var(--shell-panel-strong), var(--shell-panel)),
+    radial-gradient(circle at 18% 0%, color-mix(in srgb, var(--shell-accent-light) 18%, transparent), transparent 42%);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--shell-accent) 10%, transparent),
+    0 0 24px var(--shell-glow),
+    0 18px 40px rgba(0, 0, 0, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+html:not([data-theme='copper']) .layout-dashboard .sidebar-brand::after,
+html:not([data-theme='copper']) .layout-dashboard .sidebar-meta-card::after,
+html:not([data-theme='copper']) .layout-dashboard .sidebar-status-card::before,
+html:not([data-theme='copper']) .layout-dashboard .page-hero::after,
+html:not([data-theme='copper']) .layout-dashboard .public-header::after,
+html:not([data-theme='copper']) .layout-dashboard .card::after,
+html:not([data-theme='copper']) .layout-dashboard .personnel-stat-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  opacity: 0.48;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.12), transparent 30%),
+    linear-gradient(90deg, transparent 0 82%, color-mix(in srgb, var(--shell-accent) 16%, transparent) 82% 82.7%, transparent 82.7% 100%),
+    linear-gradient(180deg, transparent 0 34%, color-mix(in srgb, var(--shell-accent) 10%, transparent) 34% 34.7%, transparent 34.7% 100%);
+}
+
+html:not([data-theme='copper']) .layout-dashboard .table-wrapper.card,
+html:not([data-theme='copper']) .layout-dashboard .personnel-table-shell.card {
+  overflow-x: auto;
+}
+
+html:not([data-theme='copper']) .layout-dashboard .modal {
+  overflow: auto;
+}
+
+html:not([data-theme='copper']) .layout-dashboard .sidebar-brand {
+  border-radius: 20px;
+  color: var(--shell-text);
+}
+
+html:not([data-theme='copper']) .layout-dashboard .sidebar-brand h1,
+html:not([data-theme='copper']) .layout-dashboard .admin-topbar-copy strong,
+html:not([data-theme='copper']) .layout-dashboard section > h2,
+html:not([data-theme='copper']) .layout-dashboard .page-hero h2,
+html:not([data-theme='copper']) .layout-dashboard .public-header h1,
+html:not([data-theme='copper']) .layout-dashboard .card h3 {
+  color: var(--shell-text);
+}
+
+html:not([data-theme='copper']) .layout-dashboard .sidebar-brand p,
+html:not([data-theme='copper']) .layout-dashboard .sidebar-meta-label,
+html:not([data-theme='copper']) .layout-dashboard .admin-topbar-copy p,
+html:not([data-theme='copper']) .layout-dashboard .admin-topbar-eyebrow,
+html:not([data-theme='copper']) .layout-dashboard .muted-line,
+html:not([data-theme='copper']) .layout-dashboard .card p {
+  color: var(--shell-muted);
+}
+
+html:not([data-theme='copper']) .layout-dashboard .sidebar-brand-badge,
+html:not([data-theme='copper']) .layout-dashboard .admin-avatar-ring {
+  border-color: var(--shell-border-strong);
+  background:
+    radial-gradient(circle at 35% 20%, color-mix(in srgb, var(--shell-accent-light) 34%, transparent), transparent 52%),
+    linear-gradient(145deg, color-mix(in srgb, var(--shell-accent) 34%, transparent), rgba(0, 0, 0, 0.18));
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--shell-accent) 10%, transparent),
+    0 0 22px var(--shell-glow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+html:not([data-theme='copper']) .layout-dashboard .sidebar-theme-toggle,
+html:not([data-theme='copper']) .layout-dashboard .filters input,
+html:not([data-theme='copper']) .layout-dashboard .filters select,
+html:not([data-theme='copper']) .layout-dashboard .filters button,
+html:not([data-theme='copper']) .layout-dashboard .filters a,
+html:not([data-theme='copper']) .layout-dashboard .modal input,
+html:not([data-theme='copper']) .layout-dashboard .modal select,
+html:not([data-theme='copper']) .layout-dashboard .modal button,
+html:not([data-theme='copper']) .layout-dashboard .rank-tabs button,
+html:not([data-theme='copper']) .layout-dashboard .modal-tabs button,
+html:not([data-theme='copper']) .layout-dashboard .pagination button,
+html:not([data-theme='copper']) .layout-dashboard .btn-pagination,
+html:not([data-theme='copper']) .layout-dashboard .btn-table-action,
+html:not([data-theme='copper']) .layout-dashboard .public-nav-links a,
+html:not([data-theme='copper']) .layout-dashboard .theme-toggle,
+html:not([data-theme='copper']) .layout-dashboard .link-button {
+  border-color: var(--shell-border);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--shell-panel-strong) 82%, transparent), color-mix(in srgb, var(--shell-panel) 88%, transparent));
+  color: var(--shell-text);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--shell-accent) 8%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+html:not([data-theme='copper']) .layout-dashboard button:hover:not(:disabled),
+html:not([data-theme='copper']) .layout-dashboard .btn-table-action:hover,
+html:not([data-theme='copper']) .layout-dashboard .public-nav-links a:hover,
+html:not([data-theme='copper']) .layout-dashboard .rank-tabs button:hover {
+  border-color: var(--shell-border-strong);
+  filter: brightness(1.04);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--shell-accent-light) 22%, transparent),
+    0 0 24px var(--shell-glow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.16);
+}
+
+html:not([data-theme='copper']) .layout-dashboard .sidebar a {
+  min-height: 54px;
+  border-radius: 16px;
+  color: color-mix(in srgb, var(--shell-text) 86%, white 14%);
+  text-shadow: 0 0 10px color-mix(in srgb, var(--shell-accent) 12%, transparent);
+}
+
+html:not([data-theme='copper']) .layout-dashboard .sidebar a.active,
+html:not([data-theme='copper']) .layout-dashboard .sidebar a:hover {
+  border-color: var(--shell-border-strong);
+  background:
+    radial-gradient(circle at 8% 50%, color-mix(in srgb, var(--shell-accent-light) 34%, transparent), transparent 56%),
+    linear-gradient(90deg, color-mix(in srgb, var(--shell-accent) 24%, transparent), color-mix(in srgb, var(--shell-panel) 88%, transparent));
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--shell-accent-light) 22%, transparent),
+    0 0 24px var(--shell-glow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+
+html:not([data-theme='copper']) .layout-dashboard .sidebar-nav-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  border-color: var(--shell-border);
+  background:
+    radial-gradient(circle at 30% 16%, color-mix(in srgb, var(--shell-accent-light) 18%, transparent), transparent 55%),
+    color-mix(in srgb, var(--shell-panel-strong) 78%, transparent);
+  color: var(--shell-accent-light);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 0 14px color-mix(in srgb, var(--shell-accent) 10%, transparent);
+}
+
+html:not([data-theme='copper']) .layout-dashboard .sidebar a.active .sidebar-nav-icon,
+html:not([data-theme='copper']) .layout-dashboard .sidebar a:hover .sidebar-nav-icon {
+  color: var(--shell-accent-light);
+  border-color: var(--shell-border-strong);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--shell-accent-light) 18%, transparent),
+    0 0 18px var(--shell-glow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+
+html:not([data-theme='copper']) .layout-dashboard .admin-topbar-search {
+  position: relative;
+}
+
+html:not([data-theme='copper']) .layout-dashboard .admin-topbar-search::before {
+  content: '';
+  position: absolute;
+  left: 18px;
+  top: 50%;
+  z-index: 2;
+  width: 17px;
+  height: 17px;
+  border: 2px solid var(--shell-accent-light);
+  border-radius: 999px;
+  transform: translateY(-58%);
+  box-shadow: 10px 10px 0 -8px var(--shell-accent-light);
+  pointer-events: none;
+}
+
+html:not([data-theme='copper']) .layout-dashboard .admin-topbar-search input {
+  min-height: 58px;
+  padding-left: 54px;
+  padding-right: 86px;
+  color: var(--shell-text);
+  border-radius: 18px;
+}
+
+html:not([data-theme='copper']) .layout-dashboard .admin-topbar-search input::placeholder {
+  color: color-mix(in srgb, var(--shell-muted) 78%, transparent);
+}
+
+html:not([data-theme='copper']) .layout-dashboard .admin-topbar-shortcut {
+  border-color: var(--shell-border);
+  color: var(--shell-text);
+  background: color-mix(in srgb, var(--shell-panel-strong) 78%, transparent);
+}
+
+html:not([data-theme='copper']) .layout-dashboard .admin-topbar-user {
+  border-radius: 18px;
+}
+
+html:not([data-theme='copper']) .layout-dashboard .server-card {
+  position: relative;
+  min-height: 184px;
+  overflow: hidden;
+  border-radius: 0 22px 16px 16px;
+  clip-path: polygon(0 0, 83% 0, 100% 18%, 100% 100%, 0 100%);
+  background:
+    radial-gradient(circle at 50% 68%, color-mix(in srgb, var(--shell-accent-light) 28%, transparent), transparent 34%),
+    linear-gradient(180deg, color-mix(in srgb, var(--shell-panel-strong) 76%, transparent), color-mix(in srgb, var(--shell-panel) 94%, black 6%));
+}
+
+html:not([data-theme='copper']) .layout-dashboard .server-card::before {
+  content: '';
+  position: absolute;
+  left: -4px;
+  right: 22px;
+  top: -14px;
+  height: 70px;
+  pointer-events: none;
+  opacity: 0.58;
+  background:
+    linear-gradient(45deg, transparent 0 16px, color-mix(in srgb, var(--shell-accent) 42%, transparent) 17px, transparent 18px),
+    linear-gradient(0deg, transparent 0 36px, color-mix(in srgb, var(--shell-accent) 28%, transparent) 37px, transparent 38px);
+  background-size: 210px 70px;
+}
+
+html:not([data-theme='copper']) .layout-dashboard .server-info {
+  position: relative;
+  z-index: 2;
+  padding: 20px 18px 0;
+}
+
+html:not([data-theme='copper']) .layout-dashboard .dashboard-page,
+html:not([data-theme='copper']) .layout-dashboard section:not(.dashboard-page) {
+  position: relative;
+}
+
+html:not([data-theme='copper']) .layout-dashboard .server-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #18c76d;
+  text-shadow: 0 0 10px rgba(35, 226, 123, 0.28);
+}
+
+html:not([data-theme='copper']) .layout-dashboard .core {
+  position: absolute;
+  left: 50%;
+  bottom: 18px;
+  width: 118px;
+  height: 118px;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  background:
+    radial-gradient(circle, color-mix(in srgb, var(--shell-accent-light) 24%, transparent) 0 8%, transparent 9%),
+    repeating-radial-gradient(circle, transparent 0 16px, color-mix(in srgb, var(--shell-accent) 22%, transparent) 17px, transparent 18px);
+  box-shadow:
+    0 0 26px var(--shell-glow),
+    inset 0 0 28px color-mix(in srgb, var(--shell-accent) 12%, transparent);
+}
+
+html:not([data-theme='copper']) .layout-dashboard .core::after,
+html:not([data-theme='copper']) .layout-dashboard .core-inner {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  clip-path: polygon(50% 0%, 92% 25%, 92% 75%, 50% 100%, 8% 75%, 8% 25%);
+  transform: translate(-50%, -50%);
+}
+
+html:not([data-theme='copper']) .layout-dashboard .core::after {
+  content: '';
+  width: 76px;
+  height: 76px;
+  border: 1px solid color-mix(in srgb, var(--shell-accent-light) 72%, transparent);
+  box-shadow: 0 0 20px var(--shell-glow);
+}
+
+html:not([data-theme='copper']) .layout-dashboard .core-inner {
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--shell-accent-light);
+  background: color-mix(in srgb, var(--shell-accent-light) 18%, transparent);
+  box-shadow:
+    0 0 14px var(--shell-glow),
+    inset 0 0 14px color-mix(in srgb, var(--shell-accent-light) 18%, transparent);
+}
+
+html:not([data-theme='copper']) .layout-dashboard .core-line {
+  position: absolute;
+  left: -24px;
+  right: -24px;
+  top: 50%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--shell-accent-light) 46%, transparent), transparent);
+}
+
+html:not([data-theme='copper']) .layout-dashboard .dashboard-page::before,
+html:not([data-theme='copper']) .layout-dashboard section:not(.dashboard-page)::before {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 8rem;
+  width: min(28vw, 340px);
+  height: 52vh;
+  pointer-events: none;
+  opacity: 0.12;
+  background:
+    linear-gradient(180deg, transparent 0 18%, color-mix(in srgb, var(--shell-accent) 30%, transparent) 18% 18.8%, transparent 18.8%),
+    linear-gradient(90deg, transparent 0 36%, color-mix(in srgb, var(--shell-accent) 28%, transparent) 36% 36.8%, transparent 36.8%),
+    linear-gradient(135deg, transparent 0 72%, color-mix(in srgb, var(--shell-accent-light) 22%, transparent) 72% 72.8%, transparent 72.8%);
+  background-size: 100% 90px, 110px 100%, 100% 100%;
+}
+
+html:not([data-theme='copper']) .layout-dashboard .dashboard-stat-card,
+html:not([data-theme='copper']) .layout-dashboard .dashboard-mini-stat {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  align-items: center;
+  align-content: center;
+  column-gap: 16px;
+  border-color: var(--shell-border-strong);
+}
+
+html:not([data-theme='copper']) .layout-dashboard .dashboard-stat-card::before,
+html:not([data-theme='copper']) .layout-dashboard .dashboard-mini-stat::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.55;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--shell-accent-light) 18%, transparent), transparent);
+  transform: translateX(-120%);
+  animation: dashboardReferenceShine 5.6s infinite;
+}
+
+html:not([data-theme='copper']) .layout-dashboard .dashboard-stat-card:nth-child(2)::before,
+html:not([data-theme='copper']) .layout-dashboard .dashboard-mini-stat:nth-child(2)::before {
+  animation-delay: 0.45s;
+}
+
+html:not([data-theme='copper']) .layout-dashboard .dashboard-stat-card:nth-child(3)::before,
+html:not([data-theme='copper']) .layout-dashboard .dashboard-mini-stat:nth-child(3)::before {
+  animation-delay: 0.9s;
+}
+
+html:not([data-theme='copper']) .layout-dashboard .dashboard-stat-card:nth-child(4)::before,
+html:not([data-theme='copper']) .layout-dashboard .dashboard-mini-stat:nth-child(4)::before {
+  animation-delay: 1.35s;
+}
+
+html:not([data-theme='copper']) .layout-dashboard .dashboard-stat-icon,
+html:not([data-theme='copper']) .layout-dashboard .dashboard-mini-icon,
+html:not([data-theme='copper']) .layout-dashboard .dashboard-action-icon {
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--shell-border-strong);
+  background:
+    radial-gradient(circle at 35% 18%, color-mix(in srgb, var(--shell-accent-light) 22%, transparent), transparent 54%),
+    color-mix(in srgb, var(--shell-panel-strong) 78%, transparent);
+  color: var(--shell-accent-light);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 0 16px var(--shell-glow);
+}
+
+html:not([data-theme='copper']) .layout-dashboard .dashboard-stat-icon,
+html:not([data-theme='copper']) .layout-dashboard .dashboard-mini-icon {
+  grid-row: 1 / span 2;
+}
+
+html:not([data-theme='copper']) .layout-dashboard .dashboard-stat-card > span,
+html:not([data-theme='copper']) .layout-dashboard .dashboard-mini-stat > span,
+html:not([data-theme='copper']) .layout-dashboard .dashboard-stat-card > strong,
+html:not([data-theme='copper']) .layout-dashboard .dashboard-mini-stat > strong {
+  grid-column: 2;
+}
+
+html:not([data-theme='copper']) .layout-dashboard .dashboard-stat-card > span,
+html:not([data-theme='copper']) .layout-dashboard .dashboard-mini-stat > span,
+html:not([data-theme='copper']) .layout-dashboard .timesheet-table th,
+html:not([data-theme='copper']) .layout-dashboard .audit-table th {
+  color: var(--shell-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+html:not([data-theme='copper']) .layout-dashboard .dashboard-stat-card > strong,
+html:not([data-theme='copper']) .layout-dashboard .dashboard-mini-stat > strong {
+  color: var(--shell-text);
+}
+
+html:not([data-theme='copper']) .layout-dashboard .dashboard-panel {
+  border-radius: 22px;
+}
+
+html:not([data-theme='copper']) .layout-dashboard .dashboard-inactive-panel {
+  min-height: 210px;
+}
+
+html:not([data-theme='copper']) .layout-dashboard .dashboard-circuit {
+  opacity: 0.36;
+  filter: drop-shadow(0 0 12px var(--shell-glow));
+}
+
+html:not([data-theme='copper']) .layout-dashboard .dashboard-primary-action,
+html:not([data-theme='copper']) .layout-dashboard .btn-danger-action {
+  border-color: var(--shell-border-strong);
+  background:
+    radial-gradient(circle at 24% 0, color-mix(in srgb, var(--shell-accent-light) 20%, transparent), transparent 50%),
+    linear-gradient(180deg, color-mix(in srgb, var(--shell-panel-strong) 82%, transparent), color-mix(in srgb, var(--shell-panel) 92%, transparent));
+  color: var(--shell-text);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--shell-accent) 9%, transparent),
+    0 0 18px var(--shell-glow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+html:not([data-theme='copper']) .layout-dashboard .timesheet-table,
+html:not([data-theme='copper']) .layout-dashboard .audit-table {
+  overflow: hidden;
+  border-radius: 18px;
+  color: var(--table-text);
+}
+
+html:not([data-theme='copper']) .layout-dashboard .timesheet-table thead th,
+html:not([data-theme='copper']) .layout-dashboard .audit-table thead th {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--shell-panel-strong) 92%, transparent), color-mix(in srgb, var(--shell-panel) 92%, transparent));
+  border-bottom-color: var(--shell-border);
+}
+
+html:not([data-theme='copper']) .layout-dashboard .timesheet-table tbody tr:hover td,
+html:not([data-theme='copper']) .layout-dashboard .audit-table tbody tr:hover td {
+  background: color-mix(in srgb, var(--shell-accent) 14%, var(--table-row-hover)) !important;
+}
+
+@media (max-width: 1024px) {
+  html:not([data-theme='copper']) .layout-dashboard {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  html:not([data-theme='copper']) .layout-dashboard .sidebar {
+    position: relative;
+    min-height: auto;
+    max-height: none;
+    padding-bottom: 20px;
+  }
+}
+
+@media (max-width: 768px) {
+  html:not([data-theme='copper']) .layout-dashboard .admin-topbar,
+  html:not([data-theme='copper']) .layout-dashboard .content {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+}
+
 html[data-theme='copper'] .layout-dashboard .dashboard-inactive-panel > *:not(.dashboard-circuit) {
   position: relative;
   z-index: 1;

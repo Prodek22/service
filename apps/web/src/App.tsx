@@ -185,28 +185,38 @@ const AdminLayout = ({ username, role, canViewAudit, theme, onToggleTheme, onLog
           </div>
           <nav>
             <NavLink to="/admin" end className={({ isActive }) => `sidebar-nav-item${isActive ? ' active' : ''}`}>
-              <span className="sidebar-nav-icon">DB</span>
+              <span className="sidebar-nav-icon sidebar-nav-icon-dashboard" aria-hidden="true">
+                DB
+              </span>
               <span>Dashboard</span>
             </NavLink>
             <NavLink to="/admin/employees" className={({ isActive }) => `sidebar-nav-item${isActive ? ' active' : ''}`}>
-              <span className="sidebar-nav-icon">PS</span>
+              <span className="sidebar-nav-icon sidebar-nav-icon-personal" aria-hidden="true">
+                PS
+              </span>
               <span>Personal</span>
             </NavLink>
             {role === 'ADMIN' ? (
               <NavLink to="/" end className={({ isActive }) => `sidebar-nav-item${isActive ? ' active' : ''}`}>
-                <span className="sidebar-nav-icon">PJ</span>
+                <span className="sidebar-nav-icon sidebar-nav-icon-program" aria-hidden="true">
+                  PJ
+                </span>
                 <span>Program</span>
               </NavLink>
             ) : null}
             {role === 'ADMIN' ? (
               <NavLink to="/admin/reactions" className={({ isActive }) => `sidebar-nav-item${isActive ? ' active' : ''}`}>
-                <span className="sidebar-nav-icon">RM</span>
+                <span className="sidebar-nav-icon sidebar-nav-icon-reports" aria-hidden="true">
+                  RM
+                </span>
                 <span>Rapoarte</span>
               </NavLink>
             ) : null}
             {canViewAudit ? (
               <NavLink to="/admin/audit" className={({ isActive }) => `sidebar-nav-item${isActive ? ' active' : ''}`}>
-                <span className="sidebar-nav-icon">LG</span>
+                <span className="sidebar-nav-icon sidebar-nav-icon-audit" aria-hidden="true">
+                  LG
+                </span>
                 <span>Disciplina</span>
               </NavLink>
             ) : null}
