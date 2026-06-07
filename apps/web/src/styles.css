@@ -6,6 +6,7 @@
   --ink: #2f2218;
   --muted: #7b6757;
   --accent: #8a5a36;
+  --accent-light: #c98445;
   --accent-strong: #6f421f;
   --accent-soft: #efd8c4;
   --danger: #b23a48;
@@ -36,6 +37,7 @@ html[data-theme='dark'] {
   --ink: #f4f8ff;
   --muted: #c0cbea;
   --accent: #ff9b22;
+  --accent-light: #ffc36f;
   --accent-strong: #ff7417;
   --accent-soft: #274b8f;
   --danger: #ff6f7e;
@@ -66,6 +68,7 @@ html[data-theme='copper'] {
   --ink: #f4ddc9;
   --muted: #b89373;
   --accent: #d2874a;
+  --accent-light: #f0b15f;
   --accent-strong: #8f4f25;
   --accent-soft: rgba(92, 52, 26, 0.42);
   --danger: #ff857a;
@@ -5956,4 +5959,137 @@ html[data-theme='copper'] .layout-dashboard .dashboard-page .dashboard-panel::af
 html[data-theme='copper'] .layout-dashboard .dashboard-page .dashboard-inactive-panel::after {
   content: none !important;
   display: none !important;
+}
+
+/* Final dashboard icon/circuit fixes across all themes. */
+.layout-dashboard .dashboard-icon-glyph::before,
+.layout-dashboard .dashboard-icon-glyph::after {
+  border-color: var(--accent-light);
+}
+
+.layout-dashboard .dashboard-icon-glyph.document::after,
+.layout-dashboard .dashboard-icon-glyph.clock::after,
+.layout-dashboard .dashboard-icon-glyph.gauge::after,
+.layout-dashboard .dashboard-icon-glyph.pulse::before,
+.layout-dashboard .dashboard-icon-glyph.search::after {
+  background: var(--accent-light);
+}
+
+.layout-dashboard .dashboard-icon-glyph.document::after {
+  box-shadow: 0 5px 0 var(--accent-light), 0 10px 0 var(--accent-light);
+}
+
+.layout-dashboard .dashboard-icon-glyph.clock::after {
+  box-shadow: 5px 5px 0 -0.5px var(--accent-light);
+}
+
+.layout-dashboard .dashboard-icon-glyph.hash::before {
+  border-left-color: var(--accent-light);
+  border-right-color: var(--accent-light);
+}
+
+.layout-dashboard .dashboard-icon-glyph.hash::after {
+  border-top-color: var(--accent-light);
+  border-bottom-color: var(--accent-light);
+}
+
+.layout-dashboard .dashboard-icon-glyph.stack::after {
+  box-shadow: inset 0 4px 0 0 rgba(0, 0, 0, 0), 0 -1px 0 0 var(--accent-light), 0 4px 0 0 var(--accent-light);
+}
+
+.layout-dashboard .dashboard-icon-glyph.alert::before {
+  border-bottom-color: var(--accent-light);
+}
+
+.layout-dashboard .dashboard-icon-glyph.sync::before {
+  border-color: var(--accent-light);
+  border-right-color: transparent;
+}
+
+.layout-dashboard .dashboard-icon-glyph.sync::after,
+.layout-dashboard .dashboard-icon-glyph.calendar::after {
+  border-top-color: var(--accent-light);
+  border-right-color: var(--accent-light);
+}
+
+.layout-dashboard .dashboard-icon-glyph.calendar::after {
+  border-left-color: var(--accent-light);
+}
+
+.layout-dashboard .dashboard-stat-icon,
+.layout-dashboard .dashboard-mini-icon {
+  color: var(--accent-light);
+}
+
+.layout-dashboard .dashboard-action-icon {
+  color: var(--accent-light);
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  display: inline-grid;
+  place-items: center;
+}
+
+.layout-dashboard .dashboard-action-icon .dashboard-icon-glyph {
+  width: 18px;
+  height: 18px;
+}
+
+.layout-dashboard .dashboard-inactive-panel {
+  position: relative;
+  overflow: hidden;
+}
+
+.layout-dashboard .dashboard-inactive-panel > *:not(.dashboard-circuit) {
+  position: relative;
+  z-index: 1;
+}
+
+.layout-dashboard .dashboard-circuit {
+  position: absolute !important;
+  top: 50% !important;
+  right: 28px !important;
+  width: min(520px, 44%) !important;
+  height: 150px !important;
+  margin: 0 !important;
+  transform: translateY(-50%) !important;
+  pointer-events: none !important;
+  z-index: 0 !important;
+  opacity: 0.5;
+  background:
+    linear-gradient(180deg, transparent 0 42%, color-mix(in srgb, var(--accent-light) 18%, transparent) 42% 43%, transparent 43% 100%),
+    radial-gradient(circle at 75% 18%, color-mix(in srgb, var(--accent-light) 80%, transparent) 0 1px, transparent 2px),
+    radial-gradient(circle at 88% 26%, color-mix(in srgb, var(--accent-light) 80%, transparent) 0 1px, transparent 2px);
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 22%, #000);
+  mask-image: linear-gradient(90deg, transparent, #000 22%, #000);
+}
+
+.layout-dashboard .dashboard-circuit svg {
+  width: 100% !important;
+  height: 100% !important;
+  display: block !important;
+  filter: drop-shadow(0 0 10px color-mix(in srgb, var(--accent-light) 42%, transparent));
+}
+
+.layout-dashboard .sidebar-nav-icon {
+  font-size: 0 !important;
+  line-height: 0 !important;
+  text-indent: -999px;
+}
+
+html[data-theme='copper'] .layout-dashboard .sidebar-nav-item .sidebar-nav-icon {
+  font-size: 0 !important;
+  line-height: 0 !important;
+  text-indent: -999px;
+}
+
+.layout-dashboard .sidebar-nav-icon::before,
+.layout-dashboard .sidebar-nav-icon::after {
+  text-indent: 0;
+}
+
+@media (max-width: 980px) {
+  .layout-dashboard .dashboard-circuit {
+    display: none !important;
+  }
 }
