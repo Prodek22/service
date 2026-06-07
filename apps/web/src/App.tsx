@@ -138,7 +138,6 @@ type AdminLayoutProps = {
 
 const AdminLayout = ({ username, role, canViewAudit, theme, onToggleTheme, onLogout, children }: AdminLayoutProps) => {
   const location = useLocation();
-  const isDashboardRoute = location.pathname === '/admin';
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
     if (typeof window === 'undefined') {
       return false;
@@ -154,7 +153,7 @@ const AdminLayout = ({ username, role, canViewAudit, theme, onToggleTheme, onLog
   }, [isSidebarCollapsed]);
 
   return (
-    <div className={`layout ${isSidebarCollapsed ? 'sidebar-collapsed' : ''} ${isDashboardRoute ? 'layout-dashboard' : ''}`}>
+    <div className={`layout ${isSidebarCollapsed ? 'sidebar-collapsed' : ''} layout-dashboard`}>
       <button
         type="button"
         className="sidebar-toggle"

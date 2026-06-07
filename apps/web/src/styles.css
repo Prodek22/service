@@ -4794,3 +4794,421 @@ html[data-theme='copper'] .layout-dashboard .core-inner {
     0 0 34px rgba(255, 126, 42, 0.5),
     inset 0 0 18px rgba(255, 145, 62, 0.32) !important;
 }
+
+/* Shared copper UI for all non-dashboard pages rendered inside the admin shell. */
+html[data-theme='copper'] .layout-dashboard section:not(.dashboard-page) {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 18px;
+  color: var(--text-main);
+}
+
+html[data-theme='copper'] .layout-dashboard section:not(.dashboard-page) > h2 {
+  margin: 4px 0 0;
+  color: var(--text-main);
+  font-size: clamp(1.8rem, 2.2vw, 2.55rem);
+  line-height: 1;
+  letter-spacing: -0.03em;
+  text-shadow: 0 0 22px rgba(255, 177, 99, 0.14);
+}
+
+html[data-theme='copper'] .layout-dashboard .page-hero,
+html[data-theme='copper'] .layout-dashboard .public-header,
+html[data-theme='copper'] .layout-dashboard .card,
+html[data-theme='copper'] .layout-dashboard .personnel-stat-card,
+html[data-theme='copper'] .layout-dashboard .image-lightbox-card,
+html[data-theme='copper'] .layout-dashboard .modal,
+html[data-theme='copper'] .layout-dashboard .raw-item,
+html[data-theme='copper'] .layout-dashboard .verify-id-links-item {
+  position: relative;
+  border: 1px solid rgba(217, 130, 50, 0.3);
+  background:
+    linear-gradient(135deg, rgba(38, 23, 12, 0.76), rgba(14, 8, 4, 0.88)),
+    radial-gradient(circle at 12% 0%, rgba(255, 157, 72, 0.11), transparent 34%);
+  color: var(--text-main);
+  box-shadow:
+    0 0 0 1px rgba(217, 130, 50, 0.1),
+    0 0 24px rgba(217, 130, 50, 0.11),
+    0 18px 38px rgba(0, 0, 0, 0.26),
+    inset 0 1px 0 rgba(255, 220, 170, 0.08);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+html[data-theme='copper'] .layout-dashboard .page-hero,
+html[data-theme='copper'] .layout-dashboard .public-header {
+  border-radius: 24px;
+  padding: 22px 24px;
+  overflow: hidden;
+}
+
+html[data-theme='copper'] .layout-dashboard .card {
+  border-radius: 22px;
+  padding: 18px;
+  margin-bottom: 0;
+}
+
+html[data-theme='copper'] .layout-dashboard .page-hero::after,
+html[data-theme='copper'] .layout-dashboard .public-header::after,
+html[data-theme='copper'] .layout-dashboard .card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  background:
+    linear-gradient(135deg, rgba(255, 230, 205, 0.08), transparent 28%),
+    linear-gradient(90deg, transparent 0 68%, rgba(217, 130, 50, 0.09) 68% 68.35%, transparent 68.35% 100%);
+  opacity: 0.82;
+}
+
+html[data-theme='copper'] .layout-dashboard .table-wrapper.card::after,
+html[data-theme='copper'] .layout-dashboard .personnel-table-shell.card::after {
+  opacity: 0.36;
+}
+
+html[data-theme='copper'] .layout-dashboard .page-hero > *,
+html[data-theme='copper'] .layout-dashboard .public-header > *,
+html[data-theme='copper'] .layout-dashboard .card > *,
+html[data-theme='copper'] .layout-dashboard .modal > *,
+html[data-theme='copper'] .layout-dashboard .image-lightbox-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+html[data-theme='copper'] .layout-dashboard .page-hero-eyebrow,
+html[data-theme='copper'] .layout-dashboard .admin-topbar-eyebrow,
+html[data-theme='copper'] .layout-dashboard .personnel-stat-card span,
+html[data-theme='copper'] .layout-dashboard .timesheet-table th,
+html[data-theme='copper'] .layout-dashboard .muted-line {
+  color: #d8c2aa;
+}
+
+html[data-theme='copper'] .layout-dashboard .page-hero-eyebrow {
+  color: var(--accent-light);
+  letter-spacing: 0.22em;
+  text-shadow: 0 0 16px rgba(255, 178, 100, 0.25);
+}
+
+html[data-theme='copper'] .layout-dashboard .page-hero h2,
+html[data-theme='copper'] .layout-dashboard .public-header h1,
+html[data-theme='copper'] .layout-dashboard .personnel-table-header h3,
+html[data-theme='copper'] .layout-dashboard .card h3,
+html[data-theme='copper'] .layout-dashboard .modal h3 {
+  color: var(--text-main);
+  text-shadow: 0 0 20px rgba(255, 177, 99, 0.12);
+}
+
+html[data-theme='copper'] .layout-dashboard .page-hero p,
+html[data-theme='copper'] .layout-dashboard .public-header p,
+html[data-theme='copper'] .layout-dashboard .personnel-stat-card p,
+html[data-theme='copper'] .layout-dashboard .card p {
+  color: var(--text-muted);
+}
+
+html[data-theme='copper'] .layout-dashboard .personnel-stats-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+html[data-theme='copper'] .layout-dashboard .personnel-stat-card {
+  min-height: 138px;
+  border-radius: 22px;
+  padding: 20px;
+  overflow: hidden;
+}
+
+html[data-theme='copper'] .layout-dashboard .personnel-stat-card strong {
+  color: var(--text-main);
+  font-size: clamp(2rem, 3vw, 2.75rem);
+  line-height: 1;
+}
+
+html[data-theme='copper'] .layout-dashboard .filters,
+html[data-theme='copper'] .layout-dashboard .public-nav-links,
+html[data-theme='copper'] .layout-dashboard .page-hero-actions,
+html[data-theme='copper'] .layout-dashboard .table-actions,
+html[data-theme='copper'] .layout-dashboard .modal-actions,
+html[data-theme='copper'] .layout-dashboard .pagination,
+html[data-theme='copper'] .layout-dashboard .rank-tabs,
+html[data-theme='copper'] .layout-dashboard .modal-tabs {
+  gap: 10px;
+}
+
+html[data-theme='copper'] .layout-dashboard .filters input,
+html[data-theme='copper'] .layout-dashboard .filters select,
+html[data-theme='copper'] .layout-dashboard .filters button,
+html[data-theme='copper'] .layout-dashboard .filters a,
+html[data-theme='copper'] .layout-dashboard .modal input,
+html[data-theme='copper'] .layout-dashboard .modal select,
+html[data-theme='copper'] .layout-dashboard .modal button,
+html[data-theme='copper'] .layout-dashboard .rank-tabs button,
+html[data-theme='copper'] .layout-dashboard .modal-tabs button,
+html[data-theme='copper'] .layout-dashboard .pagination button,
+html[data-theme='copper'] .layout-dashboard .btn-pagination,
+html[data-theme='copper'] .layout-dashboard .btn-table-action,
+html[data-theme='copper'] .layout-dashboard .public-nav-links a,
+html[data-theme='copper'] .layout-dashboard .theme-toggle,
+html[data-theme='copper'] .layout-dashboard .link-button {
+  min-height: 42px;
+  border: 1px solid rgba(217, 130, 50, 0.42);
+  border-radius: 14px;
+  background:
+    linear-gradient(180deg, rgba(75, 43, 20, 0.72), rgba(25, 14, 7, 0.88));
+  color: var(--text-main);
+  box-shadow:
+    0 0 0 1px rgba(217, 130, 50, 0.1),
+    0 0 18px rgba(217, 130, 50, 0.09),
+    inset 0 1px 0 rgba(255, 220, 170, 0.08);
+  text-decoration: none;
+}
+
+html[data-theme='copper'] .layout-dashboard .filters input,
+html[data-theme='copper'] .layout-dashboard .filters select,
+html[data-theme='copper'] .layout-dashboard .modal input,
+html[data-theme='copper'] .layout-dashboard .modal select {
+  background:
+    linear-gradient(180deg, rgba(12, 7, 3, 0.88), rgba(20, 12, 6, 0.84));
+  color: var(--text-main);
+}
+
+html[data-theme='copper'] .layout-dashboard input::placeholder {
+  color: rgba(216, 194, 170, 0.64);
+}
+
+html[data-theme='copper'] .layout-dashboard button:hover:not(:disabled),
+html[data-theme='copper'] .layout-dashboard .btn-table-action:hover,
+html[data-theme='copper'] .layout-dashboard .public-nav-links a:hover,
+html[data-theme='copper'] .layout-dashboard .rank-tabs button:hover {
+  border-color: rgba(240, 177, 95, 0.68);
+  filter: brightness(1.06);
+  box-shadow:
+    0 0 0 1px rgba(240, 177, 95, 0.25),
+    0 0 26px rgba(217, 130, 50, 0.2),
+    inset 0 1px 0 rgba(255, 220, 170, 0.12);
+}
+
+html[data-theme='copper'] .layout-dashboard .rank-tabs button.active,
+html[data-theme='copper'] .layout-dashboard .modal-tabs button.active,
+html[data-theme='copper'] .layout-dashboard .public-nav-links a.active {
+  border-color: rgba(255, 177, 99, 0.78);
+  background:
+    radial-gradient(circle at 20% 50%, rgba(255, 157, 72, 0.35), transparent 54%),
+    linear-gradient(180deg, rgba(116, 62, 25, 0.88), rgba(46, 24, 10, 0.92));
+  box-shadow:
+    0 0 0 1px rgba(255, 177, 99, 0.2),
+    0 0 24px rgba(255, 132, 44, 0.25),
+    inset 0 1px 0 rgba(255, 220, 170, 0.16);
+}
+
+html[data-theme='copper'] .layout-dashboard .btn-danger-action,
+html[data-theme='copper'] .layout-dashboard .filters button.btn-danger-action {
+  border-color: rgba(255, 177, 99, 0.52);
+  background:
+    linear-gradient(180deg, rgba(91, 47, 20, 0.82), rgba(39, 19, 8, 0.94));
+  color: var(--text-main);
+}
+
+html[data-theme='copper'] .layout-dashboard .table-wrapper {
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(217, 130, 50, 0.55) rgba(10, 6, 3, 0.45);
+}
+
+html[data-theme='copper'] .layout-dashboard .table-wrapper::-webkit-scrollbar {
+  height: 8px;
+}
+
+html[data-theme='copper'] .layout-dashboard .table-wrapper::-webkit-scrollbar-track {
+  background: rgba(10, 6, 3, 0.42);
+  border-radius: 999px;
+}
+
+html[data-theme='copper'] .layout-dashboard .table-wrapper::-webkit-scrollbar-thumb {
+  background: rgba(217, 130, 50, 0.55);
+  border-radius: 999px;
+}
+
+html[data-theme='copper'] .layout-dashboard .timesheet-table,
+html[data-theme='copper'] .layout-dashboard .audit-table {
+  border-radius: 18px;
+  overflow: hidden;
+  color: var(--text-main);
+}
+
+html[data-theme='copper'] .layout-dashboard .timesheet-table thead th,
+html[data-theme='copper'] .layout-dashboard .audit-table thead th {
+  background:
+    linear-gradient(180deg, rgba(74, 42, 20, 0.96), rgba(34, 19, 9, 0.98));
+  color: #f8efe5;
+  border-bottom: 1px solid rgba(240, 177, 95, 0.34);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.78rem;
+}
+
+html[data-theme='copper'] .layout-dashboard .timesheet-table td,
+html[data-theme='copper'] .layout-dashboard .audit-table td {
+  color: rgba(248, 239, 229, 0.9);
+  border-bottom: 1px solid rgba(217, 130, 50, 0.14);
+  background: rgba(11, 7, 4, 0.34);
+}
+
+html[data-theme='copper'] .layout-dashboard .timesheet-table tbody tr:nth-child(odd) td,
+html[data-theme='copper'] .layout-dashboard .audit-table tbody tr:nth-child(odd) td {
+  background: rgba(25, 15, 8, 0.52);
+}
+
+html[data-theme='copper'] .layout-dashboard .timesheet-table tbody tr:nth-child(even) td,
+html[data-theme='copper'] .layout-dashboard .audit-table tbody tr:nth-child(even) td {
+  background: rgba(15, 9, 5, 0.64);
+}
+
+html[data-theme='copper'] .layout-dashboard .timesheet-table tbody tr:hover td,
+html[data-theme='copper'] .layout-dashboard .audit-table tbody tr:hover td {
+  background: rgba(79, 43, 19, 0.56) !important;
+}
+
+html[data-theme='copper'] .layout-dashboard .timesheet-table tbody tr.is-paid td {
+  background: rgba(31, 75, 48, 0.44) !important;
+  border-bottom-color: rgba(34, 197, 94, 0.25);
+}
+
+html[data-theme='copper'] .layout-dashboard .timesheet-table tbody tr.is-inactive td {
+  background: rgba(97, 38, 31, 0.5) !important;
+  border-bottom-color: rgba(248, 113, 113, 0.28);
+}
+
+html[data-theme='copper'] .layout-dashboard .timesheet-table a,
+html[data-theme='copper'] .layout-dashboard .audit-table a {
+  color: var(--accent-light);
+}
+
+html[data-theme='copper'] .layout-dashboard .badge {
+  border: 1px solid rgba(240, 177, 95, 0.24);
+  background: rgba(217, 130, 50, 0.12);
+  color: var(--accent-light);
+  box-shadow: inset 0 1px 0 rgba(255, 220, 170, 0.08);
+}
+
+html[data-theme='copper'] .layout-dashboard .badge.ok {
+  border-color: rgba(34, 197, 94, 0.35);
+  background: rgba(34, 197, 94, 0.14);
+  color: #86efac;
+}
+
+html[data-theme='copper'] .layout-dashboard .badge.warning {
+  border-color: rgba(250, 204, 21, 0.38);
+  background: rgba(250, 204, 21, 0.14);
+  color: #fde68a;
+}
+
+html[data-theme='copper'] .layout-dashboard .badge.danger {
+  border-color: rgba(248, 113, 113, 0.38);
+  background: rgba(248, 113, 113, 0.14);
+  color: #fca5a5;
+}
+
+html[data-theme='copper'] .layout-dashboard .badge.muted {
+  border-color: rgba(184, 156, 126, 0.28);
+  background: rgba(184, 156, 126, 0.1);
+  color: #d8c2aa;
+}
+
+html[data-theme='copper'] .layout-dashboard .status-orb.online {
+  background: #23e27b;
+  box-shadow: 0 0 12px rgba(35, 226, 123, 0.78);
+}
+
+html[data-theme='copper'] .layout-dashboard .pagination {
+  color: var(--text-muted);
+}
+
+html[data-theme='copper'] .layout-dashboard .modal-backdrop {
+  background:
+    radial-gradient(circle at 50% 20%, rgba(217, 130, 50, 0.14), transparent 36%),
+    rgba(3, 2, 1, 0.76);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+html[data-theme='copper'] .layout-dashboard .modal,
+html[data-theme='copper'] .layout-dashboard .image-lightbox-card {
+  border-radius: 24px;
+}
+
+html[data-theme='copper'] .layout-dashboard .raw-list {
+  color: var(--text-main);
+}
+
+html[data-theme='copper'] .layout-dashboard .audit-modal-pre,
+html[data-theme='copper'] .layout-dashboard pre {
+  background: rgba(8, 5, 3, 0.8);
+  border: 1px solid rgba(217, 130, 50, 0.24);
+  color: #f8efe5;
+}
+
+html[data-theme='copper'] .layout-dashboard .timesheet-avatar {
+  border: 1px solid rgba(240, 177, 95, 0.38);
+  box-shadow: 0 0 14px rgba(217, 130, 50, 0.18);
+}
+
+html[data-theme='copper'] .layout-dashboard .timesheet-week-salary-total {
+  color: var(--accent-light);
+}
+
+html[data-theme='copper'] .layout-dashboard .error,
+html[data-theme='copper'] .layout-dashboard .timesheet-loading-banner.is-error {
+  color: #fecaca;
+  border-color: rgba(248, 113, 113, 0.35);
+  background: rgba(97, 38, 31, 0.42);
+}
+
+html[data-theme='copper'] .layout-dashboard .timesheet-loading-banner {
+  border: 1px solid rgba(217, 130, 50, 0.25);
+  background: rgba(28, 17, 9, 0.72);
+  color: var(--text-main);
+}
+
+@media (max-width: 1100px) {
+  html[data-theme='copper'] .layout-dashboard .personnel-stats-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Keep the original Dashboard card treatment after the shared page styling above. */
+html[data-theme='copper'] .layout-dashboard .dashboard-page .card,
+html[data-theme='copper'] .layout-dashboard .dashboard-page .dashboard-panel,
+html[data-theme='copper'] .layout-dashboard .dashboard-page .dashboard-subpanel {
+  background:
+    linear-gradient(180deg, rgba(34, 21, 11, 0.72), rgba(16, 10, 6, 0.84)) !important;
+  border: 1px solid rgba(217, 130, 50, 0.28) !important;
+  box-shadow:
+    0 0 0 1px rgba(217, 130, 50, 0.12),
+    0 0 24px rgba(217, 130, 50, 0.1),
+    0 16px 34px rgba(0, 0, 0, 0.26),
+    inset 0 1px 0 rgba(255, 220, 170, 0.08) !important;
+}
+
+html[data-theme='copper'] .layout-dashboard .dashboard-page .dashboard-panel {
+  border-radius: 24px !important;
+  padding: 20px 20px 18px !important;
+  overflow: hidden !important;
+}
+
+html[data-theme='copper'] .layout-dashboard .dashboard-page .dashboard-panel::after {
+  width: 300px !important;
+  height: 120px !important;
+  right: 20px !important;
+  bottom: 18px !important;
+  opacity: 0.22 !important;
+  background:
+    linear-gradient(90deg, transparent 0 6%, rgba(240, 177, 95, 0.48) 6% 7%, transparent 7% 24%, rgba(240, 177, 95, 0.36) 24% 25%, transparent 25% 48%, rgba(240, 177, 95, 0.44) 48% 49%, transparent 49% 100%),
+    linear-gradient(180deg, transparent 0 18%, rgba(240, 177, 95, 0.28) 18% 19%, transparent 19% 38%, rgba(240, 177, 95, 0.24) 38% 39%, transparent 39% 62%, rgba(240, 177, 95, 0.2) 62% 63%, transparent 63% 100%) !important;
+}
+
+html[data-theme='copper'] .layout-dashboard .dashboard-page .dashboard-inactive-panel::after {
+  content: none !important;
+  display: none !important;
+}
