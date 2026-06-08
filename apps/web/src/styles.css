@@ -6597,7 +6597,7 @@ html[data-theme='copper'] .layout-dashboard .server-info {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 40px 22px 0;
+  padding: 32px 22px 0;
   text-align: center;
 }
 
