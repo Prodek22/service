@@ -6545,6 +6545,14 @@ html[data-theme='copper'] .layout-dashboard .sidebar-nav-item .sidebar-nav-icon 
   }
 }
 
+.layout-dashboard .admin-topbar {
+  grid-template-columns: minmax(0, 1fr) auto !important;
+}
+
+.layout-dashboard .admin-topbar-profile {
+  justify-self: end;
+}
+
 .admin-user-form {
   align-items: flex-end;
 }

@@ -154,7 +154,6 @@ const AdminLayout = ({ username, role, canViewAudit, theme, onToggleTheme, onLog
 
     return window.localStorage.getItem('service-sidebar-collapsed') === 'true';
   });
-  const [globalSearch, setGlobalSearch] = useState('');
   const sectionMeta = useMemo(() => getSectionMeta(location.pathname), [location.pathname]);
 
   useEffect(() => {
@@ -268,15 +267,6 @@ const AdminLayout = ({ username, role, canViewAudit, theme, onToggleTheme, onLog
             <strong>{sectionMeta.title}</strong>
             <p>{sectionMeta.subtitle}</p>
           </div>
-          <div className="admin-topbar-search">
-            <input
-              type="search"
-              value={globalSearch}
-              onChange={(event) => setGlobalSearch(event.target.value)}
-              placeholder="Cauta dupa nume, porecla, IBAN..."
-            />
-            <span className="admin-topbar-shortcut">CTRL</span>
-          </div>
           <div className="admin-topbar-profile">
             <div className="admin-topbar-user">
               <div className="admin-avatar-ring">
@@ -284,7 +274,6 @@ const AdminLayout = ({ username, role, canViewAudit, theme, onToggleTheme, onLog
               </div>
               <div>
                 <strong>{username}</strong>
-                <p>{role === 'ADMIN' ? 'Online' : 'Vizualizare'}</p>
               </div>
             </div>
           </div>
