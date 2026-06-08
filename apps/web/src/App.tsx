@@ -182,7 +182,6 @@ const AdminLayout = ({ username, role, canViewAudit, theme, onToggleTheme, onLog
             </div>
             <div>
               <h1>Paradise</h1>
-              <p>Monitorizare operativa</p>
             </div>
           </div>
           <div className="sidebar-meta-card">
@@ -266,7 +265,6 @@ const AdminLayout = ({ username, role, canViewAudit, theme, onToggleTheme, onLog
       <div className="layout-main">
         <header className="admin-topbar">
           <div className="admin-topbar-copy">
-            <span className="admin-topbar-eyebrow">{sectionMeta.eyebrow}</span>
             <strong>{sectionMeta.title}</strong>
             <p>{sectionMeta.subtitle}</p>
           </div>

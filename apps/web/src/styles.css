@@ -6298,6 +6298,37 @@ html[data-theme='copper'] .public-shell:not(.embedded) .public-footer {
   }
 }
 
+/* Keep native select dropdowns visually inside the copper theme. */
+html[data-theme='copper'] select,
+html[data-theme='copper'] select option,
+html[data-theme='copper'] select optgroup {
+  color-scheme: dark;
+  background-color: #120b06 !important;
+  color: #f8efe5 !important;
+}
+
+html[data-theme='copper'] select {
+  border-color: rgba(217, 130, 50, 0.48) !important;
+  background:
+    linear-gradient(180deg, rgba(29, 17, 8, 0.96), rgba(8, 5, 3, 0.98)) !important;
+}
+
+html[data-theme='copper'] select option {
+  padding: 8px 10px;
+}
+
+html[data-theme='copper'] select option:checked,
+html[data-theme='copper'] select option:hover {
+  background-color: #5b2f14 !important;
+  color: #fff1df !important;
+  box-shadow: 0 0 0 999px #5b2f14 inset;
+}
+
+html[data-theme='copper'] select:focus {
+  outline: 2px solid rgba(240, 177, 95, 0.42);
+  outline-offset: 2px;
+}
+
 /* Copper layouts should expand across the available viewport, especially after hiding the sidebar. */
 html[data-theme='copper'] .layout-dashboard {
   width: 100%;
