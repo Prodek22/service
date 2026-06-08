@@ -6298,6 +6298,47 @@ html[data-theme='copper'] .public-shell:not(.embedded) .public-footer {
   }
 }
 
+/* Copper layouts should expand across the available viewport, especially after hiding the sidebar. */
+html[data-theme='copper'] .layout-dashboard {
+  width: 100%;
+}
+
+html[data-theme='copper'] .layout-dashboard.sidebar-collapsed {
+  grid-template-columns: minmax(0, 1fr) !important;
+}
+
+html[data-theme='copper'] .layout-dashboard > .layout-main {
+  width: 100%;
+  max-width: none;
+}
+
+html[data-theme='copper'] .layout-dashboard.sidebar-collapsed > .layout-main {
+  grid-column: 1 / -1 !important;
+}
+
+html[data-theme='copper'] .layout-dashboard :is(.admin-topbar, .content),
+html[data-theme='copper'] .public-shell:not(.embedded) :is(.public-header, .content, .public-footer) {
+  width: 100% !important;
+  max-width: none !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+html[data-theme='copper'] .public-shell:not(.embedded) {
+  padding-inline: 24px;
+}
+
+html[data-theme='copper'] .public-shell:not(.embedded) .content {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+@media (max-width: 768px) {
+  html[data-theme='copper'] .public-shell:not(.embedded) {
+    padding-inline: 10px;
+  }
+}
+
 @media (max-width: 1100px) {
   html[data-theme='copper'] .layout-dashboard .personnel-stats-grid {
     grid-template-columns: 1fr;
