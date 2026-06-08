@@ -6593,6 +6593,42 @@ html[data-theme='copper'] .layout-dashboard .server-row {
   text-shadow: none;
 }
 
+html[data-theme='copper'] .layout-dashboard .server-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40px 22px 0;
+  text-align: center;
+}
+
+html[data-theme='copper'] .layout-dashboard .server-card-label {
+  justify-content: center;
+  width: 100%;
+  color: rgba(255, 239, 219, 0.96);
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-shadow:
+    0 0 12px rgba(255, 180, 107, 0.18),
+    0 1px 0 rgba(0, 0, 0, 0.5);
+}
+
+html[data-theme='copper'] .layout-dashboard .server-row {
+  justify-content: center;
+  width: 100%;
+  margin-top: 12px;
+}
+
+.layout-dashboard .server-logout-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 82px;
+  min-height: 38px;
+  font-size: 14px;
+  text-align: center;
+}
+
 html[data-theme='copper'] .layout-dashboard .server-logout-button {
   border-color: rgba(240, 177, 95, 0.48);
   background:
