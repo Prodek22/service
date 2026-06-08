@@ -387,6 +387,15 @@ html[data-theme='copper'] .sidebar-footer button {
   filter: brightness(0.97);
 }
 
+.theme-toggle-static {
+  cursor: default;
+  user-select: none;
+}
+
+.theme-toggle-static:hover {
+  filter: none;
+}
+
 .sidebar a {
   color: #ffe7d2;
   text-decoration: none;

@@ -11,8 +11,6 @@ import { ReactionTrackingPage } from './pages/ReactionTrackingPage';
 import { TimesheetPage } from './pages/TimesheetPage';
 import { AdminRole, AuthMeResponse } from './types';
 
-type ThemeMode = 'light' | 'dark' | 'copper';
-
 type AuthState = {
   checked: boolean;
   authenticated: boolean;
@@ -77,24 +75,6 @@ const SiteFooter = ({ isAuthenticated = false, username = null, onLogout, showAd
   );
 };
 
-const THEME_LABELS: Record<ThemeMode, string> = {
-  light: 'Light',
-  dark: 'Dark',
-  copper: 'Copper'
-};
-
-const getNextTheme = (current: ThemeMode): ThemeMode => {
-  if (current === 'light') {
-    return 'dark';
-  }
-
-  if (current === 'dark') {
-    return 'copper';
-  }
-
-  return 'light';
-};
-
 const getSectionMeta = (pathname: string): { eyebrow: string; title: string; subtitle: string } => {
   if (pathname.startsWith('/admin/employees')) {
     return {
@@ -139,13 +119,11 @@ type AdminLayoutProps = {
   username: string;
   role: AdminRole;
   canViewAudit: boolean;
-  theme: ThemeMode;
-  onToggleTheme: () => void;
   onLogout: () => Promise<void>;
   children: ReactNode;
 };
 
-const AdminLayout = ({ username, role, canViewAudit, theme, onToggleTheme, onLogout, children }: AdminLayoutProps) => {
+const AdminLayout = ({ username, role, canViewAudit, onLogout, children }: AdminLayoutProps) => {
   const location = useLocation();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
     if (typeof window === 'undefined') {
@@ -185,10 +163,10 @@ const AdminLayout = ({ username, role, canViewAudit, theme, onToggleTheme, onLog
           </div>
           <div className="sidebar-meta-card">
             <span className="sidebar-meta-label">Tema activa</span>
-            <button type="button" className="theme-toggle sidebar-theme-toggle" onClick={onToggleTheme}>
+            <div className="theme-toggle sidebar-theme-toggle theme-toggle-static">
               <span className="sidebar-theme-dot" aria-hidden="true" />
-              Tema: {THEME_LABELS[theme]}
-            </button>
+              Tema: Copper
+            </div>
           </div>
           <nav>
             <NavLink to="/admin" end className={({ isActive }) => `sidebar-nav-item${isActive ? ' active' : ''}`}>
@@ -274,8 +252,6 @@ const AdminLayout = ({ username, role, canViewAudit, theme, onToggleTheme, onLog
 type PublicLayoutProps = {
   isAuthenticated: boolean;
   username: string | null;
-  theme: ThemeMode;
-  onToggleTheme: () => void;
   onLogout: () => Promise<void>;
   view: 'weekly' | 'active';
   canManageWeeklyControls: boolean;
@@ -286,8 +262,6 @@ type PublicLayoutProps = {
 const PublicLayout = ({
   isAuthenticated,
   username,
-  theme,
-  onToggleTheme,
   onLogout,
   view,
   canManageWeeklyControls,
@@ -311,9 +285,6 @@ const PublicLayout = ({
             </NavLink>
           </div>
         </div>
-        <button type="button" className="theme-toggle" onClick={onToggleTheme}>
-          Tema: {THEME_LABELS[theme]}
-        </button>
       </header>
       <main className="content">
         {view === 'active' ? (
@@ -335,19 +306,6 @@ const PublicLayout = ({
 };
 
 export const App = () => {
-  const [theme, setTheme] = useState<ThemeMode>(() => {
-    if (typeof window === 'undefined') {
-      return 'light';
-    }
-
-    const savedTheme = window.localStorage.getItem('service-theme');
-    if (savedTheme === 'dark' || savedTheme === 'light' || savedTheme === 'copper') {
-      return savedTheme;
-    }
-
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-  });
-
   const [auth, setAuth] = useState<AuthState>({
     checked: false,
     authenticated: false,
@@ -380,9 +338,9 @@ export const App = () => {
   }, []);
 
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
-    window.localStorage.setItem('service-theme', theme);
-  }, [theme]);
+    document.documentElement.setAttribute('data-theme', 'copper');
+    window.localStorage.setItem('service-theme', 'copper');
+  }, []);
 
   const handleLogin = async (username: string, password: string) => {
     setLoginLoading(true);
@@ -410,7 +368,6 @@ export const App = () => {
     () => auth.role === 'ADMIN' && String(auth.username ?? '').trim().toLowerCase() === 'pdk',
     [auth.role, auth.username]
   );
-  const toggleTheme = () => setTheme((current) => getNextTheme(current));
 
   const renderAdminPage = (content: ReactNode) => {
     if (!auth.checked) {
@@ -426,8 +383,6 @@ export const App = () => {
         username={headerUser}
         role={auth.role}
         canViewAudit={canViewAudit}
-        theme={theme}
-        onToggleTheme={toggleTheme}
         onLogout={handleLogout}
       >
         {content}
@@ -440,8 +395,6 @@ export const App = () => {
       <PublicLayout
         isAuthenticated={auth.authenticated}
         username={auth.username}
-        theme={theme}
-        onToggleTheme={toggleTheme}
         onLogout={handleLogout}
         view={view}
         canManageWeeklyControls={auth.role === 'ADMIN'}
@@ -459,8 +412,6 @@ export const App = () => {
         username={headerUser}
         role={auth.role}
         canViewAudit={canViewAudit}
-        theme={theme}
-        onToggleTheme={toggleTheme}
         onLogout={handleLogout}
       >
         {publicPage}
