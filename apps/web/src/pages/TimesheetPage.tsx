@@ -606,7 +606,7 @@ export const TimesheetPage = ({ readOnly = false }: TimesheetPageProps) => {
               <th>Angajat</th>
               <th>Rank</th>
               <th>Total timp</th>
-              <th>Bonus top</th>
+              {!readOnly ? <th>Bonus top</th> : null}
             </tr>
           </thead>
           <tbody>
@@ -619,12 +619,12 @@ export const TimesheetPage = ({ readOnly = false }: TimesheetPageProps) => {
                 </td>
                 <td>{employee.rank ?? '-'}</td>
                 <td>{formatMinutes(employee.totalSeconds)}</td>
-                <td>{formatCurrency(employee.topBonus)}</td>
+                {!readOnly ? <td>{formatCurrency(employee.topBonus)}</td> : null}
               </tr>
             ))}
             {!weeklyTopEmployees.length ? (
               <tr>
-                <td colSpan={5}>Nu exista pontaje cu timp in ciclul selectat.</td>
+                <td colSpan={readOnly ? 4 : 5}>Nu exista pontaje cu timp in ciclul selectat.</td>
               </tr>
             ) : null}
           </tbody>
