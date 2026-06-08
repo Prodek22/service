@@ -240,24 +240,20 @@ const AdminLayout = ({ username, role, canViewAudit, theme, onToggleTheme, onLog
             <div className="sidebar-status-card">
               <div className="server-card">
                 <div className="server-info">
-                  <span className="sidebar-meta-label server-card-label">Server status</span>
+                  <span className="sidebar-meta-label server-card-label">{username}</span>
                   <div className="server-row">
-                    <span className="green-dot" aria-hidden="true" />
-                    <strong>Online</strong>
+                    <button type="button" className="server-logout-button" onClick={() => void onLogout()}>
+                      Logout
+                    </button>
                   </div>
                 </div>
-                <div className="core" aria-hidden="true">
+                <div className="core">
                   <span className="core-line" />
                   <span className="core-inner" />
+                  <img src="/paradise-logo.png" alt="Paradise logo" className="core-avatar-image" />
                 </div>
               </div>
             </div>
-            <span>
-              Logat ca: {username} ({role})
-            </span>
-            <button type="button" onClick={() => void onLogout()}>
-              Logout
-            </button>
           </div>
         </aside>
       ) : null}
@@ -266,16 +262,6 @@ const AdminLayout = ({ username, role, canViewAudit, theme, onToggleTheme, onLog
           <div className="admin-topbar-copy">
             <strong>{sectionMeta.title}</strong>
             <p>{sectionMeta.subtitle}</p>
-          </div>
-          <div className="admin-topbar-profile">
-            <div className="admin-topbar-user">
-              <div className="admin-avatar-ring">
-                <img src="/paradise-logo.png" alt="Paradise logo" className="admin-avatar-image" />
-              </div>
-              <div>
-                <strong>{username}</strong>
-              </div>
-            </div>
           </div>
         </header>
         <main className="content">{children}</main>

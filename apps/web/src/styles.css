@@ -6546,11 +6546,53 @@ html[data-theme='copper'] .layout-dashboard .sidebar-nav-item .sidebar-nav-icon 
 }
 
 .layout-dashboard .admin-topbar {
-  grid-template-columns: minmax(0, 1fr) auto !important;
+  grid-template-columns: minmax(0, 1fr) !important;
 }
 
-.layout-dashboard .admin-topbar-profile {
-  justify-self: end;
+.layout-dashboard .server-logout-button {
+  min-height: 34px;
+  padding: 7px 14px;
+  border-radius: 999px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.layout-dashboard .core-avatar-image {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 12;
+  width: 54px;
+  height: 54px;
+  transform: translate(-50%, -50%);
+  border-radius: 16px;
+  object-fit: cover;
+  border: 1px solid color-mix(in srgb, var(--accent-light) 58%, transparent);
+  background: rgba(8, 5, 3, 0.72);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--accent) 18%, transparent),
+    0 0 18px color-mix(in srgb, var(--accent-light) 28%, transparent);
+}
+
+html[data-theme='copper'] .layout-dashboard .server-card-label::after {
+  content: none !important;
+  display: none !important;
+}
+
+html[data-theme='copper'] .layout-dashboard .server-row {
+  color: var(--text-main);
+  text-shadow: none;
+}
+
+html[data-theme='copper'] .layout-dashboard .server-logout-button {
+  border-color: rgba(240, 177, 95, 0.48);
+  background:
+    linear-gradient(180deg, rgba(91, 47, 20, 0.82), rgba(39, 19, 8, 0.94));
+  color: var(--text-main);
+  box-shadow:
+    0 0 0 1px rgba(217, 130, 50, 0.12),
+    0 0 16px rgba(217, 130, 50, 0.16),
+    inset 0 1px 0 rgba(255, 220, 170, 0.12);
 }
 
 .admin-user-form {
