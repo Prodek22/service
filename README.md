@@ -134,6 +134,7 @@ SERVICE_COVERAGE_PRECHECK_MIN_MECHANICS=2
 SERVICE_COVERAGE_ALERT_COOLDOWN_MINUTES=9
 STATION_FREQUENCY_ENABLED=false
 STATION_FREQUENCY_CHANNEL_ID=
+STATION_FREQUENCY_CHANNEL_IDS=
 STATION_FREQUENCY_ROLE_IDS=
 STATION_FREQUENCY_MANAGER_ROLE_IDS=
 STATION_FREQUENCY_MANAGER_USER_IDS=
@@ -161,6 +162,7 @@ Pentru panoul separat de frecventa radio:
 
 - `STATION_FREQUENCY_ENABLED=true` activeaza panoul.
 - `STATION_FREQUENCY_CHANNEL_ID` este canalul separat unde botul posteaza mesajul `Frecventa statiei`.
+- `STATION_FREQUENCY_CHANNEL_IDS` permite mai multe canale, separate prin virgula; fiecare canal primeste panoul lui independent.
 - `STATION_FREQUENCY_ROLE_IDS` este lista de roluri mentionate in mesaj, separate prin virgula.
 - `STATION_FREQUENCY_MANAGER_ROLE_IDS` limiteaza cine poate apasa `Statie noua`; daca ramane gol, pot apasa doar membrii cu permisiuni Discord de administrator/manage guild.
 - `STATION_FREQUENCY_MANAGER_USER_IDS` permite useri expliciti, separat de roluri.

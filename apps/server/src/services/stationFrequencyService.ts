@@ -20,7 +20,7 @@ const ICON_DICE = '\u{1F3B2}';
 const STATION_PANEL_TITLE = `${ICON_RADIO} **Frecventa statiei**`;
 
 const isStationFrequencyConfigured = (): boolean =>
-  env.STATION_FREQUENCY_ENABLED && Boolean(env.STATION_FREQUENCY_CHANNEL_ID);
+  env.STATION_FREQUENCY_ENABLED && env.STATION_FREQUENCY_CHANNEL_IDS.length > 0;
 
 const getGuildTextChannel = async (client: Client, channelId: string): Promise<TextChannel | null> => {
   if (!channelId) {
@@ -112,19 +112,21 @@ export const ensureStationFrequencyPanel = async (client: Client): Promise<void>
     return;
   }
 
-  const channel = await getGuildTextChannel(client, env.STATION_FREQUENCY_CHANNEL_ID);
-  if (!channel) {
-    console.warn('[station-frequency] channel not found');
-    return;
-  }
+  for (const channelId of env.STATION_FREQUENCY_CHANNEL_IDS) {
+    const channel = await getGuildTextChannel(client, channelId);
+    if (!channel) {
+      console.warn(`[station-frequency] channel not found: ${channelId}`);
+      continue;
+    }
 
-  const existingMessage = await findStationPanelMessage(channel);
-  if (existingMessage) {
-    return;
-  }
+    const existingMessage = await findStationPanelMessage(channel);
+    if (existingMessage) {
+      continue;
+    }
 
-  await sendStationPanel(channel);
-  console.log('[station-frequency] panel created');
+    await sendStationPanel(channel);
+    console.log(`[station-frequency] panel created in channel ${channelId}`);
+  }
 };
 
 const hasStationAccess = (member: GuildMember): boolean => {
@@ -177,7 +179,15 @@ export const handleStationFrequencyInteraction = async (interaction: Interaction
     return true;
   }
 
-  const channel = await getGuildTextChannel(interaction.client, env.STATION_FREQUENCY_CHANNEL_ID);
+  if (!env.STATION_FREQUENCY_CHANNEL_IDS.includes(interaction.channelId)) {
+    await interaction.reply({
+      content: 'Acest buton nu apartine unui canal configurat pentru frecventa statiei.',
+      ephemeral: true
+    });
+    return true;
+  }
+
+  const channel = await getGuildTextChannel(interaction.client, interaction.channelId);
   if (!channel) {
     await interaction.reply({
       content: 'Canalul pentru frecventa statiei nu a fost gasit.',

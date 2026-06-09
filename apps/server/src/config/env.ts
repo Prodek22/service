@@ -44,6 +44,7 @@ const envSchema = z.object({
   SERVICE_COVERAGE_ALERT_COOLDOWN_MINUTES: z.string().default('9'),
   STATION_FREQUENCY_ENABLED: z.enum(['true', 'false']).default('false'),
   STATION_FREQUENCY_CHANNEL_ID: z.string().default(''),
+  STATION_FREQUENCY_CHANNEL_IDS: z.string().default(''),
   STATION_FREQUENCY_ROLE_IDS: z.string().default(''),
   STATION_FREQUENCY_MANAGER_ROLE_IDS: z.string().default(''),
   STATION_FREQUENCY_MANAGER_USER_IDS: z.string().default(''),
@@ -108,6 +109,13 @@ export const env = {
     Math.min(60, Number.parseInt(parsed.data.SERVICE_COVERAGE_ALERT_COOLDOWN_MINUTES, 10) || 9)
   ),
   STATION_FREQUENCY_ENABLED: parsed.data.STATION_FREQUENCY_ENABLED === 'true',
+  STATION_FREQUENCY_CHANNEL_IDS: [
+    parsed.data.STATION_FREQUENCY_CHANNEL_ID,
+    ...parsed.data.STATION_FREQUENCY_CHANNEL_IDS.split(',')
+  ]
+    .map((value) => value.trim())
+    .filter(Boolean)
+    .filter((value, index, values) => values.indexOf(value) === index),
   STATION_FREQUENCY_ROLE_IDS: parsed.data.STATION_FREQUENCY_ROLE_IDS
     .split(',')
     .map((value) => value.trim())
