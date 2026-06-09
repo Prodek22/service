@@ -140,6 +140,7 @@ PORT=3001
 
 Pentru alerta automata 18:00-23:00 si pontajul extra de manageri:
 
+- Orele de mai jos sunt interpretate explicit in timezone-ul `Europe/Bucharest`, indiferent de timezone-ul VPS-ului.
 - `SERVICE_COVERAGE_ENABLED=true` activeaza modulul.
 - `SERVICE_COVERAGE_EXTRA_CHANNEL_ID` este canalul `pontaj-extra`, unde botul posteaza mesajul cu butoanele `Intrare`, `Iesire`, `Sterge lista`.
 - `SERVICE_COVERAGE_HELP_CHANNEL_ID` este canalul `ajutor-service`, unde botul trimite alerta.

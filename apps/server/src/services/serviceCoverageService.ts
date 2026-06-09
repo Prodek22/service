@@ -25,6 +25,16 @@ const ICON_CROSS = '\u{274C}';
 const ICON_BROOM = '\u{1F9F9}';
 const ICON_WARNING = '\u{26A0}\u{FE0F}';
 const COVERAGE_PANEL_TITLE = `${ICON_CLIPBOARD} **Pontaj Extra Service**`;
+const COVERAGE_TIME_ZONE = 'Europe/Bucharest';
+const bucharestDateFormatter = new Intl.DateTimeFormat('en-GB', {
+  timeZone: COVERAGE_TIME_ZONE,
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+  hour: '2-digit',
+  minute: '2-digit',
+  hour12: false
+});
 
 let coverageTimer: NodeJS.Timeout | null = null;
 let lastRunMinuteKey: string | null = null;
@@ -46,16 +56,23 @@ const parseTimeToMinutes = (value: string, fallback: number): number => {
   return hours * 60 + minutes;
 };
 
-const getLocalMinuteOfDay = (date: Date): number => date.getHours() * 60 + date.getMinutes();
+const getBucharestDateParts = (date: Date): Record<string, string> => {
+  const parts = bucharestDateFormatter.formatToParts(date);
+  return Object.fromEntries(parts.map((part) => [part.type, part.value]));
+};
 
-const getLocalMinuteKey = (date: Date): string => {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  const hours = String(date.getHours()).padStart(2, '0');
-  const minutes = String(date.getMinutes()).padStart(2, '0');
+const getBucharestMinuteOfDay = (date: Date): number => {
+  const parts = getBucharestDateParts(date);
+  const hours = Number.parseInt(parts.hour ?? '0', 10);
+  const minutes = Number.parseInt(parts.minute ?? '0', 10);
 
-  return `${year}-${month}-${day} ${hours}:${minutes}`;
+  return hours * 60 + minutes;
+};
+
+const getBucharestMinuteKey = (date: Date): string => {
+  const parts = getBucharestDateParts(date);
+
+  return `${parts.year}-${parts.month}-${parts.day} ${parts.hour}:${parts.minute}`;
 };
 
 const getCoverageTimes = () => ({
@@ -441,7 +458,7 @@ const sendCoverageAlert = async (
 };
 
 const autoCloseCoverageAtEnd = async (client: Client, at: Date): Promise<void> => {
-  const minuteKey = getLocalMinuteKey(at);
+  const minuteKey = getBucharestMinuteKey(at);
   if (lastAutoCloseMinuteKey === minuteKey) {
     return;
   }
@@ -459,8 +476,8 @@ const runCoverageCheck = async (client: Client, at = new Date()): Promise<void> 
     return;
   }
 
-  const minute = getLocalMinuteOfDay(at);
-  const minuteKey = getLocalMinuteKey(at);
+  const minute = getBucharestMinuteOfDay(at);
+  const minuteKey = getBucharestMinuteKey(at);
   const { precheck, start, end } = getCoverageTimes();
 
   if (minute === end) {
@@ -523,7 +540,7 @@ export const startServiceCoverageSystem = async (client: Client): Promise<void> 
   }, 60 * 1000);
 
   console.log(
-    `[service-coverage] enabled: precheck=${env.SERVICE_COVERAGE_PRECHECK_TIME}, window=${env.SERVICE_COVERAGE_START_TIME}-${env.SERVICE_COVERAGE_END_TIME}, interval=${env.SERVICE_COVERAGE_CHECK_INTERVAL_MINUTES}m`
+    `[service-coverage] enabled: timezone=${COVERAGE_TIME_ZONE}, precheck=${env.SERVICE_COVERAGE_PRECHECK_TIME}, window=${env.SERVICE_COVERAGE_START_TIME}-${env.SERVICE_COVERAGE_END_TIME}, interval=${env.SERVICE_COVERAGE_CHECK_INTERVAL_MINUTES}m`
   );
 };
 
