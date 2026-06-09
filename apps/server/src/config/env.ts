@@ -30,6 +30,18 @@ const envSchema = z.object({
   GOOGLE_PRIVATE_KEY: z.string().optional(),
   GOOGLE_SHEETS_SPREADSHEET_ID: z.string().optional(),
   GOOGLE_SHEETS_EMPLOYEES_TAB: z.string().default('Angajati'),
+  SERVICE_COVERAGE_ENABLED: z.enum(['true', 'false']).default('false'),
+  SERVICE_COVERAGE_EXTRA_CHANNEL_ID: z.string().default(''),
+  SERVICE_COVERAGE_HELP_CHANNEL_ID: z.string().default(''),
+  SERVICE_COVERAGE_HELP_ROLE_IDS: z.string().default(''),
+  SERVICE_COVERAGE_MANAGER_ROLE_IDS: z.string().default(''),
+  SERVICE_COVERAGE_MANAGER_USER_IDS: z.string().default(''),
+  SERVICE_COVERAGE_PRECHECK_TIME: z.string().default('17:55'),
+  SERVICE_COVERAGE_START_TIME: z.string().default('18:00'),
+  SERVICE_COVERAGE_END_TIME: z.string().default('23:00'),
+  SERVICE_COVERAGE_CHECK_INTERVAL_MINUTES: z.string().default('10'),
+  SERVICE_COVERAGE_PRECHECK_MIN_MECHANICS: z.string().default('2'),
+  SERVICE_COVERAGE_ALERT_COOLDOWN_MINUTES: z.string().default('9'),
   DATABASE_URL: z.string().min(1),
   PORT: z.string().default('3001')
 });
@@ -64,6 +76,31 @@ export const env = {
   REACTION_TRACK_MESSAGE_IDS: parsed.data.REACTION_TRACK_MESSAGE_IDS
     .split(',')
     .map((value) => value.trim())
-    .filter(Boolean)
+    .filter(Boolean),
+  SERVICE_COVERAGE_ENABLED: parsed.data.SERVICE_COVERAGE_ENABLED === 'true',
+  SERVICE_COVERAGE_HELP_ROLE_IDS: parsed.data.SERVICE_COVERAGE_HELP_ROLE_IDS
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean),
+  SERVICE_COVERAGE_MANAGER_ROLE_IDS: parsed.data.SERVICE_COVERAGE_MANAGER_ROLE_IDS
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean),
+  SERVICE_COVERAGE_MANAGER_USER_IDS: parsed.data.SERVICE_COVERAGE_MANAGER_USER_IDS
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean),
+  SERVICE_COVERAGE_CHECK_INTERVAL_MINUTES: Math.max(
+    1,
+    Math.min(60, Number.parseInt(parsed.data.SERVICE_COVERAGE_CHECK_INTERVAL_MINUTES, 10) || 10)
+  ),
+  SERVICE_COVERAGE_PRECHECK_MIN_MECHANICS: Math.max(
+    1,
+    Number.parseInt(parsed.data.SERVICE_COVERAGE_PRECHECK_MIN_MECHANICS, 10) || 2
+  ),
+  SERVICE_COVERAGE_ALERT_COOLDOWN_MINUTES: Math.max(
+    1,
+    Math.min(60, Number.parseInt(parsed.data.SERVICE_COVERAGE_ALERT_COOLDOWN_MINUTES, 10) || 9)
+  )
 };
 

@@ -2,6 +2,7 @@ import {
   ChannelType,
   Client,
   GatewayIntentBits,
+  Interaction,
   Message,
   MessageReaction,
   Partials,
@@ -15,6 +16,7 @@ import { MessageInput } from '../types';
 import { attachIdImageFromReply, markCvMessageDeleted, processCvMessage } from '../services/cvService';
 import { logDiscordReactionAudit } from '../services/discordReactionAuditService';
 import { isReactionMessageTracked } from '../services/reactionTrackService';
+import { handleServiceCoverageInteraction, startServiceCoverageSystem } from '../services/serviceCoverageService';
 import { markTimesheetMessageDeleted, processTimesheetMessage } from '../services/timesheetService';
 import { setDiscordClient } from './clientStore';
 
@@ -298,9 +300,22 @@ export const startDiscordBot = async (): Promise<Client> => {
     }
   });
 
+  client.on('interactionCreate', async (interaction: Interaction) => {
+    try {
+      if (interaction.guildId !== env.DISCORD_GUILD_ID) {
+        return;
+      }
+
+      await handleServiceCoverageInteraction(interaction);
+    } catch (error) {
+      console.error('interactionCreate failed', error);
+    }
+  });
+
   await client.login(env.DISCORD_TOKEN);
   memberFilter = await createGuildMemberFilter(client);
   setDiscordClient(client);
+  await startServiceCoverageSystem(client);
 
   return client;
 };

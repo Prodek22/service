@@ -264,3 +264,20 @@ model ReactionEvent {
   @@map("reaction_events")
 }
 
+model ServiceCoverageSession {
+  id            Int       @id @default(autoincrement())
+  discordUserId String    @map("discord_user_id")
+  displayName   String?   @map("display_name")
+  startedAt     DateTime  @default(now()) @map("started_at")
+  endedAt       DateTime? @map("ended_at")
+  startedBy     String?   @map("started_by")
+  endedBy       String?   @map("ended_by")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  @@index([discordUserId, endedAt])
+  @@index([startedAt])
+  @@index([endedAt])
+  @@map("service_coverage_sessions")
+}
+

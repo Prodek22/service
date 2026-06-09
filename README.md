@@ -120,9 +120,34 @@ AUTO_CLEANUP_INTERVAL_HOURS=720
 AUTO_CLEANUP_KEEP_CYCLES=12
 AUTO_CLEANUP_RUN_ON_START=false
 MAINTENANCE_WORKER_MAX_OLD_SPACE_MB=256
+SERVICE_COVERAGE_ENABLED=false
+SERVICE_COVERAGE_EXTRA_CHANNEL_ID=
+SERVICE_COVERAGE_HELP_CHANNEL_ID=
+SERVICE_COVERAGE_HELP_ROLE_IDS=
+SERVICE_COVERAGE_MANAGER_ROLE_IDS=
+SERVICE_COVERAGE_MANAGER_USER_IDS=
+SERVICE_COVERAGE_PRECHECK_TIME=17:55
+SERVICE_COVERAGE_START_TIME=18:00
+SERVICE_COVERAGE_END_TIME=23:00
+SERVICE_COVERAGE_CHECK_INTERVAL_MINUTES=10
+SERVICE_COVERAGE_PRECHECK_MIN_MECHANICS=2
+SERVICE_COVERAGE_ALERT_COOLDOWN_MINUTES=9
 DATABASE_URL="mysql://user:password@localhost:3306/service_admin"
 PORT=3001
 ```
+
+### Acoperire service extra
+
+Pentru alerta automata 18:00-23:00 si pontajul extra de manageri:
+
+- `SERVICE_COVERAGE_ENABLED=true` activeaza modulul.
+- `SERVICE_COVERAGE_EXTRA_CHANNEL_ID` este canalul `pontaj-extra`, unde botul posteaza mesajul cu butoanele `Intrare`, `Iesire`, `Sterge lista`.
+- `SERVICE_COVERAGE_HELP_CHANNEL_ID` este canalul `ajutor-service`, unde botul trimite alerta.
+- `SERVICE_COVERAGE_HELP_ROLE_IDS` este lista de roluri mentionate in alerta, separate prin virgula.
+- `SERVICE_COVERAGE_MANAGER_ROLE_IDS` limiteaza cine poate folosi pontajul extra; daca ramane gol, pot apasa doar membrii cu permisiuni Discord de administrator/manage guild.
+- `SERVICE_COVERAGE_MANAGER_USER_IDS` permite useri expliciti, separat de roluri.
+- La `SERVICE_COVERAGE_PRECHECK_TIME` botul alerteaza daca sunt mai putini mecanici decat `SERVICE_COVERAGE_PRECHECK_MIN_MECHANICS`.
+- Intre `SERVICE_COVERAGE_START_TIME` si `SERVICE_COVERAGE_END_TIME`, botul verifica la fiecare `SERVICE_COVERAGE_CHECK_INTERVAL_MINUTES`; daca nu exista niciun pontaj mecanic si niciun manager pe acoperire, trimite alerta.
 
 Optional frontend: `apps/web/.env.example` -> `apps/web/.env`
 
