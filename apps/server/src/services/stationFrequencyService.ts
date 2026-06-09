@@ -14,10 +14,10 @@ import { randomInt } from 'node:crypto';
 import { env } from '../config/env';
 
 const STATION_NEW_ID = 'station-frequency:new';
-const ICON_RADIO = '\u{1F4FB}';
 const ICON_SATELLITE = '\u{1F4E1}';
 const ICON_DICE = '\u{1F3B2}';
-const STATION_PANEL_TITLE = `${ICON_RADIO} **Frecventa statiei**`;
+const STATION_PANEL_MARKER = '||station-frequency-panel||';
+const LEGACY_STATION_PANEL_TITLE = '**Frecventa statiei**';
 
 const isStationFrequencyConfigured = (): boolean =>
   env.STATION_FREQUENCY_ENABLED && env.STATION_FREQUENCY_CHANNEL_IDS.length > 0;
@@ -64,15 +64,13 @@ const buildStationPanelContent = (newFrequency: string, oldFrequency: string | n
   return [
     roleMentions,
     roleMentions ? '' : null,
-    STATION_PANEL_TITLE,
-    '',
     `${ICON_SATELLITE} **Statia veche**`,
     oldFrequency ? `\`${oldFrequency}\`` : '-',
     '',
     `${ICON_SATELLITE} **Statia noua**`,
     `\`${newFrequency}\``,
     '',
-    'Apasa **Statie noua** pentru a genera o frecventa noua.'
+    STATION_PANEL_MARKER
   ]
     .filter((line): line is string => line !== null)
     .join('\n');
@@ -86,7 +84,9 @@ const findStationPanelMessage = async (channel: TextChannel) => {
 
   return (
     messages.find(
-      (message) => message.author.id === channel.client.user?.id && message.content.includes(STATION_PANEL_TITLE)
+      (message) =>
+        message.author.id === channel.client.user?.id &&
+        (message.content.includes(STATION_PANEL_MARKER) || message.content.includes(LEGACY_STATION_PANEL_TITLE))
     ) ?? null
   );
 };
