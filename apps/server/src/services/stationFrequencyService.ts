@@ -17,6 +17,7 @@ const STATION_NEW_ID = 'station-frequency:new';
 const ICON_SATELLITE = '\u{1F4E1}';
 const ICON_DICE = '\u{1F3B2}';
 const LEGACY_STATION_PANEL_TITLE = '**Frecventa statiei**';
+const stationChannelLocks = new Set<string>();
 
 type StationPanelConfig = {
   channelId: string;
@@ -253,10 +254,23 @@ export const handleStationFrequencyInteraction = async (interaction: Interaction
     return true;
   }
 
-  await interaction.deferUpdate();
-  const oldFrequency = extractCurrentFrequency(interaction.message.content);
-  await interaction.message.delete().catch(() => undefined);
-  await sendStationPanel(channel, config, oldFrequency);
+  if (stationChannelLocks.has(interaction.channelId)) {
+    await interaction.reply({
+      content: 'Se genereaza deja o statie noua, incearca peste cateva secunde.',
+      ephemeral: true
+    });
+    return true;
+  }
+
+  stationChannelLocks.add(interaction.channelId);
+  try {
+    await interaction.deferUpdate();
+    const oldFrequency = extractCurrentFrequency(interaction.message.content);
+    await interaction.message.delete().catch(() => undefined);
+    await sendStationPanel(channel, config, oldFrequency);
+  } finally {
+    stationChannelLocks.delete(interaction.channelId);
+  }
 
   return true;
 };
