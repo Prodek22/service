@@ -137,9 +137,6 @@ STATION_FREQUENCY_CHANNEL_ID=
 STATION_FREQUENCY_ROLE_IDS=
 STATION_FREQUENCY_MANAGER_ROLE_IDS=
 STATION_FREQUENCY_MANAGER_USER_IDS=
-STATION_FREQUENCY_MIN=100
-STATION_FREQUENCY_MAX=999
-STATION_FREQUENCY_DECIMALS=0
 DATABASE_URL="mysql://user:password@localhost:3306/service_admin"
 PORT=3001
 ```
@@ -167,7 +164,7 @@ Pentru panoul separat de frecventa radio:
 - `STATION_FREQUENCY_ROLE_IDS` este lista de roluri mentionate in mesaj, separate prin virgula.
 - `STATION_FREQUENCY_MANAGER_ROLE_IDS` limiteaza cine poate apasa `Statie noua`; daca ramane gol, pot apasa doar membrii cu permisiuni Discord de administrator/manage guild.
 - `STATION_FREQUENCY_MANAGER_USER_IDS` permite useri expliciti, separat de roluri.
-- `STATION_FREQUENCY_MIN`, `STATION_FREQUENCY_MAX` si `STATION_FREQUENCY_DECIMALS` controleaza intervalul frecventei generate.
+- Frecventa este generata aleatoriu in format `123.456`, cu sase cifre, ca sa fie greu de ghicit.
 - La apasarea butonului `Statie noua`, botul sterge mesajul vechi si posteaza unul nou, cu tag la rolurile din `STATION_FREQUENCY_ROLE_IDS`.
 
 Optional frontend: `apps/web/.env.example` -> `apps/web/.env`

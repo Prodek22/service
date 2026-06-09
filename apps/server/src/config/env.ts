@@ -47,9 +47,6 @@ const envSchema = z.object({
   STATION_FREQUENCY_ROLE_IDS: z.string().default(''),
   STATION_FREQUENCY_MANAGER_ROLE_IDS: z.string().default(''),
   STATION_FREQUENCY_MANAGER_USER_IDS: z.string().default(''),
-  STATION_FREQUENCY_MIN: z.string().default('100'),
-  STATION_FREQUENCY_MAX: z.string().default('999'),
-  STATION_FREQUENCY_DECIMALS: z.string().default('0'),
   DATABASE_URL: z.string().min(1),
   PORT: z.string().default('3001')
 });
@@ -122,12 +119,6 @@ export const env = {
   STATION_FREQUENCY_MANAGER_USER_IDS: parsed.data.STATION_FREQUENCY_MANAGER_USER_IDS
     .split(',')
     .map((value) => value.trim())
-    .filter(Boolean),
-  STATION_FREQUENCY_MIN: Number.parseFloat(parsed.data.STATION_FREQUENCY_MIN) || 100,
-  STATION_FREQUENCY_MAX: Number.parseFloat(parsed.data.STATION_FREQUENCY_MAX) || 999,
-  STATION_FREQUENCY_DECIMALS: Math.max(
-    0,
-    Math.min(3, Number.parseInt(parsed.data.STATION_FREQUENCY_DECIMALS, 10) || 0)
-  )
+    .filter(Boolean)
 };
 

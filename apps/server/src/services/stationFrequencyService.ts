@@ -10,6 +10,7 @@ import {
   PermissionFlagsBits,
   TextChannel
 } from 'discord.js';
+import { randomInt } from 'node:crypto';
 import { env } from '../config/env';
 
 const STATION_NEW_ID = 'station-frequency:new';
@@ -34,25 +35,11 @@ const getGuildTextChannel = async (client: Client, channelId: string): Promise<T
   return channel;
 };
 
-const getStationRange = (): { min: number; max: number; decimals: number } => {
-  const min = Math.min(env.STATION_FREQUENCY_MIN, env.STATION_FREQUENCY_MAX);
-  const max = Math.max(env.STATION_FREQUENCY_MIN, env.STATION_FREQUENCY_MAX);
-
-  return {
-    min,
-    max,
-    decimals: env.STATION_FREQUENCY_DECIMALS
-  };
-};
-
 const generateStationFrequency = (): string => {
-  const { min, max, decimals } = getStationRange();
-  const multiplier = 10 ** decimals;
-  const minInt = Math.ceil(min * multiplier);
-  const maxInt = Math.floor(max * multiplier);
-  const value = minInt + Math.floor(Math.random() * (maxInt - minInt + 1));
+  const prefix = randomInt(100, 1000);
+  const suffix = randomInt(0, 1000);
 
-  return (value / multiplier).toFixed(decimals);
+  return `${prefix}.${String(suffix).padStart(3, '0')}`;
 };
 
 const buildStationButtons = (): ActionRowBuilder<ButtonBuilder> =>
