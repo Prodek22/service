@@ -138,6 +138,14 @@ STATION_FREQUENCY_CHANNEL_IDS=
 STATION_FREQUENCY_ROLE_IDS=
 STATION_FREQUENCY_MANAGER_ROLE_IDS=
 STATION_FREQUENCY_MANAGER_USER_IDS=
+STATION_FREQUENCY_BIG_CHANNEL_ID=
+STATION_FREQUENCY_BIG_ROLE_IDS=
+STATION_FREQUENCY_BIG_MANAGER_ROLE_IDS=
+STATION_FREQUENCY_BIG_MANAGER_USER_IDS=
+STATION_FREQUENCY_SMALL_CHANNEL_ID=
+STATION_FREQUENCY_SMALL_ROLE_IDS=
+STATION_FREQUENCY_SMALL_MANAGER_ROLE_IDS=
+STATION_FREQUENCY_SMALL_MANAGER_USER_IDS=
 DATABASE_URL="mysql://user:password@localhost:3306/service_admin"
 PORT=3001
 ```
@@ -166,6 +174,8 @@ Pentru panoul separat de frecventa radio:
 - `STATION_FREQUENCY_ROLE_IDS` este lista de roluri mentionate in mesaj, separate prin virgula.
 - `STATION_FREQUENCY_MANAGER_ROLE_IDS` limiteaza cine poate apasa `Statie noua`; daca ramane gol, pot apasa doar membrii cu permisiuni Discord de administrator/manage guild.
 - `STATION_FREQUENCY_MANAGER_USER_IDS` permite useri expliciti, separat de roluri.
+- Pentru doua camere cu roluri diferite, foloseste `STATION_FREQUENCY_BIG_*` si `STATION_FREQUENCY_SMALL_*`; aceste setari bat fallback-ul global de mai sus.
+- Exemplu: camera mare poate avea `STATION_FREQUENCY_BIG_ROLE_IDS=ROL_COMUN` si `STATION_FREQUENCY_BIG_MANAGER_ROLE_IDS=ROL_ACCESS_MARE`, iar camera mica poate avea `STATION_FREQUENCY_SMALL_ROLE_IDS=ROL_COMUN,ROL_MIC` si `STATION_FREQUENCY_SMALL_MANAGER_ROLE_IDS=ROL_ACCESS_MARE,ROL_ACCESS_MIC`.
 - Frecventa este generata aleatoriu in format `123.456`, cu sase cifre, ca sa fie greu de ghicit.
 - La apasarea butonului `Statie noua`, botul sterge mesajul vechi si posteaza unul nou, cu tag la rolurile din `STATION_FREQUENCY_ROLE_IDS`.
 

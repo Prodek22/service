@@ -48,6 +48,14 @@ const envSchema = z.object({
   STATION_FREQUENCY_ROLE_IDS: z.string().default(''),
   STATION_FREQUENCY_MANAGER_ROLE_IDS: z.string().default(''),
   STATION_FREQUENCY_MANAGER_USER_IDS: z.string().default(''),
+  STATION_FREQUENCY_BIG_CHANNEL_ID: z.string().default(''),
+  STATION_FREQUENCY_BIG_ROLE_IDS: z.string().default(''),
+  STATION_FREQUENCY_BIG_MANAGER_ROLE_IDS: z.string().default(''),
+  STATION_FREQUENCY_BIG_MANAGER_USER_IDS: z.string().default(''),
+  STATION_FREQUENCY_SMALL_CHANNEL_ID: z.string().default(''),
+  STATION_FREQUENCY_SMALL_ROLE_IDS: z.string().default(''),
+  STATION_FREQUENCY_SMALL_MANAGER_ROLE_IDS: z.string().default(''),
+  STATION_FREQUENCY_SMALL_MANAGER_USER_IDS: z.string().default(''),
   DATABASE_URL: z.string().min(1),
   PORT: z.string().default('3001')
 });
@@ -58,6 +66,18 @@ if (!parsed.success) {
   console.error('Missing or invalid environment variables:', parsed.error.flatten().fieldErrors);
   process.exit(1);
 }
+
+const splitList = (value: string): string[] =>
+  value
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+const uniqueList = (values: string[]): string[] =>
+  values
+    .map((value) => value.trim())
+    .filter(Boolean)
+    .filter((value, index, list) => list.indexOf(value) === index);
 
 export const env = {
   ...parsed.data,
@@ -109,24 +129,18 @@ export const env = {
     Math.min(60, Number.parseInt(parsed.data.SERVICE_COVERAGE_ALERT_COOLDOWN_MINUTES, 10) || 9)
   ),
   STATION_FREQUENCY_ENABLED: parsed.data.STATION_FREQUENCY_ENABLED === 'true',
-  STATION_FREQUENCY_CHANNEL_IDS: [
+  STATION_FREQUENCY_CHANNEL_IDS: uniqueList([
     parsed.data.STATION_FREQUENCY_CHANNEL_ID,
-    ...parsed.data.STATION_FREQUENCY_CHANNEL_IDS.split(',')
-  ]
-    .map((value) => value.trim())
-    .filter(Boolean)
-    .filter((value, index, values) => values.indexOf(value) === index),
-  STATION_FREQUENCY_ROLE_IDS: parsed.data.STATION_FREQUENCY_ROLE_IDS
-    .split(',')
-    .map((value) => value.trim())
-    .filter(Boolean),
-  STATION_FREQUENCY_MANAGER_ROLE_IDS: parsed.data.STATION_FREQUENCY_MANAGER_ROLE_IDS
-    .split(',')
-    .map((value) => value.trim())
-    .filter(Boolean),
-  STATION_FREQUENCY_MANAGER_USER_IDS: parsed.data.STATION_FREQUENCY_MANAGER_USER_IDS
-    .split(',')
-    .map((value) => value.trim())
-    .filter(Boolean)
+    ...splitList(parsed.data.STATION_FREQUENCY_CHANNEL_IDS)
+  ]),
+  STATION_FREQUENCY_ROLE_IDS: splitList(parsed.data.STATION_FREQUENCY_ROLE_IDS),
+  STATION_FREQUENCY_MANAGER_ROLE_IDS: splitList(parsed.data.STATION_FREQUENCY_MANAGER_ROLE_IDS),
+  STATION_FREQUENCY_MANAGER_USER_IDS: splitList(parsed.data.STATION_FREQUENCY_MANAGER_USER_IDS),
+  STATION_FREQUENCY_BIG_ROLE_IDS: splitList(parsed.data.STATION_FREQUENCY_BIG_ROLE_IDS),
+  STATION_FREQUENCY_BIG_MANAGER_ROLE_IDS: splitList(parsed.data.STATION_FREQUENCY_BIG_MANAGER_ROLE_IDS),
+  STATION_FREQUENCY_BIG_MANAGER_USER_IDS: splitList(parsed.data.STATION_FREQUENCY_BIG_MANAGER_USER_IDS),
+  STATION_FREQUENCY_SMALL_ROLE_IDS: splitList(parsed.data.STATION_FREQUENCY_SMALL_ROLE_IDS),
+  STATION_FREQUENCY_SMALL_MANAGER_ROLE_IDS: splitList(parsed.data.STATION_FREQUENCY_SMALL_MANAGER_ROLE_IDS),
+  STATION_FREQUENCY_SMALL_MANAGER_USER_IDS: splitList(parsed.data.STATION_FREQUENCY_SMALL_MANAGER_USER_IDS)
 };
 

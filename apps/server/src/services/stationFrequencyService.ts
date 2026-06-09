@@ -18,8 +18,44 @@ const ICON_SATELLITE = '\u{1F4E1}';
 const ICON_DICE = '\u{1F3B2}';
 const LEGACY_STATION_PANEL_TITLE = '**Frecventa statiei**';
 
+type StationPanelConfig = {
+  channelId: string;
+  roleIds: string[];
+  managerRoleIds: string[];
+  managerUserIds: string[];
+};
+
+const getStationPanelConfigs = (): StationPanelConfig[] => {
+  const explicitConfigs: StationPanelConfig[] = [
+    {
+      channelId: env.STATION_FREQUENCY_BIG_CHANNEL_ID,
+      roleIds: env.STATION_FREQUENCY_BIG_ROLE_IDS,
+      managerRoleIds: env.STATION_FREQUENCY_BIG_MANAGER_ROLE_IDS,
+      managerUserIds: env.STATION_FREQUENCY_BIG_MANAGER_USER_IDS
+    },
+    {
+      channelId: env.STATION_FREQUENCY_SMALL_CHANNEL_ID,
+      roleIds: env.STATION_FREQUENCY_SMALL_ROLE_IDS,
+      managerRoleIds: env.STATION_FREQUENCY_SMALL_MANAGER_ROLE_IDS,
+      managerUserIds: env.STATION_FREQUENCY_SMALL_MANAGER_USER_IDS
+    }
+  ].filter((config) => Boolean(config.channelId));
+
+  const explicitChannelIds = new Set(explicitConfigs.map((config) => config.channelId));
+  const legacyConfigs = env.STATION_FREQUENCY_CHANNEL_IDS
+    .filter((channelId) => !explicitChannelIds.has(channelId))
+    .map((channelId) => ({
+      channelId,
+      roleIds: env.STATION_FREQUENCY_ROLE_IDS,
+      managerRoleIds: env.STATION_FREQUENCY_MANAGER_ROLE_IDS,
+      managerUserIds: env.STATION_FREQUENCY_MANAGER_USER_IDS
+    }));
+
+  return [...explicitConfigs, ...legacyConfigs];
+};
+
 const isStationFrequencyConfigured = (): boolean =>
-  env.STATION_FREQUENCY_ENABLED && env.STATION_FREQUENCY_CHANNEL_IDS.length > 0;
+  env.STATION_FREQUENCY_ENABLED && getStationPanelConfigs().length > 0;
 
 const getGuildTextChannel = async (client: Client, channelId: string): Promise<TextChannel | null> => {
   if (!channelId) {
@@ -57,8 +93,12 @@ const buildStationButtons = (): ActionRowBuilder<ButtonBuilder> =>
       .setEmoji(ICON_DICE)
   );
 
-const buildStationPanelContent = (newFrequency: string, oldFrequency: string | null): string => {
-  const roleMentions = env.STATION_FREQUENCY_ROLE_IDS.map((roleId) => `<@&${roleId}>`).join(' ');
+const buildStationPanelContent = (
+  newFrequency: string,
+  oldFrequency: string | null,
+  config: StationPanelConfig
+): string => {
+  const roleMentions = config.roleIds.map((roleId) => `<@&${roleId}>`).join(' ');
 
   return [
     roleMentions,
@@ -103,12 +143,16 @@ const findStationPanelMessage = async (channel: TextChannel) => {
   );
 };
 
-const sendStationPanel = async (channel: TextChannel, oldFrequency: string | null = null): Promise<void> => {
+const sendStationPanel = async (
+  channel: TextChannel,
+  config: StationPanelConfig,
+  oldFrequency: string | null = null
+): Promise<void> => {
   await channel.send({
-    content: buildStationPanelContent(generateStationFrequency(), oldFrequency),
+    content: buildStationPanelContent(generateStationFrequency(), oldFrequency, config),
     components: [buildStationButtons()],
     allowedMentions: {
-      roles: env.STATION_FREQUENCY_ROLE_IDS
+      roles: config.roleIds
     }
   });
 };
@@ -124,10 +168,10 @@ export const ensureStationFrequencyPanel = async (client: Client): Promise<void>
     return;
   }
 
-  for (const channelId of env.STATION_FREQUENCY_CHANNEL_IDS) {
-    const channel = await getGuildTextChannel(client, channelId);
+  for (const config of getStationPanelConfigs()) {
+    const channel = await getGuildTextChannel(client, config.channelId);
     if (!channel) {
-      console.warn(`[station-frequency] channel not found: ${channelId}`);
+      console.warn(`[station-frequency] channel not found: ${config.channelId}`);
       continue;
     }
 
@@ -136,14 +180,14 @@ export const ensureStationFrequencyPanel = async (client: Client): Promise<void>
       continue;
     }
 
-    await sendStationPanel(channel);
-    console.log(`[station-frequency] panel created in channel ${channelId}`);
+    await sendStationPanel(channel, config);
+    console.log(`[station-frequency] panel created in channel ${config.channelId}`);
   }
 };
 
-const hasStationAccess = (member: GuildMember): boolean => {
-  const allowedUserIds = env.STATION_FREQUENCY_MANAGER_USER_IDS;
-  const allowedRoleIds = env.STATION_FREQUENCY_MANAGER_ROLE_IDS;
+const hasStationAccess = (member: GuildMember, config: StationPanelConfig): boolean => {
+  const allowedUserIds = config.managerUserIds;
+  const allowedRoleIds = config.managerRoleIds;
 
   if (allowedUserIds.length === 0 && allowedRoleIds.length === 0) {
     return member.permissions.has(PermissionFlagsBits.Administrator) || member.permissions.has(PermissionFlagsBits.ManageGuild);
@@ -182,18 +226,19 @@ export const handleStationFrequencyInteraction = async (interaction: Interaction
     return true;
   }
 
-  const member = await getInteractionMember(interaction);
-  if (!member || !hasStationAccess(member)) {
+  const config = getStationPanelConfigs().find((item) => item.channelId === interaction.channelId);
+  if (!config) {
     await interaction.reply({
-      content: 'Nu ai acces sa generezi o statie noua.',
+      content: 'Acest buton nu apartine unui canal configurat pentru frecventa statiei.',
       ephemeral: true
     });
     return true;
   }
 
-  if (!env.STATION_FREQUENCY_CHANNEL_IDS.includes(interaction.channelId)) {
+  const member = await getInteractionMember(interaction);
+  if (!member || !hasStationAccess(member, config)) {
     await interaction.reply({
-      content: 'Acest buton nu apartine unui canal configurat pentru frecventa statiei.',
+      content: 'Nu ai acces sa generezi o statie noua.',
       ephemeral: true
     });
     return true;
@@ -211,7 +256,7 @@ export const handleStationFrequencyInteraction = async (interaction: Interaction
   await interaction.deferUpdate();
   const oldFrequency = extractCurrentFrequency(interaction.message.content);
   await interaction.message.delete().catch(() => undefined);
-  await sendStationPanel(channel, oldFrequency);
+  await sendStationPanel(channel, config, oldFrequency);
 
   return true;
 };
