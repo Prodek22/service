@@ -42,6 +42,13 @@ const generateStationFrequency = (): string => {
   return `${prefix}.${String(suffix).padStart(3, '0')}`;
 };
 
+const extractCurrentFrequency = (content: string): string | null => {
+  const matches = [...content.matchAll(/`(\d{3}\.\d{3})`/g)];
+  const lastMatch = matches.at(-1);
+
+  return lastMatch?.[1] ?? null;
+};
+
 const buildStationButtons = (): ActionRowBuilder<ButtonBuilder> =>
   new ActionRowBuilder<ButtonBuilder>().addComponents(
     new ButtonBuilder()
@@ -51,7 +58,7 @@ const buildStationButtons = (): ActionRowBuilder<ButtonBuilder> =>
       .setEmoji(ICON_DICE)
   );
 
-const buildStationPanelContent = (frequency: string): string => {
+const buildStationPanelContent = (newFrequency: string, oldFrequency: string | null): string => {
   const roleMentions = env.STATION_FREQUENCY_ROLE_IDS.map((roleId) => `<@&${roleId}>`).join(' ');
 
   return [
@@ -59,8 +66,11 @@ const buildStationPanelContent = (frequency: string): string => {
     roleMentions ? '' : null,
     STATION_PANEL_TITLE,
     '',
-    `${ICON_SATELLITE} **Statia curenta**`,
-    `\`${frequency}\``,
+    `${ICON_SATELLITE} **Statia veche**`,
+    oldFrequency ? `\`${oldFrequency}\`` : '-',
+    '',
+    `${ICON_SATELLITE} **Statia noua**`,
+    `\`${newFrequency}\``,
     '',
     'Apasa **Statie noua** pentru a genera o frecventa noua.'
   ]
@@ -81,9 +91,9 @@ const findStationPanelMessage = async (channel: TextChannel) => {
   );
 };
 
-const sendStationPanel = async (channel: TextChannel): Promise<void> => {
+const sendStationPanel = async (channel: TextChannel, oldFrequency: string | null = null): Promise<void> => {
   await channel.send({
-    content: buildStationPanelContent(generateStationFrequency()),
+    content: buildStationPanelContent(generateStationFrequency(), oldFrequency),
     components: [buildStationButtons()],
     allowedMentions: {
       roles: env.STATION_FREQUENCY_ROLE_IDS
@@ -177,8 +187,9 @@ export const handleStationFrequencyInteraction = async (interaction: Interaction
   }
 
   await interaction.deferUpdate();
+  const oldFrequency = extractCurrentFrequency(interaction.message.content);
   await interaction.message.delete().catch(() => undefined);
-  await sendStationPanel(channel);
+  await sendStationPanel(channel, oldFrequency);
 
   return true;
 };
