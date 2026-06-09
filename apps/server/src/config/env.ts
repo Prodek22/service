@@ -42,6 +42,14 @@ const envSchema = z.object({
   SERVICE_COVERAGE_CHECK_INTERVAL_MINUTES: z.string().default('10'),
   SERVICE_COVERAGE_PRECHECK_MIN_MECHANICS: z.string().default('2'),
   SERVICE_COVERAGE_ALERT_COOLDOWN_MINUTES: z.string().default('9'),
+  STATION_FREQUENCY_ENABLED: z.enum(['true', 'false']).default('false'),
+  STATION_FREQUENCY_CHANNEL_ID: z.string().default(''),
+  STATION_FREQUENCY_ROLE_IDS: z.string().default(''),
+  STATION_FREQUENCY_MANAGER_ROLE_IDS: z.string().default(''),
+  STATION_FREQUENCY_MANAGER_USER_IDS: z.string().default(''),
+  STATION_FREQUENCY_MIN: z.string().default('100'),
+  STATION_FREQUENCY_MAX: z.string().default('999'),
+  STATION_FREQUENCY_DECIMALS: z.string().default('0'),
   DATABASE_URL: z.string().min(1),
   PORT: z.string().default('3001')
 });
@@ -101,6 +109,25 @@ export const env = {
   SERVICE_COVERAGE_ALERT_COOLDOWN_MINUTES: Math.max(
     1,
     Math.min(60, Number.parseInt(parsed.data.SERVICE_COVERAGE_ALERT_COOLDOWN_MINUTES, 10) || 9)
+  ),
+  STATION_FREQUENCY_ENABLED: parsed.data.STATION_FREQUENCY_ENABLED === 'true',
+  STATION_FREQUENCY_ROLE_IDS: parsed.data.STATION_FREQUENCY_ROLE_IDS
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean),
+  STATION_FREQUENCY_MANAGER_ROLE_IDS: parsed.data.STATION_FREQUENCY_MANAGER_ROLE_IDS
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean),
+  STATION_FREQUENCY_MANAGER_USER_IDS: parsed.data.STATION_FREQUENCY_MANAGER_USER_IDS
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean),
+  STATION_FREQUENCY_MIN: Number.parseFloat(parsed.data.STATION_FREQUENCY_MIN) || 100,
+  STATION_FREQUENCY_MAX: Number.parseFloat(parsed.data.STATION_FREQUENCY_MAX) || 999,
+  STATION_FREQUENCY_DECIMALS: Math.max(
+    0,
+    Math.min(3, Number.parseInt(parsed.data.STATION_FREQUENCY_DECIMALS, 10) || 0)
   )
 };
 

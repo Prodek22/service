@@ -132,6 +132,14 @@ SERVICE_COVERAGE_END_TIME=23:00
 SERVICE_COVERAGE_CHECK_INTERVAL_MINUTES=10
 SERVICE_COVERAGE_PRECHECK_MIN_MECHANICS=2
 SERVICE_COVERAGE_ALERT_COOLDOWN_MINUTES=9
+STATION_FREQUENCY_ENABLED=false
+STATION_FREQUENCY_CHANNEL_ID=
+STATION_FREQUENCY_ROLE_IDS=
+STATION_FREQUENCY_MANAGER_ROLE_IDS=
+STATION_FREQUENCY_MANAGER_USER_IDS=
+STATION_FREQUENCY_MIN=100
+STATION_FREQUENCY_MAX=999
+STATION_FREQUENCY_DECIMALS=0
 DATABASE_URL="mysql://user:password@localhost:3306/service_admin"
 PORT=3001
 ```
@@ -149,6 +157,18 @@ Pentru alerta automata 18:00-23:00 si pontajul extra de manageri:
 - `SERVICE_COVERAGE_MANAGER_USER_IDS` permite useri expliciti, separat de roluri.
 - La `SERVICE_COVERAGE_PRECHECK_TIME` botul alerteaza daca sunt mai putini mecanici decat `SERVICE_COVERAGE_PRECHECK_MIN_MECHANICS`.
 - Intre `SERVICE_COVERAGE_START_TIME` si `SERVICE_COVERAGE_END_TIME`, botul verifica la fiecare `SERVICE_COVERAGE_CHECK_INTERVAL_MINUTES`; daca nu exista niciun pontaj mecanic si niciun manager pe acoperire, trimite alerta.
+
+### Frecventa statiei
+
+Pentru panoul separat de frecventa radio:
+
+- `STATION_FREQUENCY_ENABLED=true` activeaza panoul.
+- `STATION_FREQUENCY_CHANNEL_ID` este canalul separat unde botul posteaza mesajul `Frecventa statiei`.
+- `STATION_FREQUENCY_ROLE_IDS` este lista de roluri mentionate in mesaj, separate prin virgula.
+- `STATION_FREQUENCY_MANAGER_ROLE_IDS` limiteaza cine poate apasa `Statie noua`; daca ramane gol, pot apasa doar membrii cu permisiuni Discord de administrator/manage guild.
+- `STATION_FREQUENCY_MANAGER_USER_IDS` permite useri expliciti, separat de roluri.
+- `STATION_FREQUENCY_MIN`, `STATION_FREQUENCY_MAX` si `STATION_FREQUENCY_DECIMALS` controleaza intervalul frecventei generate.
+- La apasarea butonului `Statie noua`, botul sterge mesajul vechi si posteaza unul nou, cu tag la rolurile din `STATION_FREQUENCY_ROLE_IDS`.
 
 Optional frontend: `apps/web/.env.example` -> `apps/web/.env`
 

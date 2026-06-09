@@ -17,6 +17,7 @@ import { attachIdImageFromReply, markCvMessageDeleted, processCvMessage } from '
 import { logDiscordReactionAudit } from '../services/discordReactionAuditService';
 import { isReactionMessageTracked } from '../services/reactionTrackService';
 import { handleServiceCoverageInteraction, startServiceCoverageSystem } from '../services/serviceCoverageService';
+import { ensureStationFrequencyPanel, handleStationFrequencyInteraction } from '../services/stationFrequencyService';
 import { markTimesheetMessageDeleted, processTimesheetMessage } from '../services/timesheetService';
 import { setDiscordClient } from './clientStore';
 
@@ -306,7 +307,11 @@ export const startDiscordBot = async (): Promise<Client> => {
         return;
       }
 
-      await handleServiceCoverageInteraction(interaction);
+      if (await handleServiceCoverageInteraction(interaction)) {
+        return;
+      }
+
+      await handleStationFrequencyInteraction(interaction);
     } catch (error) {
       console.error('interactionCreate failed', error);
     }
@@ -316,6 +321,7 @@ export const startDiscordBot = async (): Promise<Client> => {
   memberFilter = await createGuildMemberFilter(client);
   setDiscordClient(client);
   await startServiceCoverageSystem(client);
+  await ensureStationFrequencyPanel(client);
 
   return client;
 };
