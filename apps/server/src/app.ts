@@ -11,6 +11,7 @@ import { employeesRouter } from './routes/employeesRoutes';
 import { healthRouter } from './routes/healthRoutes';
 import { maintenanceRouter } from './routes/maintenanceRoutes';
 import { reactionRouter } from './routes/reactionRoutes';
+import { stationFrequencyRouter } from './routes/stationFrequencyRoutes';
 import { timesheetRouter } from './routes/timesheetRoutes';
 import { getIdImageStaticDirs, ID_IMAGE_PUBLIC_BASE_PATH } from './services/idImageStorage';
 
@@ -34,6 +35,7 @@ export const createApp = () => {
   app.use('/api/auth', authRouter);
   app.use('/api/audit', requirePdkAuditAccess, auditRouter);
   app.use('/api/admin-users', requirePdkAuditAccess, adminUsersRouter);
+  app.use('/api/station-frequency', requirePdkAuditAccess, stationFrequencyRouter);
   app.use('/api/timesheet', timesheetRouter);
   app.use('/api/dashboard', requireAuth, dashboardRouter);
   app.use('/api/employees', requireAuth, employeesRouter);

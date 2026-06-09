@@ -12,6 +12,7 @@ import {
 } from 'discord.js';
 import { randomInt } from 'node:crypto';
 import { env } from '../config/env';
+import { prisma } from '../db/prisma';
 
 const STATION_NEW_ID = 'station-frequency:new';
 const ICON_SATELLITE = '\u{1F4E1}';
@@ -147,10 +148,11 @@ const findStationPanelMessage = async (channel: TextChannel) => {
 const sendStationPanel = async (
   channel: TextChannel,
   config: StationPanelConfig,
-  oldFrequency: string | null = null
+  oldFrequency: string | null = null,
+  newFrequency = generateStationFrequency()
 ): Promise<void> => {
   await channel.send({
-    content: buildStationPanelContent(generateStationFrequency(), oldFrequency, config),
+    content: buildStationPanelContent(newFrequency, oldFrequency, config),
     components: [buildStationButtons()],
     allowedMentions: {
       roles: config.roleIds
@@ -200,6 +202,9 @@ const hasStationAccess = (member: GuildMember, config: StationPanelConfig): bool
 
   return allowedRoleIds.some((roleId) => member.roles.cache.has(roleId));
 };
+
+const getMemberDisplayName = (member: GuildMember): string =>
+  member.displayName || member.user.globalName || member.user.displayName || member.user.username;
 
 const getInteractionMember = async (interaction: ButtonInteraction): Promise<GuildMember | null> => {
   if (!interaction.guild) {
@@ -266,8 +271,18 @@ export const handleStationFrequencyInteraction = async (interaction: Interaction
   try {
     await interaction.deferUpdate();
     const oldFrequency = extractCurrentFrequency(interaction.message.content);
+    const newFrequency = generateStationFrequency();
     await interaction.message.delete().catch(() => undefined);
-    await sendStationPanel(channel, config, oldFrequency);
+    await sendStationPanel(channel, config, oldFrequency, newFrequency);
+    await prisma.stationFrequencyLog.create({
+      data: {
+        channelId: interaction.channelId,
+        discordUserId: member.id,
+        userDisplayName: getMemberDisplayName(member),
+        oldFrequency,
+        newFrequency
+      }
+    });
   } finally {
     stationChannelLocks.delete(interaction.channelId);
   }

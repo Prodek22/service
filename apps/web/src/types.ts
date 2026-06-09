@@ -233,6 +233,21 @@ export type AuditLogsResponse = {
   };
 };
 
+export type StationFrequencyLog = {
+  id: number;
+  channelId: string;
+  discordUserId: string;
+  userDisplayName: string | null;
+  oldFrequency: string | null;
+  newFrequency: string;
+  changedAt: string;
+  createdAt: string;
+};
+
+export type StationFrequencyLogsResponse = {
+  items: StationFrequencyLog[];
+};
+
 export type DeleteOldResponse = {
   ok: boolean;
   olderThanDays: number;

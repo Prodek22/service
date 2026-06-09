@@ -8,6 +8,7 @@ import { DashboardPage } from './pages/DashboardPage';
 import { EmployeesPage } from './pages/EmployeesPage';
 import { LoginPage } from './pages/LoginPage';
 import { ReactionTrackingPage } from './pages/ReactionTrackingPage';
+import { StationFrequencyLogsPage } from './pages/StationFrequencyLogsPage';
 import { TimesheetPage } from './pages/TimesheetPage';
 import { AdminRole, AuthMeResponse } from './types';
 
@@ -105,6 +106,14 @@ const getSectionMeta = (pathname: string): { eyebrow: string; title: string; sub
       eyebrow: 'Acces pdk',
       title: 'Utilizatori admin',
       subtitle: 'Creeaza conturi ADMIN sau VIEWER pentru panou.'
+    };
+  }
+
+  if (pathname.startsWith('/admin/station-frequency')) {
+    return {
+      eyebrow: 'Acces pdk',
+      title: 'Log statii',
+      subtitle: 'Vezi cine a schimbat frecventele si cand.'
     };
   }
 
@@ -211,6 +220,17 @@ const AdminLayout = ({ username, role, canViewAudit, onLogout, children }: Admin
                   US
                 </span>
                 <span>Utilizatori</span>
+              </NavLink>
+            ) : null}
+            {canViewAudit ? (
+              <NavLink
+                to="/admin/station-frequency"
+                className={({ isActive }) => `sidebar-nav-item${isActive ? ' active' : ''}`}
+              >
+                <span className="sidebar-nav-icon sidebar-nav-icon-stations" aria-hidden="true">
+                  ST
+                </span>
+                <span>Statii</span>
               </NavLink>
             ) : null}
           </nav>
@@ -454,6 +474,10 @@ export const App = () => {
       <Route
         path="/admin/users"
         element={renderAdminPage(canViewAudit ? <AdminUsersPage /> : <Navigate to="/admin" replace />)}
+      />
+      <Route
+        path="/admin/station-frequency"
+        element={renderAdminPage(canViewAudit ? <StationFrequencyLogsPage /> : <Navigate to="/admin" replace />)}
       />
       <Route path="/dashboard" element={<Navigate to="/admin" replace />} />
       <Route path="/employees" element={<Navigate to="/admin/employees" replace />} />
