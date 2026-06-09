@@ -16,7 +16,6 @@ import { env } from '../config/env';
 const STATION_NEW_ID = 'station-frequency:new';
 const ICON_SATELLITE = '\u{1F4E1}';
 const ICON_DICE = '\u{1F3B2}';
-const STATION_PANEL_MARKER = '||station-frequency-panel||';
 const LEGACY_STATION_PANEL_TITLE = '**Frecventa statiei**';
 
 const isStationFrequencyConfigured = (): boolean =>
@@ -68,9 +67,7 @@ const buildStationPanelContent = (newFrequency: string, oldFrequency: string | n
     oldFrequency ? `\`${oldFrequency}\`` : '-',
     '',
     `${ICON_SATELLITE} **Statia noua**`,
-    `\`${newFrequency}\``,
-    '',
-    STATION_PANEL_MARKER
+    `\`${newFrequency}\``
   ]
     .filter((line): line is string => line !== null)
     .join('\n');
@@ -84,9 +81,24 @@ const findStationPanelMessage = async (channel: TextChannel) => {
 
   return (
     messages.find(
-      (message) =>
-        message.author.id === channel.client.user?.id &&
-        (message.content.includes(STATION_PANEL_MARKER) || message.content.includes(LEGACY_STATION_PANEL_TITLE))
+      (message) => {
+        if (message.author.id !== channel.client.user?.id) {
+          return false;
+        }
+
+        const hasStationButton = message.components.some((row) => {
+          const components = 'components' in row && Array.isArray(row.components) ? row.components : [];
+          return components.some((component: unknown) => {
+            if (!component || typeof component !== 'object' || !('customId' in component)) {
+              return false;
+            }
+
+            return (component as { customId?: string }).customId === STATION_NEW_ID;
+          });
+        });
+
+        return hasStationButton || message.content.includes(LEGACY_STATION_PANEL_TITLE);
+      }
     ) ?? null
   );
 };
