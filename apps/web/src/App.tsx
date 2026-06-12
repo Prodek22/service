@@ -263,8 +263,10 @@ const AdminLayout = ({ username, role, canViewAudit, onLogout, children }: Admin
             <p>{sectionMeta.subtitle}</p>
           </div>
         </header>
-        {role === 'ADMIN' ? <ControlCheckStatus /> : null}
-        <main className="content">{children}</main>
+        <main className="content">
+          {role === 'ADMIN' ? <ControlCheckStatus /> : null}
+          {children}
+        </main>
         <SiteFooter />
       </div>
     </div>

@@ -27,16 +27,14 @@ export const ControlCheckStatus = () => {
     };
   }, []);
 
-  if (error) {
-    return null;
-  }
-
   const latest = data?.latest ?? null;
 
   return (
     <section className="control-check-status card" aria-label="Status control service">
       <span className="control-check-status-label">Control service</span>
-      {latest ? (
+      {error ? (
+        <p className="error">Nu am putut incarca statusul controlului.</p>
+      ) : latest ? (
         <p>
           Controlul a fost facut la {formatDateTime(latest.checkedAt)} -{' '}
           <strong>{latest.userDisplayName ?? 'utilizator necunoscut'}</strong>
