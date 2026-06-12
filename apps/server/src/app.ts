@@ -34,10 +34,10 @@ export const createApp = () => {
 
   app.use('/api/health', healthRouter);
   app.use('/api/auth', authRouter);
-  app.use('/api/control-check', controlCheckRouter);
   app.use('/api/audit', requirePdkAuditAccess, auditRouter);
   app.use('/api/admin-users', requirePdkAuditAccess, adminUsersRouter);
   app.use('/api/station-frequency', requirePdkAuditAccess, stationFrequencyRouter);
+  app.use('/api/control-check', requireAdmin, controlCheckRouter);
   app.use('/api/timesheet', timesheetRouter);
   app.use('/api/dashboard', requireAuth, dashboardRouter);
   app.use('/api/employees', requireAuth, employeesRouter);

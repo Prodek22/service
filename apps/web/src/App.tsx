@@ -263,6 +263,7 @@ const AdminLayout = ({ username, role, canViewAudit, onLogout, children }: Admin
             <p>{sectionMeta.subtitle}</p>
           </div>
         </header>
+        {role === 'ADMIN' ? <ControlCheckStatus /> : null}
         <main className="content">{children}</main>
         <SiteFooter />
       </div>
@@ -307,7 +308,6 @@ const PublicLayout = ({
           </div>
         </div>
       </header>
-      <ControlCheckStatus />
       <main className="content">
         {view === 'active' ? (
           <ActiveTimesheetsPage canManage={canManageActiveControls} />
