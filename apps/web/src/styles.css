@@ -4577,6 +4577,25 @@ html[data-theme='dark'] {
     8px 8px 0 -1px currentColor;
 }
 
+.layout-dashboard .sidebar-nav-icon-control::before {
+  left: 8px;
+  top: 8px;
+  width: 18px;
+  height: 18px;
+  border: 2px solid currentColor;
+  border-radius: 999px;
+}
+
+.layout-dashboard .sidebar-nav-icon-control::after {
+  left: 15px;
+  top: 5px;
+  width: 4px;
+  height: 24px;
+  background: currentColor;
+  border-radius: 999px;
+  transform: rotate(45deg);
+}
+
 .section-heading-row {
   display: flex;
   align-items: flex-start;

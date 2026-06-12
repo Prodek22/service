@@ -1,10 +1,10 @@
 ﻿import { ReactNode, useEffect, useMemo, useState } from 'react';
 import { Link, NavLink, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { ApiError, apiGet, apiPost } from './api/client';
-import { ControlCheckStatus } from './components/ControlCheckStatus';
 import { ActiveTimesheetsPage } from './pages/ActiveTimesheetsPage';
 import { AdminUsersPage } from './pages/AdminUsersPage';
 import { AuditLogsPage } from './pages/AuditLogsPage';
+import { ControlCheckPage } from './pages/ControlCheckPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { EmployeesPage } from './pages/EmployeesPage';
 import { LoginPage } from './pages/LoginPage';
@@ -118,6 +118,14 @@ const getSectionMeta = (pathname: string): { eyebrow: string; title: string; sub
     };
   }
 
+  if (pathname.startsWith('/admin/control-check')) {
+    return {
+      eyebrow: 'Control intern',
+      title: 'Control service',
+      subtitle: 'Ultima verificare inregistrata din Discord.'
+    };
+  }
+
   return {
     eyebrow: 'Monitorizare si control',
     title: 'Panou personal',
@@ -207,6 +215,17 @@ const AdminLayout = ({ username, role, canViewAudit, onLogout, children }: Admin
                 <span>Rapoarte</span>
               </NavLink>
             ) : null}
+            {role === 'ADMIN' ? (
+              <NavLink
+                to="/admin/control-check"
+                className={({ isActive }) => `sidebar-nav-item${isActive ? ' active' : ''}`}
+              >
+                <span className="sidebar-nav-icon sidebar-nav-icon-control" aria-hidden="true">
+                  CT
+                </span>
+                <span>Control</span>
+              </NavLink>
+            ) : null}
             {canViewAudit ? (
               <NavLink to="/admin/audit" className={({ isActive }) => `sidebar-nav-item${isActive ? ' active' : ''}`}>
                 <span className="sidebar-nav-icon sidebar-nav-icon-audit" aria-hidden="true">
@@ -263,10 +282,7 @@ const AdminLayout = ({ username, role, canViewAudit, onLogout, children }: Admin
             <p>{sectionMeta.subtitle}</p>
           </div>
         </header>
-        <main className="content">
-          {role === 'ADMIN' ? <ControlCheckStatus /> : null}
-          {children}
-        </main>
+        <main className="content">{children}</main>
         <SiteFooter />
       </div>
     </div>
@@ -470,6 +486,10 @@ export const App = () => {
       <Route
         path="/admin/reactions"
         element={renderAdminPage(auth.role === 'ADMIN' ? <ReactionTrackingPage /> : <Navigate to="/admin" replace />)}
+      />
+      <Route
+        path="/admin/control-check"
+        element={renderAdminPage(auth.role === 'ADMIN' ? <ControlCheckPage /> : <Navigate to="/admin" replace />)}
       />
       <Route
         path="/admin/audit"
