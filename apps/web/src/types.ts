@@ -254,8 +254,8 @@ export type ControlCheckLog = {
   checkedAt: string;
 };
 
-export type ControlCheckLatestResponse = {
-  latest: ControlCheckLog | null;
+export type ControlCheckLogsResponse = {
+  items: ControlCheckLog[];
 };
 
 export type DeleteOldResponse = {
