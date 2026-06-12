@@ -297,3 +297,17 @@ model StationFrequencyLog {
   @@map("station_frequency_logs")
 }
 
+model ControlCheckLog {
+  id              Int      @id @default(autoincrement())
+  channelId       String   @map("channel_id")
+  discordUserId   String   @map("discord_user_id")
+  userDisplayName String?  @map("user_display_name")
+  checkedAt       DateTime @default(now()) @map("checked_at")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@index([channelId, checkedAt])
+  @@index([discordUserId, checkedAt])
+  @@index([checkedAt])
+  @@map("control_check_logs")
+}
+

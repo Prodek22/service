@@ -146,6 +146,10 @@ STATION_FREQUENCY_SMALL_CHANNEL_ID=
 STATION_FREQUENCY_SMALL_ROLE_IDS=
 STATION_FREQUENCY_SMALL_MANAGER_ROLE_IDS=
 STATION_FREQUENCY_SMALL_MANAGER_USER_IDS=
+CONTROL_CHECK_ENABLED=false
+CONTROL_CHECK_CHANNEL_ID=
+CONTROL_CHECK_MANAGER_ROLE_IDS=
+CONTROL_CHECK_MANAGER_USER_IDS=
 DATABASE_URL="mysql://user:password@localhost:3306/service_admin"
 PORT=3001
 ```
@@ -178,6 +182,14 @@ Pentru panoul separat de frecventa radio:
 - Exemplu: camera mare poate avea `STATION_FREQUENCY_BIG_ROLE_IDS=ROL_COMUN` si `STATION_FREQUENCY_BIG_MANAGER_ROLE_IDS=ROL_ACCESS_MARE`, iar camera mica poate avea `STATION_FREQUENCY_SMALL_ROLE_IDS=ROL_COMUN,ROL_MIC` si `STATION_FREQUENCY_SMALL_MANAGER_ROLE_IDS=ROL_ACCESS_MARE,ROL_ACCESS_MIC`.
 - Frecventa este generata aleatoriu in format `123.456`, cu sase cifre, ca sa fie greu de ghicit.
 - La apasarea butonului `Statie noua`, botul sterge mesajul vechi si posteaza unul nou, cu tag la rolurile din `STATION_FREQUENCY_ROLE_IDS`.
+
+### Control service
+
+- `CONTROL_CHECK_ENABLED=true` activeaza panoul de control.
+- `CONTROL_CHECK_CHANNEL_ID` este canalul unde botul posteaza butonul `Control facut`.
+- `CONTROL_CHECK_MANAGER_ROLE_IDS` limiteaza cine poate apasa butonul; daca ramane gol, orice membru din guild il poate apasa.
+- `CONTROL_CHECK_MANAGER_USER_IDS` permite useri expliciti, separat de roluri.
+- La apasarea butonului, site-ul public afiseaza ultima verificare in formatul `Controlul a fost facut la data, ora - user`.
 
 Optional frontend: `apps/web/.env.example` -> `apps/web/.env`
 

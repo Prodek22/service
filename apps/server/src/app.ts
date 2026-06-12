@@ -6,6 +6,7 @@ import { env } from './config/env';
 import { adminUsersRouter } from './routes/adminUsersRoutes';
 import { auditRouter } from './routes/auditRoutes';
 import { authRouter } from './routes/authRoutes';
+import { controlCheckRouter } from './routes/controlCheckRoutes';
 import { dashboardRouter } from './routes/dashboardRoutes';
 import { employeesRouter } from './routes/employeesRoutes';
 import { healthRouter } from './routes/healthRoutes';
@@ -33,6 +34,7 @@ export const createApp = () => {
 
   app.use('/api/health', healthRouter);
   app.use('/api/auth', authRouter);
+  app.use('/api/control-check', controlCheckRouter);
   app.use('/api/audit', requirePdkAuditAccess, auditRouter);
   app.use('/api/admin-users', requirePdkAuditAccess, adminUsersRouter);
   app.use('/api/station-frequency', requirePdkAuditAccess, stationFrequencyRouter);

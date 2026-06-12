@@ -4594,8 +4594,67 @@ html[data-theme='dark'] {
   color: var(--muted);
 }
 
+.control-check-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 0 0 18px;
+  padding: 16px 20px;
+}
+
+.control-check-status-label {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.control-check-status p {
+  margin: 0;
+  color: var(--text);
+  font-weight: 700;
+}
+
+html[data-theme='copper'] .control-check-status {
+  position: relative;
+  overflow: hidden;
+  border-color: rgba(219, 126, 42, 0.46);
+  background:
+    radial-gradient(circle at 0% 0%, rgba(231, 139, 53, 0.2), transparent 34%),
+    linear-gradient(135deg, rgba(22, 14, 7, 0.84), rgba(10, 6, 3, 0.9));
+  box-shadow:
+    0 0 0 1px rgba(231, 139, 53, 0.12),
+    0 0 24px rgba(231, 139, 53, 0.16),
+    inset 0 1px 0 rgba(255, 210, 155, 0.08);
+}
+
+html[data-theme='copper'] .control-check-status::after {
+  content: '';
+  position: absolute;
+  inset: auto 18px 12px auto;
+  width: 180px;
+  height: 42px;
+  pointer-events: none;
+  opacity: 0.42;
+  background:
+    linear-gradient(90deg, transparent 0 20%, rgba(231, 139, 53, 0.45) 20% 21%, transparent 21%),
+    linear-gradient(135deg, transparent 0 42%, rgba(231, 139, 53, 0.5) 42% 44%, transparent 44%),
+    linear-gradient(0deg, transparent 0 48%, rgba(231, 139, 53, 0.28) 48% 51%, transparent 51%);
+}
+
+html[data-theme='copper'] .control-check-status-label {
+  color: rgba(255, 180, 107, 0.86);
+}
+
 @media (max-width: 700px) {
   .section-heading-row {
+    flex-direction: column;
+  }
+
+  .control-check-status {
+    align-items: flex-start;
     flex-direction: column;
   }
 }

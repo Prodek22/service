@@ -248,6 +248,16 @@ export type StationFrequencyLogsResponse = {
   items: StationFrequencyLog[];
 };
 
+export type ControlCheckLog = {
+  id: number;
+  userDisplayName: string | null;
+  checkedAt: string;
+};
+
+export type ControlCheckLatestResponse = {
+  latest: ControlCheckLog | null;
+};
+
 export type DeleteOldResponse = {
   ok: boolean;
   olderThanDays: number;

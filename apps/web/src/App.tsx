@@ -1,6 +1,7 @@
 ﻿import { ReactNode, useEffect, useMemo, useState } from 'react';
 import { Link, NavLink, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { ApiError, apiGet, apiPost } from './api/client';
+import { ControlCheckStatus } from './components/ControlCheckStatus';
 import { ActiveTimesheetsPage } from './pages/ActiveTimesheetsPage';
 import { AdminUsersPage } from './pages/AdminUsersPage';
 import { AuditLogsPage } from './pages/AuditLogsPage';
@@ -306,6 +307,7 @@ const PublicLayout = ({
           </div>
         </div>
       </header>
+      <ControlCheckStatus />
       <main className="content">
         {view === 'active' ? (
           <ActiveTimesheetsPage canManage={canManageActiveControls} />

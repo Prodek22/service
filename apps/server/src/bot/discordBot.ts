@@ -11,6 +11,7 @@ import {
 } from 'discord.js';
 import { env } from '../config/env';
 import { parseTimesheetMessage } from '../parsers/timesheetParser';
+import { ensureControlCheckPanel, handleControlCheckInteraction } from '../services/controlCheckService';
 import { createGuildMemberFilter } from '../services/guildMemberFilter';
 import { MessageInput } from '../types';
 import { attachIdImageFromReply, markCvMessageDeleted, processCvMessage } from '../services/cvService';
@@ -311,6 +312,10 @@ export const startDiscordBot = async (): Promise<Client> => {
         return;
       }
 
+      if (await handleControlCheckInteraction(interaction)) {
+        return;
+      }
+
       await handleStationFrequencyInteraction(interaction);
     } catch (error) {
       console.error('interactionCreate failed', error);
@@ -321,6 +326,7 @@ export const startDiscordBot = async (): Promise<Client> => {
   memberFilter = await createGuildMemberFilter(client);
   setDiscordClient(client);
   await startServiceCoverageSystem(client);
+  await ensureControlCheckPanel(client);
   await ensureStationFrequencyPanel(client);
 
   return client;
